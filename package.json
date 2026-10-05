@@ -1,0 +1,12 @@
+{
+  "name": "cevher-madenci-2d",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "oyna": "node test/oyna.mjs",
+    "sunucu": "node test/sunucu.mjs",
+    "paketle": "node araclar/paketle.mjs"
+  }
+}

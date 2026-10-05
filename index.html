@@ -1,0 +1,53 @@
+<title>Cevher Madenci</title>
+<!--
+  Gövde parçası (Paket D). Sunucu ve yayın ortamı bunu
+  <!doctype html><html lang="tr"><head>…</head><body> içine sarar; araclar/paketle.mjs tam belgeyi yazar.
+  İskelet: #oyun kökü, #maden (tuval #sahne + DOM katmanı #dunya), efekt tuvali #efekt ve açılış perdesi #acilis.
+  HUD, istatistik, alt şerit, gezinti, sayfa, pencere ve bildirim katmanlarını Arayuz.kur (Paket C) #oyun içine kurar.
+-->
+<meta name="theme-color" content="#0F2F2A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Rubik:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/temel.css">
+<link rel="stylesheet" href="css/oyun.css">
+<link rel="stylesheet" href="css/pencereler.css">
+<link rel="stylesheet" href="css/sayfalar.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #071B18; overscroll-behavior: none; }
+</style>
+
+<div id="oyun">
+  <main id="maden" aria-label="Maden">
+    <canvas id="sahne" aria-label="Maden görünümü. Kaydırarak derine in; madene, asansöre ya da depoya dokun." style="position:absolute;left:0;top:0;width:100%;height:100%;display:block"></canvas>
+    <div id="dunya"></div>
+  </main>
+
+  <canvas id="efekt" aria-hidden="true" style="position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none;z-index:12"></canvas>
+
+  <div id="acilis" aria-hidden="true" style="position:absolute;inset:0;z-index:15;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 35%,#143C36,#0F2F2A 60%,#071B18);transition:opacity .4s ease">
+    <div style="display:grid;justify-items:center;gap:10px;padding:0 24px;text-align:center">
+      <svg viewBox="0 0 120 120" width="112" height="112" aria-hidden="true">
+        <defs>
+          <radialGradient id="acilis-zemin" cx="45%" cy="38%" r="65%"><stop offset="0" stop-color="#FFE08A"/><stop offset=".55" stop-color="#F6C453"/><stop offset="1" stop-color="#D99A2B"/></radialGradient>
+          <linearGradient id="acilis-tas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7DB1F0"/><stop offset=".5" stop-color="#4A90E2"/><stop offset="1" stop-color="#2F6DB8"/></linearGradient>
+          <linearGradient id="acilis-sap" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8A5A32"/><stop offset="1" stop-color="#6B4425"/></linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r="44" fill="url(#acilis-zemin)" stroke="#FBF4EA" stroke-width="4"/>
+        <g stroke="#2B1D12" stroke-width="2.4" stroke-linejoin="round">
+          <g transform="rotate(-38 60 60)"><rect x="57" y="24" width="6" height="70" rx="3" fill="url(#acilis-sap)"/><path d="M30 36q30-19 60 0l-2 6q-28-14-56 0z" fill="#A9B4BE"/></g>
+          <path d="M60 44 76 56 69 82H51L44 56z" fill="url(#acilis-tas)"/>
+          <path d="M44 56h32M60 44l-6 12 6 26 6-26z" fill="none" stroke="#FBF4EA" stroke-width="1.4" opacity=".8"/>
+        </g>
+      </svg>
+      <h1 style="margin:0;font:800 30px/34px 'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#F6C453;text-shadow:0 2px 0 rgba(0,0,0,.3)">Cevher Madenci</h1>
+      <p style="margin:0;font:500 13px/17px Rubik,'Segoe UI',Roboto,system-ui,sans-serif;color:rgba(255,255,255,.72)">Kendi madenini kur, kaynaklarını yönet, zirveye ulaş!</p>
+      <div style="width:180px;height:8px;margin-top:8px;border-radius:4px;background:rgba(0,0,0,.32);overflow:hidden">
+        <i id="acilis-ilerleme" style="display:block;height:100%;width:100%;transform:scaleX(.05);transform-origin:0 50%;background:linear-gradient(90deg,#D99A2B,#F6C453,#FFE08A);transition:transform .2s ease"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>window.__cevher = window.__cevher || { hazir: false, sayac: { domYazim: 0, ciz: 0, uzun: 0 } }</script>
+<script type="module" src="js/ana.js"></script>
