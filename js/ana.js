@@ -11,7 +11,9 @@ import { kaydirmaKur } from './kaydirma.js'
 import { Ses } from './ses.js'
 import { Reklam } from './reklam.js'
 import { Magaza } from './magaza.js'
-import { Sahne, Arayuz, yerlesim } from '../test/taslak/baglanti.js'   // GEÇİCİ: entegrasyonda gerçek modüller
+import { Sahne } from './sahne/sahne.js'
+import { yerlesim } from './yerlesim.js'
+import { Arayuz } from '../test/taslak/baglanti.js'   // GEÇİCİ: arayüz gelene kadar
 
 const ADIM = Benzetim.ADIM || 0.05
 const HALKA = 600
