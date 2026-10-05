@@ -1,0 +1,231 @@
+/* ════════════════════════════════════════════════════════════════
+   TEMEL (Paket C, §4.1–4.2): renk jetonları, sıfırlama, yazı, düğmeler,
+   haplar, çubuklar, anahtarlar ve bölümlü seçici.
+   ════════════════════════════════════════════════════════════════ */
+:root {
+  --arka: #0F2F2A;
+  --panel: #F4E8D6;
+  --yukselt: #E67E3E;
+  --para: #F6C453;
+  --basari: #2ECC71;
+  --bilgi: #4A90E2;
+
+  --arka-900: #071B18;
+  --arka-800: #0B2622;
+  --arka-700: #143C36;
+  --arka-600: #1C4F47;
+  --arka-400: #3E7D72;
+  --panel-acik: #FBF4EA;
+  --panel-koyu: #E9D7BC;
+  --panel-cizgi: #D8C3A2;
+  --panel-kenar: #B8996F;
+  --metin: #2B1D12;
+  --metin-soluk: #6B5640;
+  --acik: #FFFFFF;
+  --acik-soluk: rgba(255, 255, 255, .72);
+  --yukselt-acik: #F59A55;
+  --yukselt-koyu: #CC5F27;
+  --yukselt-kenar: #9A4316;
+  --para-acik: #FFE08A;
+  --para-koyu: #D99A2B;
+  --para-kenar: #A8690F;
+  --basari-acik: #5FE08F;
+  --basari-koyu: #1E9E55;
+  --basari-kenar: #13703A;
+  --bilgi-acik: #7DB1F0;
+  --bilgi-koyu: #2F6DB8;
+  --uyari: #E25A43;
+  --uyari-zemin: #4A1F1A;
+  --uyari-kenar: #8E3B2E;
+  --pasif: #A8968A;
+  --teklif: #A8508C;
+  --sradan: #B8C2C8;
+  --bar-iz: #3A2A1E;
+
+  --f-baslik: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --f-govde: "Rubik", "Segoe UI", Roboto, system-ui, sans-serif;
+
+  --golge-kart: 0 2px 0 rgba(120, 80, 40, .28), 0 6px 14px rgba(0, 0, 0, .30);
+  --golge-buton: inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 -3px 0 rgba(0, 0, 0, .16), 0 2px 0 var(--yukselt-kenar), 0 4px 8px rgba(0, 0, 0, .25);
+  --golge-panel: 0 10px 28px rgba(0, 0, 0, .40);
+  --golge-yazi: 0 1px 0 rgba(0, 0, 0, .30);
+
+  --st: env(safe-area-inset-top, 0px);
+  --sb: env(safe-area-inset-bottom, 0px);
+  --yay: cubic-bezier(.3, 1.6, .5, 1);
+  --kay: cubic-bezier(.2, .9, .25, 1);
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--arka-900);
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+*, *::before, *::after { box-sizing: border-box; }
+
+#oyun {
+  position: fixed;
+  inset: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--arka);
+  color: var(--metin);
+  font: 500 13px/17px var(--f-govde);
+  font-variant-numeric: tabular-nums;
+  contain: strict;
+  isolation: isolate;
+}
+/* Sıfırlama: :where ile özgüllük sıfır, bileşen sınıfları her zaman kazanır */
+:where(#oyun) button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+#oyun button:focus-visible { outline: 2px solid var(--para); outline-offset: 2px; }
+:where(#oyun) :is(h1, h2, h3, p) { margin: 0; }
+#oyun [hidden] { display: none !important; }
+
+.ik { display: inline-block; width: 1em; height: 1em; flex: none; vertical-align: middle; overflow: visible; }
+.ikon-tanim { position: absolute; width: 0; height: 0; overflow: hidden; }
+.sayi { font-variant-numeric: tabular-nums; }
+
+/* ── Düğmeler (§4.6, §5.6) ── */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 9px;
+  font: 800 15px/18px var(--f-baslik) !important;
+  color: var(--acik) !important;
+  text-shadow: var(--golge-yazi);
+  white-space: nowrap;
+  overflow: hidden;
+  transition: transform .16s var(--yay), filter .12s;
+}
+.btn .ik { width: 15px; height: 15px; }
+.btn:active, .btn.basili { transform: scale(.96) translateY(1px); transition-duration: .08s; }
+.btn-turuncu { background: linear-gradient(180deg, var(--yukselt-acik), var(--yukselt) 55%, var(--yukselt-koyu)); box-shadow: var(--golge-buton); }
+.btn-yesil { background: linear-gradient(180deg, var(--basari-acik), var(--basari) 50%, var(--basari-koyu)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.16), 0 2px 0 var(--basari-kenar), 0 4px 8px rgba(0,0,0,.25); }
+.btn-mavi { background: linear-gradient(180deg, var(--bilgi-acik), var(--bilgi) 50%, var(--bilgi-koyu)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.16), 0 2px 0 #23548F, 0 4px 8px rgba(0,0,0,.25); }
+.btn-altin { background: linear-gradient(180deg, var(--para-acik), var(--para) 50%, var(--para-koyu)); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), inset 0 -3px 0 rgba(0,0,0,.12), 0 2px 0 var(--para-kenar), 0 4px 8px rgba(0,0,0,.2); color: var(--metin) !important; text-shadow: none; }
+.btn-krem { background: linear-gradient(180deg, var(--panel-acik), var(--panel-koyu)); border: 1px solid var(--panel-kenar) !important; color: var(--metin) !important; text-shadow: none; box-shadow: 0 2px 0 rgba(120,80,40,.3); }
+.btn-kirmizi { background: linear-gradient(180deg, #F07A62, var(--uyari) 55%, #B03E2C); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 0 var(--uyari-kenar); }
+.btn[disabled], .btn.pasif {
+  background: linear-gradient(180deg, #B5A497, #9C8A7E) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 2px 0 #7E6E62 !important;
+  color: rgba(244, 232, 214, .75) !important;
+  text-shadow: none;
+}
+.btn[disabled] { cursor: default; }
+.btn .parla { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: inherit; }
+.btn .parla::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  width: 40%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .35), transparent);
+  transform: translateX(0) skewX(-18deg);
+  animation: parla 3.2s ease-in-out infinite;
+  animation-delay: var(--gecikme, 0s);
+}
+@keyframes parla { 0%, 72% { transform: translateX(0) skewX(-18deg); } 90%, 100% { transform: translateX(420%) skewX(-18deg); } }
+
+/* ── Hap ve artı düğmesi ── */
+.hap { display: inline-flex; align-items: center; border-radius: 999px; background: rgba(0, 0, 0, .32); border: 1px solid rgba(255, 255, 255, .06); }
+.arti-btn {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  color: var(--acik) !important;
+  background: linear-gradient(180deg, var(--basari-acik), var(--basari-koyu));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 2px 0 var(--basari-kenar);
+}
+.arti-btn::before { content: ""; position: absolute; inset: -8px; }
+.arti-btn .ik { width: 14px; height: 14px; }
+
+/* ── Çubuk: iç öğe scaleX (--o 0..1) ── */
+.cubuk { position: relative; overflow: hidden; border-radius: 5px; }
+.cubuk > i {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  transform: scaleX(var(--o, 0));
+  transition: transform .4s cubic-bezier(.2, .8, .2, 1);
+  border-radius: inherit;
+}
+
+/* ── Anahtar (switch 44×26) ── */
+.anahtar {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: #CDBB9E;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.25);
+  transition: background .2s;
+  flex: none;
+}
+.anahtar::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--panel-acik);
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  transition: transform .2s var(--kay);
+}
+.anahtar[aria-checked="true"] { background: var(--basari); }
+.anahtar[aria-checked="true"]::after { transform: translateX(18px); }
+
+/* ── Bölümlü seçici ── */
+.bolumlu {
+  display: flex;
+  gap: 4px;
+  height: 34px;
+  padding: 3px;
+  border-radius: 17px;
+  background: var(--panel-koyu);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.18);
+}
+.bolumlu > button {
+  flex: 1;
+  border-radius: 14px;
+  font: 700 13px/1 var(--f-govde) !important;
+  color: var(--metin-soluk) !important;
+  transition: background .15s, color .15s;
+}
+.bolumlu > button[aria-pressed="true"] {
+  color: var(--acik) !important;
+  background: linear-gradient(180deg, var(--yukselt-acik), var(--yukselt) 55%, var(--yukselt-koyu));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 1px 0 var(--yukselt-kenar);
+  text-shadow: var(--golge-yazi);
+}
+
+/* ── Hareket azaltma ── */
+@media (prefers-reduced-motion: reduce) {
+  #oyun *, #oyun *::before, #oyun *::after { animation: none !important; transition-duration: .12s !important; }
+}
