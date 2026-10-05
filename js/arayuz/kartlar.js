@@ -59,7 +59,7 @@ export function kur(B) {
   }
   // Asansör ve depo rozetleri
   const ozelRozet = (ist, ad) => {
-    const r = ogeYap(`<button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="${ist}" aria-label="${ad} yöneticisi" data-ogretici="${ist}-yonetici">
+    const r = ogeYap(`<button class="yonetici-rozet kucuk bos" data-eylem="rozet-yonetici" data-istasyon="${ist}" aria-label="${ad} yöneticisi" data-ogretici="${ist}-yonetici">
       ${ikon('arti')}<span class="rozet-etiket">Yönetici</span><canvas class="portre" width="56" height="56"></canvas><i class="simsek">${ikon('yildirim')}</i></button>`)
     D.appendChild(r)
     return { r, portre: r.querySelector('.portre'), yonId: null }
@@ -97,10 +97,11 @@ export function kur(B) {
       c.r.style.left = (y.odaX + 6) + 'px'
       c.r.style.top = (y.satirY(i) + 10) + 'px'
     }
-    rozetA.r.style.left = Math.round(y.kuyuX + y.kuyuG / 2 - 17) + 'px'
-    rozetA.r.style.top = '28px'
-    rozetD.r.style.left = Math.round(y.W - 40) + 'px'
-    rozetD.r.style.top = (y.YUZEY_H + 40) + 'px'
+    // Asansör ve depo rozetleri kendi çiplerinin sol üst köşesinde
+    rozetA.r.style.left = Math.round(CIP_X[1] * y.W - 27 - 12) + 'px'
+    rozetA.r.style.top = '48px'
+    rozetD.r.style.left = Math.round(CIP_X[2] * y.W - 27 - 12) + 'px'
+    rozetD.r.style.top = '48px'
     kilitli.style.left = y.kenar + 'px'
     kilitli.style.width = y.kartG + 'px'
     sonAcik = -1
@@ -184,7 +185,7 @@ export function kur(B) {
     if (r.yonId !== yon.id) {
       r.yonId = yon.id
       ozellik(r.r, '--nr', nadirlik(yon.nadirlik).renk)
-      try { B.sahne.portre(yon.tohum, yon.nadirlik, r.portre, 28) } catch {}
+      try { B.sahne.portre(yon.tohum, yon.nadirlik, r.portre, r.r.classList.contains('kucuk') ? 24 : 28) } catch {}
     }
     const h = yetenekHali(d, yon)
     sinif(r.r, 'hazir', h.durum === 'hazir')

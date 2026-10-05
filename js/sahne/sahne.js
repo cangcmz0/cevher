@@ -22,9 +22,10 @@ import { bicim } from '../bicim.js'
 const DPR_TAVAN = { yuksek: 2, dengeli: 1.5, pil: 1.25 }
 const KAZI_MS = 1600
 const SATIS_TOPLA_MS = 450
-const SLOT = [0.20, 0.50, 0.35]         // madenci konumları (oda genişliğine oran)
+const SLOT = [0.19, 0.52, 0.36]         // madenci konumları (oda genişliğine oran)
 const SLOT_YON = [-1, 1, -1]            // -1 sola bakar
 const TASIYICI_OLCEK = 0.82
+const MADENCI_OLCEK = 1.22
 
 let tuval = null, ctx = null, efektTuval = null, ectx = null
 let W = 390, H = 600, oran = 2, efOran = 2, efW = 390, efH = 844
@@ -64,15 +65,12 @@ const satirCesidi = (i) => 'satir.zonguldak.' + (i % SATIR_CESIT)
 
 function madenciCiz(anahtar, x, y, yon) {
   const img = al(anahtar)
-  if (yon < 0) {
-    ctx.save()
-    ctx.translate(x, 0)
-    ctx.scale(-1, 1)
-    ctx.drawImage(img, -AYAK_X, y - AYAK_Y, HUCRE_W, HUCRE_H)
-    ctx.restore()
-  } else {
-    ctx.drawImage(img, x - AYAK_X, y - AYAK_Y, HUCRE_W, HUCRE_H)
-  }
+  const s = MADENCI_OLCEK
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(yon < 0 ? -s : s, s)
+  ctx.drawImage(img, -AYAK_X, -AYAK_Y, HUCRE_W, HUCRE_H)
+  ctx.restore()
 }
 
 function tasiyiciCiz(anahtar, x, y, yon) {
@@ -158,7 +156,7 @@ function satirDinamik(d, b, i, simdiMs, t) {
       const yon = SLOT_YON[k]
       const elle = !d.bolgeler[d.aktifBolge].yoneticiler.some((y) => y.atanan === 'm' + i)
       if (elle || karma(t * 13 + j) < 0.4) {
-        const px = x + yon * 22, py = zemin - 12
+        const px = x + yon * 26, py = zemin - 14
         dunyaP.patlat(px, py, 'kivilcim', 4, { yon: yon < 0 ? Math.PI : 0 })
         dunyaP.patlat(px, py + 4, 'toz', 2)
       }

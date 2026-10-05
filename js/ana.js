@@ -159,7 +159,7 @@ function sesler(liste) {
     const o = liste[i]
     switch (o.tip) {
       case 'yukseltildi':
-        Ses.cal(o.kademeler > 0 ? 'esik' : 'yukselt'); Ses.titret(15); break
+        Ses.cal(o.kademeler && o.kademeler.length ? 'esik' : 'yukselt'); Ses.titret(15); break
       case 'madenAcildi':
         Ses.cal('kazi'); Ses.titret(15); setTimeout(() => Ses.cal('galeri'), 1200); break
       case 'kaziBasladi':

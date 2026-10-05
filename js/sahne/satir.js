@@ -116,10 +116,20 @@ function odaCiz(ctx, y, r, p) {
     ctx.fill(tas)
     kenarIsik(ctx, tas, '#FFC873', 0.7, 0.18)
   }
-  // Duvardaki kömür
-  for (let i = 0; i < 3; i++) {
-    const x = y.odaX + 8 + r() * (y.odaG - 16), yy = ODA_UST + 20 + r() * 50
-    komurYigini(ctx, x, yy, 14 + r() * 14, 6 + r() * 4, r, p.cevher, p.cevherIsik, 10)
+  // Duvara gömülü kömür damarları (koyu, parlak benekli)
+  for (let i = 0; i < 2; i++) {
+    const x0 = y.odaX + 6 + r() * (y.odaG * 0.4), yy = ODA_UST + 26 + r() * 46, uz = y.odaG * (0.4 + r() * 0.4)
+    const yol = new Path2D()
+    yol.moveTo(x0, yy)
+    yol.bezierCurveTo(x0 + uz * 0.3, yy - 5, x0 + uz * 0.7, yy + 3, x0 + uz, yy - 2)
+    yol.bezierCurveTo(x0 + uz * 0.7, yy + 6, x0 + uz * 0.3, yy + 4, x0, yy + 3)
+    yol.closePath()
+    ctx.fillStyle = dikey(ctx, yy - 5, yy + 6, ['#2E353A', p.cevher, '#0E1012'])
+    ctx.fill(yol)
+    for (let t = 0; t < 7; t++) {
+      ctx.fillStyle = rgba(p.cevherIsik, 0.7)
+      ctx.fillRect(x0 + r() * uz, yy - 1 + r() * 3, 0.9, 0.9)
+    }
   }
   dokuKapla(ctx, y.odaX, ODA_UST, y.odaG, ODA_H, 'gurultu', 0.22, 'multiply')
   // Sıcak ışık havuzu (zemin)

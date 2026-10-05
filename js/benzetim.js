@@ -43,6 +43,7 @@ export function hazirla(durum) {
   durum.calisma = c
   const tu = toplamUretim(durum, b)
   c.uretimGecmis.fill(tu)
+  c.gelirEma = otoGelir(durum, b) * (durum.zaman < durum.takviye.bitis ? 2 : 1)
   c.gecmisSayi = GECMIS_UZUNLUK
   for (const y of b.yoneticiler) c.yetenekler[y.id] = yetenekDurum(durum, y).durum
   for (let i = 0; i < b.madenler.length; i++) {
