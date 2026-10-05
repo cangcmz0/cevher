@@ -1,144 +1,156 @@
 // ════════════════════════════════════════════════════════════════
-//  KARTLAR (Paket C, §4.6) — #dunya katmanı: yüzey akış çipleri,
-//  12 maden kartı (baştan kurulur, açılana kadar gizli), satır başı
-//  yönetici rozetleri, asansör/depo rozetleri, sonraki maden kartı,
-//  kademe şeritleri ve taban yazısı.
-//  • Kartlar 4 Hz (yalnız görünür satırlar), rozet halkaları 10 Hz.
+//  KARTLAR (görsel yön 2) — #dunya katmanı: kat kartları ("5. Kat /
+//  Kömür"), kartın yanındaki yeşil yükseltme okları, galeri yönetici
+//  rozetleri, sonraki (kilitli) kat kartı, "1. Kat / Yükleme" kartı,
+//  depo rozeti; #maden-ust katmanı: Asansör etiketi ve Darboğaz kartı.
+//  • Kartlar 4 Hz (yalnız görünür katlar), rozet halkaları 10 Hz.
 //  • Uzun basma (≥ 350 ms): seçili modla hızlı alım, 150 ms'de bir
 //    (1,5 sn sonra 80 ms), para yettikçe.
 // ════════════════════════════════════════════════════════════════
 import { ikon, cevherIkonu } from './ikonlar.js'
 import {
-  E, A, yaz, sinif, gizle, ozellik, cubuk, bicim, oranYazi, bolgeAl, istasyonAdi, nadirlik, yetenekHali,
-  kartHizi, ogeYap, yoneticiAdi, yetenekBilgi, yetenekEtki, ses, titret,
+  E, A, yaz, sinif, gizle, ozellik, cubuk, bicim, oranYazi, bolgeAl, nadirlik, yetenekHali,
+  kartHizi, ogeYap, yoneticiAdi, yetenekEtki,
 } from './ortak.js'
 
 const MAKS = 12
-const CIP_X = [0.2, 0.5, 0.8]
+const katNo = (i) => i + 2            // Maden i → "(i+2). Kat" (1. Kat yükleme katıdır)
+const cevherAdi = (d) => (A.BOLGE[d.aktifBolge] || A.BOLGELER[0]).cevher
 
 export function kur(B) {
   const D = B.dunya
-  // ── Çipler ──
-  const cipler = [
-    ogeYap(`<button class="cip" data-eylem="cip" data-hedef="madenci" aria-label="Madenciler">${ikon('madenci')}<span>Madenci</span></button>`),
-    ogeYap(`<button class="cip" data-eylem="cip" data-hedef="asansor" aria-label="Asansör">${ikon('asansor')}<span>Asansör</span><i class="cip-sv sayi">Sv.1</i></button>`),
-    ogeYap(`<button class="cip" data-eylem="cip" data-hedef="depo" aria-label="Depo">${ikon('sepet')}<span>Depo</span><i class="cip-sv sayi">Sv.1</i></button>`),
-  ]
-  const oklar = [ogeYap(`<i class="cip-ok">${ikon('ileri')}</i>`), ogeYap(`<i class="cip-ok">${ikon('ileri')}</i>`)]
-  for (const c of cipler) D.appendChild(c)
-  for (const o of oklar) D.appendChild(o)
-  const cipSv = [null, cipler[1].querySelector('.cip-sv'), cipler[2].querySelector('.cip-sv')]
+  const ustKat = B.kok.querySelector('#maden-ust')
+  const d0 = B.durumAl()
 
-  // ── Kartlar ──
+  // ── Kat kartları, yükseltme okları ve galeri rozetleri ──
   const kartlar = []
   for (let i = 0; i < MAKS; i++) {
     const k = ogeYap(`<div class="kart" data-eylem="yukselt-ac" data-istasyon="m${i}" hidden>
+      <b class="kart-ad">${katNo(i)}. Kat</b>
+      <span class="kart-cevher">${cevherAdi(d0)}</span>
       <span class="kart-ikon">${cevherIkonu('zonguldak')}</span>
-      <b class="kart-ad">Maden ${i + 1}</b>
-      <i class="kart-ok">${ikon('yukari')}</i>
-      <span class="kart-sv">Seviye <span class="rakam sayi">1</span></span>
+      <i class="kart-sv sayi">Sv.1</i>
       <span class="kart-hiz">${ikon('para')}<span class="sayi">0/sn</span></span>
-      <span class="kart-bar"><span class="cubuk"><i></i></span><span class="yuzde sayi">%0</span></span>
-      <button class="btn btn-turuncu kart-btn" data-eylem="yukselt-ac" data-istasyon="m${i}" data-uzun ${i === 0 ? 'data-ogretici="m0-yukselt"' : ''}><span class="parla" style="--gecikme:${(i * 0.4).toFixed(1)}s"></span>${ikon('yukari')}<span class="etiket">Yükselt</span></button>
+      <span class="cubuk kart-bar"><i></i></span>
+      <span class="kart-yuzde sayi">%0</span>
     </div>`)
     D.appendChild(k)
-    const r = ogeYap(`<button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="m${i}" aria-label="Maden ${i + 1} yöneticisi" ${i === 0 ? 'data-ogretici="m0-yonetici"' : ''} hidden>
-      ${ikon('arti')}<span class="rozet-etiket">Yönetici</span><canvas class="portre" width="56" height="56"></canvas><i class="simsek">${ikon('yildirim')}</i></button>`)
+    const ok = ogeYap(`<button class="yukselt-ok pasif" data-eylem="yukselt-ac" data-istasyon="m${i}" data-uzun aria-label="${katNo(i)}. Kat yükselt" ${i === 0 ? 'data-ogretici="m0-yukselt"' : ''} hidden>${ikon('yukari')}</button>`)
+    D.appendChild(ok)
+    const r = ogeYap(`<button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="m${i}" aria-label="${katNo(i)}. Kat yöneticisi" ${i === 0 ? 'data-ogretici="m0-yonetici"' : ''} hidden>
+      ${ikon('arti')}<span class="rozet-etiket">Yönetici</span><canvas class="portre" width="48" height="48"></canvas><i class="simsek">${ikon('yildirim')}</i></button>`)
     D.appendChild(r)
     kartlar.push({
-      k, r,
-      sv: k.querySelector('.kart-sv .rakam'),
+      k, ok, r,
+      sv: k.querySelector('.kart-sv'),
       hiz: k.querySelector('.kart-hiz .sayi'),
-      bar: k.querySelector('.kart-bar .cubuk'),
-      yuzde: k.querySelector('.kart-bar .yuzde'),
-      btn: k.querySelector('.kart-btn'),
-      etiket: k.querySelector('.kart-btn .etiket'),
+      bar: k.querySelector('.kart-bar'),
+      yuzde: k.querySelector('.kart-yuzde'),
       portre: r.querySelector('.portre'),
-      sonL: 0, yonId: null, acik: false,
+      sonL: 0, yonId: null,
     })
   }
-  // Asansör ve depo rozetleri
-  const ozelRozet = (ist, ad) => {
-    const r = ogeYap(`<button class="yonetici-rozet kucuk bos" data-eylem="rozet-yonetici" data-istasyon="${ist}" aria-label="${ad} yöneticisi" data-ogretici="${ist}-yonetici">
-      ${ikon('arti')}<span class="rozet-etiket">Yönetici</span><canvas class="portre" width="56" height="56"></canvas><i class="simsek">${ikon('yildirim')}</i></button>`)
-    D.appendChild(r)
-    return { r, portre: r.querySelector('.portre'), yonId: null }
-  }
-  const rozetA = ozelRozet('asansor', 'Asansör')
-  const rozetD = ozelRozet('depo', 'Depo')
 
-  // Sonraki maden kartı
+  // ── Kilitli (sonraki) kat ──
   const kilitli = ogeYap(`<div class="kart kilitli" hidden>
+    <b class="kart-ad">3. Kat</b>
+    <span class="kart-cevher">Yeni maden</span>
     <span class="kart-ikon">${ikon('kilit')}</span>
-    <b class="kart-ad">Maden 2</b>
-    <span class="kart-sv">Yeni maden</span>
     <button class="btn btn-yesil kart-ac" data-eylem="maden-ac" data-i="1">${ikon('para')}<span class="etiket sayi">Aç · 40</span></button>
   </div>`)
   D.appendChild(kilitli)
   const kil = { ad: kilitli.querySelector('.kart-ad'), btn: kilitli.querySelector('.kart-ac'), etiket: kilitli.querySelector('.kart-ac .etiket') }
-  const taban = ogeYap('<p class="taban-yazi" hidden>Bu bölgenin en derin noktası</p>')
-  D.appendChild(taban)
+
+  // ── 1. Kat Yükleme kartı ve depo rozeti ──
+  const yk = ogeYap(`<div class="kart yukleme" data-eylem="yukselt-ac" data-istasyon="depo">
+    <b class="kart-ad">1. Kat</b>
+    <span class="kart-cevher">Yükleme</span>
+    <i class="kart-ok-sari">${ikon('geri')}</i>
+    <i class="kart-sv sayi" style="top:34px">Sv.1</i>
+    <span class="kart-hiz">${ikon('sepet')}<span class="sayi">1 vagon</span></span>
+    <span class="cubuk kart-bar"><i></i></span>
+    <span class="kart-yuzde sayi">%0</span>
+  </div>`)
+  D.appendChild(yk)
+  const ykOk = ogeYap(`<button class="yukselt-ok pasif" data-eylem="yukselt-ac" data-istasyon="depo" data-uzun aria-label="Depoyu yükselt">${ikon('yukari')}</button>`)
+  D.appendChild(ykOk)
+  const ykEl = { sv: yk.querySelector('.kart-sv'), hiz: yk.querySelector('.kart-hiz .sayi'), bar: yk.querySelector('.kart-bar'), yuzde: yk.querySelector('.kart-yuzde') }
+  const rozetD = ogeYap(`<button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="depo" aria-label="Depo yöneticisi" data-ogretici="depo-yonetici">
+    ${ikon('arti')}<span class="rozet-etiket">Yönetici</span><canvas class="portre" width="48" height="48"></canvas><i class="simsek">${ikon('yildirim')}</i></button>`)
+  D.appendChild(rozetD)
+  const rD = { r: rozetD, portre: rozetD.querySelector('.portre'), yonId: null }
+
+  // ── Görünüme sabit: Asansör etiketi ve Darboğaz kartı ──
+  const asansorKap = ogeYap(`<div class="asansor-kap" style="position:absolute;right:4px;top:34%">
+    <button class="asansor-etiket" data-eylem="yukselt-ac" data-istasyon="asansor" style="position:relative;right:0;top:0"><b>Asansör</b><span class="sayi">Sv.1</span></button>
+    <button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="asansor" aria-label="Asansör yöneticisi" data-ogretici="asansor-yonetici" style="left:-24px;top:7px;width:26px;height:26px">
+      ${ikon('arti')}<canvas class="portre" width="40" height="40" style="inset:2px;width:20px;height:20px"></canvas><i class="simsek">${ikon('yildirim')}</i></button>
+  </div>`)
+  ustKat.appendChild(asansorKap)
+  const asSv = asansorKap.querySelector('.asansor-etiket span')
+  const rA = { r: asansorKap.querySelector('.yonetici-rozet'), portre: asansorKap.querySelector('.portre'), yonId: null }
+  const darbogaz = ogeYap(`<button class="darbogaz-kart bos" data-eylem="darbogaz" aria-live="polite"><span class="bas">${ikon('uyari')}Darboğaz</span><span class="alt"></span></button>`)
+  ustKat.appendChild(darbogaz)
+  const dbAlt = darbogaz.querySelector('.alt')
 
   let sonAcik = -1
+  let sonDarbogaz = null
   const atanan = {}
 
-  // ── Yerleşim (genişlik değişince) ──
+  // ── Yerleşim ──
   function yerlestir(d) {
     const y = B.yer
-    for (let j = 0; j < 3; j++) cipler[j].style.left = Math.round(CIP_X[j] * y.W) + 'px'
-    oklar[0].style.left = Math.round(0.35 * y.W) + 'px'
-    oklar[1].style.left = Math.round(0.65 * y.W) + 'px'
     for (let i = 0; i < MAKS; i++) {
       const c = kartlar[i]
-      const s = c.k.style
-      s.left = y.kenar + 'px'
-      s.top = (y.satirY(i) + y.KART_UST) + 'px'
-      s.width = y.kartG + 'px'
-      c.r.style.left = (y.odaX + 6) + 'px'
-      c.r.style.top = (y.satirY(i) + 10) + 'px'
+      const ust = y.satirY(i) + y.KART_UST
+      c.k.style.cssText = `left:${y.kenar}px;top:${ust}px;width:${y.kartG}px`
+      c.ok.style.cssText = `left:${y.kenar + y.kartG - 8}px;top:${ust + y.KART_H - 20}px`
+      c.r.style.cssText = `left:${y.odaX + 12}px;top:${y.satirY(i) + 16}px`
     }
-    // Asansör ve depo rozetleri kendi çiplerinin sol üst köşesinde
-    rozetA.r.style.left = Math.round(CIP_X[1] * y.W - 27 - 12) + 'px'
-    rozetA.r.style.top = '48px'
-    rozetD.r.style.left = Math.round(CIP_X[2] * y.W - 27 - 12) + 'px'
-    rozetD.r.style.top = '48px'
     kilitli.style.left = y.kenar + 'px'
     kilitli.style.width = y.kartG + 'px'
+    const ykUst = y.yuklemeY + 16
+    yk.style.cssText = `left:${y.kenar}px;top:${ykUst}px;width:${y.kartG}px`
+    ykOk.style.cssText = `left:${y.kenar + y.kartG - 8}px;top:${ykUst + y.KART_H - 20}px`
+    rozetD.style.cssText = `left:${y.depo.x + 8}px;top:${y.yuklemeY + 36}px`
     sonAcik = -1
-    if (d) satirlariGuncelle(d)
+    if (d) katlariGuncelle(d)
   }
 
-  // Açık maden sayısı değişince kartları göster/gizle
-  function satirlariGuncelle(d) {
+  function katlariGuncelle(d) {
     const b = bolgeAl(d)
     const n = b.madenler.length
     if (n === sonAcik) return
     const y = B.yer
     for (let i = 0; i < MAKS; i++) {
       gizle(kartlar[i].k, i >= n)
+      gizle(kartlar[i].ok, i >= n)
       gizle(kartlar[i].r, i >= n)
-      kartlar[i].acik = i < n
     }
     gizle(kilitli, n >= MAKS)
     if (n < MAKS) {
       kilitli.style.top = (y.satirY(n) + y.KART_UST) + 'px'
-      yaz(kil.ad, 'Maden ' + (n + 1))
+      yaz(kil.ad, katNo(n) + '. Kat')
       kil.btn.dataset.i = String(n)
       if (n === 1) kil.btn.dataset.ogretici = 'm1-ac'
       else delete kil.btn.dataset.ogretici
     }
-    gizle(taban, n < MAKS)
-    taban.style.top = (y.YUZEY_H + MAKS * y.SATIR_H + 40) + 'px'
     sonAcik = n
   }
 
-  // ── Bağlama ──
+  function okBagla(ok, tk, maks) {
+    sinif(ok, 'alinir', !!(tk && tk.yetiyor))
+    sinif(ok, 'pasif', !maks && !(tk && tk.yetiyor))
+    sinif(ok, 'maks', maks)
+  }
+
+  // ── Bağlama (4 Hz) ──
   function kare4(d) {
     const b = bolgeAl(d)
-    satirlariGuncelle(d)
+    katlariGuncelle(d)
     const n = b.madenler.length
     const y = B.yer
-    const ust = B.kaydirY - 140, alt = B.kaydirY + B.gorunurYuk + 20
+    const ust = B.kaydirY - 120, alt = B.kaydirY + B.gorunurYuk + 20
     for (let i = 0; i < n; i++) {
       const sy = y.satirY(i)
       if (sy + y.SATIR_H < ust || sy > alt) continue
@@ -150,16 +162,14 @@ export function kur(B) {
         c.sv.classList.add('yuvarla')
       }
       c.sonL = L
-      yaz(c.sv, String(L))
+      yaz(c.sv, 'Sv.' + L)
       yaz(c.hiz, oranYazi(kartHizi(d, b, i)))
       const maks = L >= A.MAKS_MADEN_SEVIYE
       const ilerleme = E.kademeIlerleme(L, A.KADEME_MADEN)
       cubuk(c.bar, maks ? 1 : ilerleme)
       yaz(c.yuzde, maks ? 'MAKS' : '%' + Math.floor(ilerleme * 100))
-      yaz(c.etiket, maks ? 'MAKS' : 'Yükselt')
-      const tk = maks ? null : E.teklif(d, b, 'm' + i, d.alimModu)
-      sinif(c.k, 'alinir', !!(tk && tk.yetiyor))
       sinif(c.k, 'maks', maks)
+      okBagla(c.ok, maks ? null : E.teklif(d, b, 'm' + i, d.alimModu), maks)
     }
     if (n < MAKS) {
       const mal = E.madenAcilis(d, b, n)
@@ -168,11 +178,35 @@ export function kur(B) {
       sinif(kil.btn, 'btn-yesil', yetiyor)
       sinif(kil.btn, 'pasif', !yetiyor)
     }
-    yaz(cipSv[1], 'Sv.' + b.asansor.L)
-    yaz(cipSv[2], 'Sv.' + b.depo.L)
+    // Yükleme katı (depo)
+    if (y.yuklemeY < alt) {
+      const L = b.depo.L
+      yaz(ykEl.sv, 'Sv.' + L)
+      yaz(ykEl.hiz, E.tasiyiciSayisi(L) + ' vagon')
+      const maks = L >= A.MAKS_ISTASYON_SEVIYE
+      const il = E.kademeIlerleme(L, A.KADEME_ISTASYON)
+      cubuk(ykEl.bar, maks ? 1 : il)
+      yaz(ykEl.yuzde, maks ? 'MAKS' : '%' + Math.floor(il * 100))
+      okBagla(ykOk, maks ? null : E.teklif(d, b, 'depo', d.alimModu), maks)
+    }
+    yaz(asSv, 'Sv.' + b.asansor.L)
+    // Darboğaz
+    const db = d.calisma.darbogaz
+    if (db !== sonDarbogaz) {
+      const m = db ? A.DARBOGAZ_METIN[db] : null
+      if (m) {
+        yaz(dbAlt, m[0])
+        darbogaz.classList.remove('salla')
+        void darbogaz.offsetWidth
+        if (sonDarbogaz) darbogaz.classList.add('salla')
+      }
+      sinif(darbogaz, 'bos', !m)
+      darbogaz.tabIndex = m ? 0 : -1
+      sonDarbogaz = db
+    }
   }
 
-  function rozetBagla(r, yon, d) {
+  function rozetBagla(r, yon, d, boyut) {
     if (!yon) {
       sinif(r.r, 'bos', true)
       sinif(r.r, 'dolu', false)
@@ -185,7 +219,7 @@ export function kur(B) {
     if (r.yonId !== yon.id) {
       r.yonId = yon.id
       ozellik(r.r, '--nr', nadirlik(yon.nadirlik).renk)
-      try { B.sahne.portre(yon.tohum, yon.nadirlik, r.portre, r.r.classList.contains('kucuk') ? 24 : 28) } catch {}
+      try { B.sahne.portre(yon.tohum, yon.nadirlik, r.portre, boyut) } catch {}
     }
     const h = yetenekHali(d, yon)
     sinif(r.r, 'hazir', h.durum === 'hazir')
@@ -194,20 +228,19 @@ export function kur(B) {
     if (h.durum !== 'hazir') ozellik(r.r, '--oran', h.halka.toFixed(3))
   }
 
+  // ── Rozetler (10 Hz) ──
   function kare10(d) {
     const b = bolgeAl(d)
     for (const k in atanan) atanan[k] = null
     for (const y of b.yoneticiler) if (y.atanan) atanan[y.atanan] = y
-    const ust = B.kaydirY - 140, alt = B.kaydirY + B.gorunurYuk + 20
+    const ust = B.kaydirY - 120, alt = B.kaydirY + B.gorunurYuk + 20
     for (let i = 0; i < b.madenler.length; i++) {
       const sy = B.yer.satirY(i)
-      if (sy + 128 < ust || sy > alt) continue
-      rozetBagla(kartlar[i], atanan['m' + i], d)
+      if (sy + B.yer.SATIR_H < ust || sy > alt) continue
+      rozetBagla(kartlar[i], atanan['m' + i], d, 24)
     }
-    if (B.kaydirY < 300) {
-      rozetBagla(rozetA, atanan.asansor, d)
-      rozetBagla(rozetD, atanan.depo, d)
-    }
+    rozetBagla(rA, atanan.asansor, d, 20)
+    if (B.yer.yuklemeY < alt) rozetBagla(rD, atanan.depo, d, 24)
   }
 
   // ── Uzun basma: hızlı alım ──
@@ -218,11 +251,9 @@ export function kur(B) {
     if (!d.ogretici.bitti && d.ogretici.adim <= 4) return
     const ist = el.dataset.istasyon
     const bas = performance.now()
-    let n = 0
     const adim = () => {
       const s = B.eylem('yukselt', { istasyon: ist })
       if (!s || !s.ok) { uzunBitti(); return }
-      n++
       const gecen = performance.now() - bas
       uzun = { el, z: setTimeout(adim, gecen > 1500 ? 80 : 150) }
     }
@@ -252,33 +283,26 @@ export function kur(B) {
     B.pencere.ac('yonetici', { istasyon: ist })
   }
   B.eylemler['maden-ac'] = (el) => {
-    const i = +el.dataset.i
-    const s = B.eylem('madenAc', { i })
+    const s = B.eylem('madenAc', { i: +el.dataset.i })
     if (s && !s.ok && s.sebep === 'para') B.bildir('bilgi', 'Yetersiz para')
   }
-  B.eylemler.cip = (el) => {
-    const h = el.dataset.hedef
-    if (h === 'asansor' || h === 'depo') { B.pencere.ac('yukseltme', { istasyon: h }); return }
-    const d = B.durumAl(), b = bolgeAl(d)
-    let hedef = 0
-    for (let i = 0; i < b.madenler.length; i++) {
-      const tk = E.teklif(d, b, 'm' + i, d.alimModu)
-      if (tk.yetiyor) { hedef = i; break }
-    }
-    B.kaydirKonumu(Math.max(0, B.yer.satirY(hedef) - 40), { anim: true })
-    const k = kartlar[hedef].k
-    k.classList.remove('vurgu')
-    void k.offsetWidth
-    k.classList.add('vurgu')
+  B.eylemler.darbogaz = () => {
+    const d = B.durumAl()
+    const db = d.calisma.darbogaz
+    if (!db) { B.pencere.ac('yukseltme', { istasyon: 'asansor' }); return }
+    const ist = db.startsWith('asansor') ? 'asansor' : 'depo'
+    B.istasyonaKaydir(ist)
+    if (db.endsWith('Manuel')) B.pencere.ac('yonetici', { istasyon: ist })
+    else B.pencere.ac('yukseltme', { istasyon: ist })
   }
 
   function serit(ist, metin) {
     const y = B.yer
     let x, yy
-    if (ist === 'asansor') { x = y.kuyuX + y.kuyuG / 2; yy = y.YUZEY_H + 30 }
-    else if (ist === 'depo') { x = y.sagX + y.sagG / 2 - 30; yy = y.YUZEY_H + 60 }
+    if (ist === 'asansor') { x = y.kuyuX - 30; yy = B.kaydirY + 40 }
+    else if (ist === 'depo') { x = y.depo.x + y.depo.w / 2 - 10; yy = y.yuklemeY + 20 }
     else { const i = +ist.slice(1); x = y.odaX + y.odaG / 2; yy = y.satirY(i) + 30 }
-    const s = ogeYap(`<div class="kademe-serit"></div>`)
+    const s = ogeYap('<div class="kademe-serit"></div>')
     s.textContent = metin
     s.style.left = Math.max(60, Math.min(y.W - 60, x)) + 'px'
     s.style.top = yy + 'px'
@@ -289,38 +313,35 @@ export function kur(B) {
   function olay(o, d) {
     if (o.tip === 'yukseltildi') {
       const i = E.madenIndeks(o.istasyon)
-      if (i >= 0) {
-        const c = kartlar[i]
-        c.k.classList.remove('nabiz')
-        void c.k.offsetWidth
-        c.k.classList.add('nabiz', 'halka')
-        setTimeout(() => c.k.classList.remove('halka'), 400)
-        if (o.kademeler && o.kademeler.length) {
-          c.bar.classList.remove('flas')
-          void c.bar.offsetWidth
-          c.bar.classList.add('flas')
-        }
+      const c = i >= 0 ? kartlar[i] : null
+      const kartEl = c ? c.k : o.istasyon === 'depo' ? yk : null
+      if (kartEl) {
+        kartEl.classList.remove('nabiz')
+        void kartEl.offsetWidth
+        kartEl.classList.add('nabiz', 'halka')
+        setTimeout(() => kartEl.classList.remove('halka'), 400)
       }
       if (o.kademeler && o.kademeler.length) {
+        const bar = c ? c.bar : o.istasyon === 'depo' ? ykEl.bar : null
+        if (bar) { bar.classList.remove('flas'); void bar.offsetWidth; bar.classList.add('flas') }
         const m = o.kademeler[o.kademeler.length - 1]
         const kat = o.kademeler.length > 1 ? '×' + Math.pow(2, o.kademeler.length) : '×2'
-        const stat = o.istasyon === 'asansor' ? 'Kapasite' : o.istasyon === 'depo' ? 'Taşıyıcı yükü' : 'Üretim'
+        const stat = o.istasyon === 'asansor' ? 'Kapasite' : o.istasyon === 'depo' ? 'Vagon yükü' : 'Üretim'
         serit(o.istasyon, `Kademe ${m} · ${kat}`)
         B.bildir('basari', `Kademe ${m}! ${stat} ${kat}`)
       }
     } else if (o.tip === 'madenAcildi') {
-      satirlariGuncelle(d)
+      katlariGuncelle(d)
       const c = kartlar[o.i]
       c.k.classList.remove('giris')
       void c.k.offsetWidth
       c.k.classList.add('giris')
-      B.bildir('basari', `Maden ${o.i + 1} açıldı!`)
+      B.bildir('basari', `${katNo(o.i)}. Kat açıldı!`)
     } else if (o.tip === 'yetenek') {
-      const y = o.yonetici
-      if (y) B.bildir('basari', `${yoneticiAdi(y)}: ${yetenekEtki(y)}!`)
+      if (o.yonetici) B.bildir('basari', `${yoneticiAdi(o.yonetici)}: ${yetenekEtki(o.yonetici)}!`)
     }
   }
 
-  yerlestir(B.durumAl ? B.durumAl() : null)
+  yerlestir(d0)
   return { yerlestir, kare4, kare10, olay, uzunBasma, uzunBitti, kartEl: (i) => kartlar[i] && kartlar[i].k }
 }

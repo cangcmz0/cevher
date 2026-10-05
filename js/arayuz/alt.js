@@ -1,9 +1,13 @@
 // ════════════════════════════════════════════════════════════════
-//  ALT (Paket C, §4.6–4.7) — alt şerit (durum yuvası, akış göstergesi,
-//  Topla x2) ve beş sekmeli gezinti.
+//  ALT (görsel yön 2) — alt bant ve sekmeler.
+//  • Solda "Çevrimdışı Kazanç" paneli: bekleyen kazanç varsa miktar ve
+//    süre (dokununca ×1 toplar); yoksa yöneticili katların 2 saatte
+//    kazanacağı miktar (bilgi).
+//  • Sağda sarı "2x Topla": bekleyen kazanç varsa ödüllü reklamla ×2
+//    toplar; yoksa Kazanç x2 takviyesi (30 dk) başlatır (Lv. 2'den).
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
-import { A, yaz, sinif, gizle, ozellik, sayac } from './ortak.js'
+import { E, A, yaz, sinif, gizle, bicim, sayac, sure, bolgeAl } from './ortak.js'
 
 const SEKMELER = [
   ['maden', 'Maden', 'kazma'],
@@ -12,109 +16,90 @@ const SEKMELER = [
   ['arastirma', 'Araştırma', 'arastirma'],
   ['magaza', 'Mağaza', 'magaza'],
 ]
-const HALKA_C = 2 * Math.PI * 34
+
+const sureKisa = (sn) => (sn >= 3600 ? Math.floor(sn / 3600) + ' saat' : sure(sn))
 
 export function kur(B) {
   const serit = B.kok.querySelector('#alt-serit')
   serit.innerHTML = `
-    <button class="durum-yuva bos" data-eylem="darbogaz" aria-live="polite">${ikon('uyari')}<span class="durum-metin"><b></b><span></span></span></button>
-    <button class="akis" data-eylem="darbogaz" aria-label="Üretim akışı">
-      <span class="akis-ikon" data-a="0">${ikon('cevher.zonguldak')}<i class="unlem">!</i></span>${ikon('ileri')}
-      <span class="akis-ikon" data-a="1">${ikon('asansor')}<i class="unlem">!</i></span>${ikon('ileri')}
-      <span class="akis-ikon" data-a="2">${ikon('sepet')}<i class="unlem">!</i></span>
-    </button>
-    <button class="topla gizli" data-eylem="topla" aria-label="Kazanç x2">
-      <svg class="geri-halka" viewBox="0 0 98 74" aria-hidden="true"><rect x="3" y="3" width="92" height="68" rx="25" fill="none" stroke="rgba(246,196,83,.95)" stroke-width="3" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0"/></svg>
-      ${ikon('topla')}<span class="topla-metin"><b>Topla</b><strong class="sayi">x2</strong></span><i class="reklam-rozet">${ikon('oynat')}</i>
-    </button>`
+    <button class="cevrimdisi-panel" data-eylem="cevrimdisi-panel">${ikon('topla')}<span class="metin"><small>Çevrimdışı Kazanç</small><span class="satir"><b class="sayi">+0</b><em>(2 saat)</em></span></span></button>
+    <button class="topla2x" data-eylem="topla2x" aria-label="2x Topla"><span class="rozet2x">2x</span><span class="metin"><b>Topla</b><strong class="sayi">30 dk</strong></span><i class="reklam-rozet">${ikon('oynat')}</i></button>`
   const nav = B.kok.querySelector('#gezinti')
   nav.setAttribute('role', 'tablist')
   nav.innerHTML = SEKMELER.map(([k, ad, ik]) => `<button class="sekme" role="tab" data-eylem="sekme" data-sekme="${k}" aria-selected="${k === 'maden'}">${ikon(ik)}<span>${ad}</span><i class="nokta"></i></button>`).join('')
 
   const el = {
-    yuva: serit.querySelector('.durum-yuva'),
-    satir1: serit.querySelector('.durum-metin b'),
-    satir2: serit.querySelector('.durum-metin span'),
-    akis: [...serit.querySelectorAll('.akis-ikon')],
-    topla: serit.querySelector('.topla'),
-    toplaYazi: serit.querySelector('.topla-metin strong'),
-    halka: serit.querySelector('.geri-halka rect'),
-    reklamRozet: serit.querySelector('.reklam-rozet'),
+    panel: serit.querySelector('.cevrimdisi-panel'),
+    panelMiktar: serit.querySelector('.cevrimdisi-panel b'),
+    panelSure: serit.querySelector('.cevrimdisi-panel em'),
+    topla: serit.querySelector('.topla2x'),
+    toplaUst: serit.querySelector('.topla2x .metin b'),
+    toplaAlt: serit.querySelector('.topla2x .metin strong'),
+    reklam: serit.querySelector('.topla2x .reklam-rozet'),
     sekmeler: [...nav.querySelectorAll('.sekme')],
   }
-  let sonDarbogaz = null
-  let toplaGorunur = false
   let reklamda = false
-  let halkaTop = 0
 
   function kare4(d) {
-    const c = d.calisma
-    const db = c.darbogaz
-    if (db !== sonDarbogaz) {
-      const m = db ? A.DARBOGAZ_METIN[db] : null
-      if (m) {
-        yaz(el.satir1, m[0])
-        yaz(el.satir2, m[1])
-        el.yuva.classList.remove('salla')
-        void el.yuva.offsetWidth
-        if (sonDarbogaz) el.yuva.classList.add('salla')
-      }
-      sinif(el.yuva, 'bos', !m)
-      el.yuva.setAttribute('aria-hidden', m ? 'false' : 'true')
-      el.yuva.tabIndex = m ? 0 : -1
-      const sorun = db === 'asansor' || db === 'asansorManuel' ? 1 : db === 'depo' || db === 'depoManuel' ? 2 : -1
-      for (let k = 0; k < 3; k++) sinif(el.akis[k], 'sorun', k === sorun)
-      sonDarbogaz = db
+    const b = bolgeAl(d)
+    const bc = d.bekleyenCevrimdisi
+    const kalan = d.takviye.bitis - d.zaman
+    sinif(el.panel, 'bekliyor', !!bc)
+    if (bc) {
+      yaz(el.panelMiktar, '+' + bicim(bc.miktar))
+      yaz(el.panelSure, '(' + sureKisa(bc.sure) + ')')
+      yaz(el.toplaUst, 'Topla')
+      yaz(el.toplaAlt, bicim(bc.miktar * 2))
+    } else {
+      const sinir = (A.CEVRIMDISI_SINIR_SAAT + E.ar(d, 'gece')) * 3600
+      yaz(el.panelMiktar, '+' + bicim(E.otoGelir(d, b) * sinir))
+      yaz(el.panelSure, '(' + sureKisa(sinir) + ')')
+      if (kalan > 0) { yaz(el.toplaUst, 'Aktif'); yaz(el.toplaAlt, sayac(kalan)) }
+      else { yaz(el.toplaUst, 'Topla'); yaz(el.toplaAlt, A.TAKVIYE_DAKIKA + ' dk') }
     }
-    // Topla x2
-    const acik = d.oyuncu.lv >= 2
-    if (acik !== toplaGorunur) {
-      toplaGorunur = acik
-      sinif(el.topla, 'gizli', !acik)
-      if (acik) {
-        el.topla.classList.remove('cikis')
-        void el.topla.offsetWidth
-        el.topla.classList.add('cikis')
-      }
-    }
-    if (acik) {
-      const kalan = d.takviye.bitis - d.zaman
-      const aktif = kalan > 0
-      sinif(el.topla, 'aktif', aktif)
-      yaz(el.toplaYazi, aktif ? sayac(kalan) : 'x2')
-      if (aktif) {
-        if (kalan > halkaTop) halkaTop = kalan
-        ozellik(el.halka, 'stroke-dashoffset', String(Math.round((1 - kalan / halkaTop) * 100)))
-      } else halkaTop = 0
-      gizle(el.reklamRozet, !!d.satin.reklamsiz)
+    sinif(el.topla, 'aktif', !bc && kalan > 0)
+    sinif(el.topla, 'kilitli', !bc && d.oyuncu.lv < 2)
+    gizle(el.reklam, !!d.satin.reklamsiz || (!bc && kalan > 0))
+  }
+
+  async function reklamla(yer) {
+    reklamda = true
+    el.topla.classList.add('bekliyor')
+    let ok = false
+    try { ok = await B.reklamIzle(yer) } catch { ok = false }
+    el.topla.classList.remove('bekliyor')
+    reklamda = false
+    if (!ok) B.bildir('bilgi', 'Reklam yüklenemedi, sonra tekrar dene')
+    return ok
+  }
+
+  function topla(kat, kaynakEl) {
+    const s = B.eylem('cevrimdisiTopla', { kat })
+    if (s && s.ok) {
+      const r = kaynakEl.getBoundingClientRect(), k = B.kok.getBoundingClientRect()
+      B.ucanSikke(r.left - k.left + r.width / 2, r.top - k.top + r.height / 2, 14)
     }
   }
 
-  function darbogazEylem() {
+  B.eylemler['cevrimdisi-panel'] = (b) => {
     const d = B.durumAl()
-    const db = d.calisma.darbogaz
-    if (!db) { B.pencere.ac('yukseltme', { istasyon: 'asansor' }); return }
-    const ist = db.startsWith('asansor') ? 'asansor' : 'depo'
-    B.istasyonaKaydir(ist)
-    if (db.endsWith('Manuel')) B.pencere.ac('yonetici', { istasyon: ist })
-    else B.pencere.ac('yukseltme', { istasyon: ist })
+    if (d.bekleyenCevrimdisi) topla(1, b)
+    else B.bildir('bilgi', 'Uygulama kapalıyken yöneticili katlar 2 saate kadar kazanır.')
   }
-  B.eylemler.darbogaz = darbogazEylem
 
-  B.eylemler.topla = async () => {
+  B.eylemler.topla2x = async (b) => {
     if (reklamda) return
     const d = B.durumAl()
+    if (d.bekleyenCevrimdisi) {
+      if (await reklamla('cevrimdisi')) topla(2, b)
+      return
+    }
+    if (d.oyuncu.lv < 2) { B.bildir('bilgi', "2x Topla, Seviye 2'de açılır.") ; return }
     if (d.takviye.bitis >= d.zaman + A.TAKVIYE_SINIR_SAAT * 3600 - 1) {
       B.bildir('bilgi', 'Kazanç x2 en fazla 4 saat birikir.')
       return
     }
-    reklamda = true
-    el.topla.classList.add('bekliyor')
-    let ok = false
-    try { ok = await B.reklamIzle('takviye') } catch { ok = false }
-    el.topla.classList.remove('bekliyor')
-    reklamda = false
-    if (!ok) { B.bildir('bilgi', 'Reklam yüklenemedi, sonra tekrar dene'); return }
+    if (!(await reklamla('takviye'))) return
     const s = B.eylem('takviye', { dakika: A.TAKVIYE_DAKIKA })
     if (s && s.ok) B.bildir('basari', 'Kazanç x2 başladı! 30 dk')
     else B.bildir('bilgi', 'Kazanç x2 en fazla 4 saat birikir.')

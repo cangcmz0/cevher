@@ -25,6 +25,8 @@ let sonW = 0
 function kokKur(kok) {
   kok.insertAdjacentHTML('afterbegin', DEFS)
   const maden = kok.querySelector('#maden')
+  // Görünüme sabit katman (Asansör etiketi, Darboğaz kartı)
+  maden.appendChild(ogeYap('<div id="maden-ust"></div>'))
   // HUD ve istatistik maden görünümünün üstünde; sonra alt şerit, gezinti, sayfa, perde, pencereler, bildirimler
   const parca = document.createDocumentFragment()
   for (const html of [

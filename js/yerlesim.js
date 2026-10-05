@@ -1,28 +1,41 @@
-// Dünya yerleşimi (§4.3). Saf modül: DOM yok, yan etki yok.
-// Sahne (B) ve arayüz (C) aynı sayıları buradan okur; böylece kanvas ile DOM kartları birebir hizalanır.
+// Dünya yerleşimi (§4.3, görsel yön 2). Saf modül: DOM yok, yan etki yok.
+// Sahne ve arayüz aynı sayıları buradan okur; böylece kanvas ile DOM kartları birebir hizalanır.
+//
+// Görsel yön 2 (ikinci referans): katlar alttan üste dizilir. En altta "1. Kat Yükleme" (depo ve vagon),
+// onun üstünde Maden 1 ("2. Kat"), en üstte en yeni maden. Yerler sabittir (12 maden yuvası); açılmamış
+// yuvalar kaya olarak çizilir ve kaydırmanın üst sınırı sonraki (kilitli) katın biraz üstündedir.
+// Asansör konumu: 0 = yükleme katındaki boşaltma noktası, k = Maden k'nın zemini (yukarı doğru).
 
-export const YUZEY_H = 128
-export const SATIR_H = 128
-export const KART_H = 116
-export const KART_UST = 6
-export const BITIS_H = 96
 export const MAKS_MADEN = 12
-
-// Odanın (kazı galerisi) satır içindeki dikey konumu
-export const ODA_UST = 8
-export const ODA_H = 112
-export const ZEMIN_Y = 100   // oda tabanı (döşeme) satır içi y
+export const SATIR_H = 112           // bir maden katı
+export const KART_H = 92
+export const KART_UST = 10
+export const TEPE_H = 64             // en üst yuvanın üstündeki kaya
+export const YUKLEME_H = 140         // yükleme katı (en alt)
+export const ODA_UST = 6             // oda (galeri) satır içi üst
+export const ODA_H = 90
+export const ZEMIN_Y = 96            // satır içi zemin (döşeme üstü)
+export const YUKLEME_ZEMIN = 112     // yükleme katı içi zemin (raylar)
 
 const sinirla = (v, a, b) => (v < a ? a : v > b ? b : v)
 
-export const satirY = (i) => YUZEY_H + i * SATIR_H
+// Maden i'nin (0 tabanlı) satır üstü
+export const satirY = (i) => TEPE_H + (MAKS_MADEN - 1 - i) * SATIR_H
+export const yuklemeY = TEPE_H + MAKS_MADEN * SATIR_H
+export const DUNYA_H = yuklemeY + YUKLEME_H
 
-// Kabinin alt kenarının dünya y'si. konum 0 = DEPO boşaltma noktası (yüzeyin hemen altı, huninin yanı),
-// konum k = Maden k'nın döşemesi. 0..1 arası daha kısa bir yol (yüzeyden ilk kata).
-export const KABIN_UST_ALT = 150
+// Kabinin alt kenarının dünya y'si (konum yukarı doğru artar; katlar arası doğrusal)
+export const KABIN_YUKLEME_ALT = yuklemeY + 66
 export function kabinAltY(konum) {
-  if (konum <= 1) return KABIN_UST_ALT + (satirY(0) + ZEMIN_Y - KABIN_UST_ALT) * (konum < 0 ? 0 : konum)
-  return satirY(0) + ZEMIN_Y + (konum - 1) * SATIR_H
+  if (!(konum > 0)) return KABIN_YUKLEME_ALT
+  if (konum <= 1) return KABIN_YUKLEME_ALT + (satirY(0) + ZEMIN_Y - KABIN_YUKLEME_ALT) * konum
+  return satirY(0) + ZEMIN_Y - (konum - 1) * SATIR_H
+}
+
+// Kaydırmanın üst sınırı: sonraki (kilitli) katın ya da en üst katın biraz üstü
+export function ustSinir(acik) {
+  const ust = Math.min(acik, MAKS_MADEN - 1)
+  return Math.max(0, satirY(ust) - (acik >= MAKS_MADEN ? TEPE_H : 28))
 }
 
 const onbellek = new Map()
@@ -31,26 +44,28 @@ export function yerlesim(W) {
   W = Math.round(W) || 390
   const hazir = onbellek.get(W)
   if (hazir) return hazir
-  const kenar = W >= 420 ? 12 : 8
-  const kartG = sinirla(Math.round(0.41 * W), 148, 196)
-  const bosluk = 6
-  const kuyuG = W < 375 ? 36 : (W >= 440 ? 44 : 38)
-  const sagG = sinirla(Math.round(0.13 * W), 46, 62)
+  const kenar = W >= 420 ? 10 : 8
+  const kartG = sinirla(Math.round(0.27 * W), 96, 132)
+  const bosluk = 4
+  const kuyuG = W < 375 ? 46 : (W >= 440 ? 58 : 50)
+  const sagPay = W >= 420 ? 12 : 8
   const odaX = kenar + kartG + bosluk
-  const odaG = W - odaX - kuyuG - sagG
-  const kuyuX = odaX + odaG
-  const sagX = kuyuX + kuyuG
+  const kuyuX = W - sagPay - kuyuG
+  const odaG = kuyuX - odaX
+  // Yükleme katı: depo sağda (kuyunun altı), vagon rayları boydan boya
+  const depoX = Math.round(W * 0.6)
+  const depo = { x: depoX, y: yuklemeY + 4, w: W - depoX - 2, h: YUKLEME_ZEMIN - 4 }
 
-  const dunyaH = (acik) => YUZEY_H + (acik + (acik < MAKS_MADEN ? 1 : 0)) * SATIR_H + BITIS_H
+  const dunyaH = () => DUNYA_H
 
   // İstasyon kutuları (dünya koordinatı). Dokunma hedefleri ve ekran çapaları bunlardan türer.
   function istasyonKutusu(istasyon, acik) {
     if (istasyon === 'asansor') {
-      const alt = acik > 0 ? satirY(acik - 1) + SATIR_H : YUZEY_H
-      return { x: kuyuX, y: 18, w: kuyuG, h: alt - 18 }
+      const ust = acik > 0 ? satirY(acik - 1) : yuklemeY
+      return { x: kuyuX, y: ust, w: kuyuG, h: yuklemeY + 70 - ust }
     }
-    if (istasyon === 'depo') return { x: sagX - 8, y: YUZEY_H - 22, w: W - (sagX - 8), h: 126 }
-    if (istasyon === 'satis') return { x: sagX - 18, y: 64, w: W - (sagX - 18), h: 40 }
+    if (istasyon === 'depo') return { x: depo.x, y: depo.y, w: depo.w, h: depo.h }
+    if (istasyon === 'satis') return { x: 0, y: yuklemeY + 50, w: 40, h: YUKLEME_ZEMIN - 50 }
     if (typeof istasyon === 'string' && istasyon[0] === 'm') {
       const i = +istasyon.slice(1)
       if (!(i >= 0 && i < MAKS_MADEN)) return null
@@ -59,11 +74,11 @@ export function yerlesim(W) {
     return null
   }
 
-  // Dondurulmaz: tüketiciler (ana.js) nesneye kendi işaretini ekleyebilir.
+  // Dondurulmaz: tüketiciler nesneye kendi işaretini ekleyebilir.
   const y = {
-    W, kenar, kartG, bosluk, odaX, odaG, kuyuX, kuyuG, sagX, sagG,
-    YUZEY_H, SATIR_H, KART_H, KART_UST, BITIS_H,
-    satirY, dunyaH, istasyonKutusu,
+    W, kenar, kartG, bosluk, odaX, odaG, kuyuX, kuyuG, sagPay, depo,
+    SATIR_H, KART_H, KART_UST, TEPE_H, YUKLEME_H, ODA_UST, ODA_H, ZEMIN_Y, YUKLEME_ZEMIN,
+    satirY, yuklemeY, dunyaH, istasyonKutusu, ustSinir, kabinAltY,
   }
   onbellek.set(W, y)
   return y

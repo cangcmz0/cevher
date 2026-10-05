@@ -3,7 +3,7 @@
 //  dokunma ve uzun basma algılama. Yerel kaydırma kullanılmaz.
 //  • Sürükleme 8 px sonra başlar, içerik parmağı 1:1 izler.
 //  • Bırakınca atalet v *= exp(-dt/0.325), |v| < 12 px/sn'de durur.
-//  • Sınırlar 0..(dunyaH − gorunurYuk + 80); dışında lastik bant,
+//  • Sınırlar ustSinir..(dunyaH − gorunurYuk + altPay); dışında lastik bant,
 //    geri dönüş kritik sönümlü yay (ω = 16).
 //  • Fare tekerleği 120 ms yumuşatılır; kaydirKonumu 450 ms easeOutCubic.
 //  • Dokunuş: < 8 px ve < 350 ms. DOM denetimine dokunulduysa tıklama
@@ -29,7 +29,7 @@ const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3)
 // Lastik bant: sınır dışı yer değiştirme × 0.5 / (1 + |d|/300)
 function lastik(d) { return d * 0.5 / (1 + Math.abs(d) / 300) }
 
-export function kaydirmaKur({ kok, alan, dunya, dunyaYukAl, dokun, uiMi, yayinla, simdi = () => performance.now() }) {
+export function kaydirmaKur({ kok, alan, dunya, dunyaYukAl, ustSinirAl, altPay = ALT_PAY, dokun, uiMi, yayinla, simdi = () => performance.now() }) {
   // Durum
   let y = 0                    // gösterilen kaydırma (dünya px)
   let v = 0                    // px/sn (atalet)
@@ -49,8 +49,10 @@ export function kaydirmaKur({ kok, alan, dunya, dunyaYukAl, dokun, uiMi, yayinla
   let tiklamaBastir = false
   let bastirZaman = 0
 
-  const maks = () => Math.max(0, (dunyaYukAl() || 0) - gorunurYuk + ALT_PAY)
-  const sinirla = (d) => Math.min(maks(), Math.max(0, d))
+  const maks = () => Math.max(0, (dunyaYukAl() || 0) - gorunurYuk + altPay)
+  // Üst sınır (en az kaydırma): dünya görünümden kısaysa alta yaslanır
+  const enAz = () => Math.min(maks(), Math.max(0, ustSinirAl ? ustSinirAl() : 0))
+  const sinirla = (d) => Math.min(maks(), Math.max(enAz(), d))
 
   function ornekEkle(t, cy) {
     ornT[ornI] = t; ornY[ornI] = cy
@@ -74,8 +76,8 @@ export function kaydirmaKur({ kok, alan, dunya, dunyaYukAl, dokun, uiMi, yayinla
 
   // Ham (sınırsız) konumu lastik bantla gösterilen konuma çevirir
   function hamdanGoster(ham) {
-    const m = maks()
-    if (ham < 0) return lastik(ham)
+    const m = maks(), a = enAz()
+    if (ham < a) return a + lastik(ham - a)
     if (ham > m) return m + lastik(ham - m)
     return ham
   }
@@ -215,10 +217,10 @@ export function kaydirmaKur({ kok, alan, dunya, dunyaYukAl, dokun, uiMi, yayinla
       if (k >= 1) { y = tw.son; tw = null }
       return
     }
-    const m = maks()
-    if (y < 0 || y > m) {
+    const m = maks(), a = enAz()
+    if (y < a || y > m) {
       // Kritik sönümlü yay, tam çözüm (büyük dt'de de kararlı)
-      const sinir = y < 0 ? 0 : m
+      const sinir = y < a ? a : m
       const x0 = y - sinir
       const e = Math.exp(-OMEGA * dt)
       const c = v + OMEGA * x0
@@ -261,6 +263,7 @@ export function kaydirmaKur({ kok, alan, dunya, dunyaYukAl, dokun, uiMi, yayinla
     ilerle, uygula, kaydirKonumu, boyutla,
     get y() { return y },
     get maks() { return maks() },
+    get enAz() { return enAz() },
     get hareketli() { return Boolean((isaretci && isaretci.surukle) || tw || v !== 0 || yayda) },
   }
 }

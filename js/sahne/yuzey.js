@@ -9,7 +9,8 @@ import {
   dikey, yatay, radyal, elips, yuvarlakYol, cokgen, topakYol, kenarIsik, dokuKapla, yolaDoku, golgeli,
   acik, koyu, rgba, rastgele, kalas, civata, parilti,
 } from './cizim.js'
-import { yerlesim, YUZEY_H } from '../yerlesim.js'
+import { yerlesim } from '../yerlesim.js'
+const YUZEY_H = 128
 
 export const ZEMIN_Y = 104
 export const DENIZ_UST = 52

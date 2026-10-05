@@ -3,18 +3,23 @@
    haplar, çubuklar, anahtarlar ve bölümlü seçici.
    ════════════════════════════════════════════════════════════════ */
 :root {
-  --arka: #0F2F2A;
+  --arka: #0E2A33;
   --panel: #F4E8D6;
   --yukselt: #E67E3E;
   --para: #F6C453;
   --basari: #2ECC71;
   --bilgi: #4A90E2;
 
-  --arka-900: #071B18;
-  --arka-800: #0B2622;
-  --arka-700: #143C36;
-  --arka-600: #1C4F47;
-  --arka-400: #3E7D72;
+  --arka-900: #061820;
+  --arka-800: #0A222B;
+  --arka-700: #12353F;
+  --arka-600: #1B4753;
+  --arka-400: #3D7581;
+  /* Görsel yön 2: koyu lacivert-yeşil kartlar ve çerçeveler */
+  --kart-ust: #194650;
+  --kart-alt: #0F2E37;
+  --cerceve: #2F6872;
+  --cerceve-acik: #5FA3AC;
   --panel-acik: #FBF4EA;
   --panel-koyu: #E9D7BC;
   --panel-cizgi: #D8C3A2;

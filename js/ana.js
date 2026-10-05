@@ -12,7 +12,7 @@ import { Ses } from './ses.js'
 import { Reklam } from './reklam.js'
 import { Magaza } from './magaza.js'
 import { Sahne } from './sahne/sahne.js'
-import { yerlesim } from './yerlesim.js'
+import { yerlesim, ustSinir } from './yerlesim.js'
 import { Arayuz } from './arayuz/arayuz.js'
 
 const ADIM = Benzetim.ADIM || 0.05
@@ -125,7 +125,7 @@ function eylem(ad, veri = {}) {
     else if (ERTELI.has(ad)) kayitIste(1000)
     if (ad === 'ayar' && veri && veri.anahtar === 'kalite') boyutla()
     if (ad === 'cevrimdisiTopla') Ses.cal('para')
-    if (ad === 'sifirla') kaydirma?.kaydirKonumu(0, { anim: false })
+    if (ad === 'sifirla') kaydirma?.kaydirKonumu(1e9, { anim: false })
   } else if (s && (s.sebep === 'para' || s.sebep === 'elmas')) {
     Ses.cal('hata')
   }
@@ -223,7 +223,8 @@ function cevrimdisiYol() {
   }
   if (s.geriAlindi) Arayuz.bildir('bilgi', 'Cihaz saati geri alınmış; çevrimdışı kazanç verilmedi.')
   else if (s.gecen >= 60 && !(s.miktar > 0) && s.eksikYonetici) Arayuz.bildir('bilgi', 'Yöneticisi olmayan istasyonlar sen yokken çalışmaz.')
-  if (durum.bekleyenCevrimdisi) Arayuz.modalAc('cevrimdisi', { ...durum.bekleyenCevrimdisi, eksikYonetici: Boolean(s.eksikYonetici) })
+  // Görsel yön 2: bekleyen kazanç alt banttaki Çevrimdışı Kazanç panelinde durur
+  if (s.gecen >= 60 && durum.bekleyenCevrimdisi) Arayuz.bildir('basari', 'Sen yokken madencilerin çalıştı!')
   kaydet()
 }
 
@@ -407,6 +408,8 @@ async function basla(hot = {}) {
   kaydirma = kaydirmaKur({
     kok, alan, dunya,
     dunyaYukAl: dunyaYuk,
+    ustSinirAl: () => ustSinir(bolge().madenler.length),
+    altPay: 16,
     dokun, uiMi,
     yayinla: (o) => Veriyolu.yayinla(o),
   })
@@ -425,6 +428,8 @@ async function basla(hot = {}) {
   }
   boyutla()
   try { new ResizeObserver(() => boyutla()).observe(alan) } catch { window.addEventListener('resize', boyutla) }
+  // Görünüm alttaki yükleme katından başlar
+  kaydirma.kaydirKonumu(1e9, { anim: false })
 
   // Yükleme uyarıları ve eski oyundan aktarım
   if (yuklenen.kaynak === 'aktarim') Arayuz.modalAc('aktarim', {})
@@ -468,6 +473,7 @@ Object.assign(K, {
   sayfaAc: (ad) => Arayuz.sayfaAc(ad),
   get kaydirY() { return kaydirma ? kaydirma.y : 0 },
   get kaydirMaks() { return kaydirma ? kaydirma.maks : 0 },
+  get kaydirMin() { return kaydirma ? kaydirma.enAz : 0 },
   // Öğretici hedefi: sayfa koordinatlarında { x, y } ya da null
   ogreticiHedef() {
     try {
