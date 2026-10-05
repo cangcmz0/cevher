@@ -136,6 +136,10 @@ export class Havuz {
       this.sprite = [Varliklar.al('p.toz'), Varliklar.al('p.kivilcim'), Varliklar.al('p.parca'), Varliklar.al('p.sikke'), Varliklar.al('p.parilti')]
     }
     const sp = this.sprite
+    const m = ctx.getTransform()
+    const ma = m.a, md = m.d, me = m.e, mf = m.f
+    let toplamali = false, sayiVar = false
+    // 1. geçiş: normal karışım (toz, parça, sikke, konfeti)
     for (let i = 0; i < l.length; i++) {
       const p = l[i]
       if (!p.aktif) continue
@@ -145,16 +149,6 @@ export class Havuz {
           ctx.globalAlpha = (1 - t) * 0.7
           const s = 6 * p.boy * (1 + t)
           ctx.drawImage(sp[0], p.x - s / 2, p.y - s / 2, s, s)
-          break
-        }
-        case 1: {
-          ctx.globalCompositeOperation = 'lighter'
-          ctx.globalAlpha = 1 - t
-          const a = Math.atan2(p.vy, p.vx) - Math.PI / 2
-          ctx.translate(p.x, p.y); ctx.rotate(a)
-          ctx.drawImage(sp[1], -1.5 * p.boy, -8 * p.boy, 3 * p.boy, 8 * p.boy)
-          ctx.rotate(-a); ctx.translate(-p.x, -p.y)
-          ctx.globalCompositeOperation = 'source-over'
           break
         }
         case 2: {
@@ -169,15 +163,6 @@ export class Havuz {
           ctx.drawImage(sp[3], p.x - s / 2, p.y - s / 2, s, s)
           break
         }
-        case 4: {
-          ctx.globalCompositeOperation = 'lighter'
-          const k = Math.sin(t * Math.PI)
-          ctx.globalAlpha = k
-          const s = 16 * p.boy * (0.5 + k * 0.7)
-          ctx.drawImage(sp[4], p.x - s / 2, p.y - s / 2, s, s)
-          ctx.globalCompositeOperation = 'source-over'
-          break
-        }
         case 5: {
           ctx.globalAlpha = t > 0.8 ? (1 - t) / 0.2 : 1
           ctx.fillStyle = p.renk
@@ -185,19 +170,50 @@ export class Havuz {
           ctx.fillRect(p.x - w / 2, p.y - h / 2, w, Math.max(0.8, h))
           break
         }
-        case 6: {
-          ctx.globalAlpha = t > 0.7 ? (1 - t) / 0.3 : 1
-          ctx.font = SAYI_YAZI
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'middle'
-          ctx.lineWidth = 3
-          ctx.lineJoin = 'round'
-          ctx.strokeStyle = 'rgba(43,29,18,.85)'
-          ctx.strokeText(p.metin, p.x, p.y)
-          ctx.fillStyle = '#FFFFFF'
-          ctx.fillText(p.metin, p.x, p.y)
-          break
+        case 1: case 4: toplamali = true; break
+        case 6: sayiVar = true; break
+      }
+    }
+    // 2. geçiş: toplamalı ışıklar (kıvılcım, parıltı) tek karışım değişimiyle
+    if (toplamali) {
+      ctx.globalCompositeOperation = 'lighter'
+      for (let i = 0; i < l.length; i++) {
+        const p = l[i]
+        if (!p.aktif) continue
+        const t = p.yas / p.omur
+        if (p.tur === 1) {
+          ctx.globalAlpha = 1 - t
+          const a = Math.atan2(p.vy, p.vx) - Math.PI / 2
+          const c = Math.cos(a), s = Math.sin(a)
+          ctx.setTransform(ma * c, md * s, -ma * s, md * c, ma * p.x + me, md * p.y + mf)
+          ctx.drawImage(sp[1], -1.5 * p.boy, -8 * p.boy, 3 * p.boy, 8 * p.boy)
+        } else if (p.tur === 4) {
+          ctx.setTransform(ma, 0, 0, md, me, mf)
+          const k = Math.sin(t * Math.PI)
+          ctx.globalAlpha = k
+          const s = 16 * p.boy * (0.5 + k * 0.7)
+          ctx.drawImage(sp[4], p.x - s / 2, p.y - s / 2, s, s)
         }
+      }
+      ctx.setTransform(m)
+      ctx.globalCompositeOperation = 'source-over'
+    }
+    // 3. geçiş: uçan sayılar (yazı ayarları bir kez)
+    if (sayiVar) {
+      ctx.font = SAYI_YAZI
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.lineWidth = 3
+      ctx.lineJoin = 'round'
+      ctx.strokeStyle = 'rgba(43,29,18,.85)'
+      ctx.fillStyle = '#FFFFFF'
+      for (let i = 0; i < l.length; i++) {
+        const p = l[i]
+        if (!p.aktif || p.tur !== 6) continue
+        const t = p.yas / p.omur
+        ctx.globalAlpha = t > 0.7 ? (1 - t) / 0.3 : 1
+        ctx.strokeText(p.metin, p.x, p.y)
+        ctx.fillText(p.metin, p.x, p.y)
       }
     }
     ctx.globalAlpha = 1

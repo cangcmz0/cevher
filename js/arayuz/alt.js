@@ -7,7 +7,7 @@
 //    toplar; yoksa Kazanç x2 takviyesi (30 dk) başlatır (Lv. 2'den).
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
-import { E, A, yaz, sinif, gizle, bicim, sayac, sure, bolgeAl } from './ortak.js'
+import { E, A, yaz, sinif, gizle, bicim, sayac, sure, bolgeAl, canlandir } from './ortak.js'
 
 const SEKMELER = [
   ['maden', 'Maden', 'kazma'],
@@ -116,11 +116,7 @@ export function kur(B) {
       const sec = s.dataset.sekme === ad
       if ((s.getAttribute('aria-selected') === 'true') !== sec) {
         s.setAttribute('aria-selected', String(sec))
-        if (sec) {
-          s.classList.remove('zipla')
-          void s.offsetWidth
-          s.classList.add('zipla')
-        }
+        if (sec) canlandir(s, [{ transform: 'scale(.92)' }, { transform: 'scale(1.06)', offset: 0.6 }, { transform: 'none' }], 280)
       }
     }
   }

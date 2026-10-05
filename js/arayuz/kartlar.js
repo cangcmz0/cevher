@@ -10,7 +10,7 @@
 import { ikon, cevherIkonu } from './ikonlar.js'
 import {
   E, A, yaz, sinif, gizle, ozellik, cubuk, bicim, oranYazi, bolgeAl, nadirlik, yetenekHali,
-  kartHizi, ogeYap, yoneticiAdi, yetenekEtki,
+  kartHizi, ogeYap, yoneticiAdi, yetenekEtki, canlandir, NABIZ, SALLA, PARLA, YUVARLA,
 } from './ortak.js'
 
 const MAKS = 12
@@ -66,7 +66,7 @@ export function kur(B) {
     <b class="kart-ad">1. Kat</b>
     <span class="kart-cevher">Yükleme</span>
     <i class="kart-ok-sari">${ikon('geri')}</i>
-    <i class="kart-sv sayi" style="top:34px">Sv.1</i>
+    <i class="kart-sv sayi" style="top:36px;right:20px">Sv.1</i>
     <span class="kart-hiz">${ikon('sepet')}<span class="sayi">1 vagon</span></span>
     <span class="cubuk kart-bar"><i></i></span>
     <span class="kart-yuzde sayi">%0</span>
@@ -156,11 +156,7 @@ export function kur(B) {
       if (sy + y.SATIR_H < ust || sy > alt) continue
       const c = kartlar[i]
       const L = b.madenler[i].L
-      if (c.sonL && L !== c.sonL) {
-        c.sv.classList.remove('yuvarla')
-        void c.sv.offsetWidth
-        c.sv.classList.add('yuvarla')
-      }
+      if (c.sonL && L !== c.sonL) canlandir(c.sv, YUVARLA, 200)
       c.sonL = L
       yaz(c.sv, 'Sv.' + L)
       yaz(c.hiz, oranYazi(kartHizi(d, b, i)))
@@ -196,9 +192,7 @@ export function kur(B) {
       const m = db ? A.DARBOGAZ_METIN[db] : null
       if (m) {
         yaz(dbAlt, m[0])
-        darbogaz.classList.remove('salla')
-        void darbogaz.offsetWidth
-        if (sonDarbogaz) darbogaz.classList.add('salla')
+        if (sonDarbogaz) canlandir(darbogaz, SALLA, 300)
       }
       sinif(darbogaz, 'bos', !m)
       darbogaz.tabIndex = m ? 0 : -1
@@ -316,14 +310,15 @@ export function kur(B) {
       const c = i >= 0 ? kartlar[i] : null
       const kartEl = c ? c.k : o.istasyon === 'depo' ? yk : null
       if (kartEl) {
-        kartEl.classList.remove('nabiz')
-        void kartEl.offsetWidth
-        kartEl.classList.add('nabiz', 'halka')
-        setTimeout(() => kartEl.classList.remove('halka'), 400)
+        canlandir(kartEl, NABIZ, 240)
+        if (!kartEl.classList.contains('halka')) {
+          kartEl.classList.add('halka')
+          setTimeout(() => kartEl.classList.remove('halka'), 400)
+        }
       }
       if (o.kademeler && o.kademeler.length) {
         const bar = c ? c.bar : o.istasyon === 'depo' ? ykEl.bar : null
-        if (bar) { bar.classList.remove('flas'); void bar.offsetWidth; bar.classList.add('flas') }
+        if (bar) canlandir(bar.firstElementChild, PARLA, 300)
         const m = o.kademeler[o.kademeler.length - 1]
         const kat = o.kademeler.length > 1 ? '×' + Math.pow(2, o.kademeler.length) : '×2'
         const stat = o.istasyon === 'asansor' ? 'Kapasite' : o.istasyon === 'depo' ? 'Vagon yükü' : 'Üretim'
@@ -332,10 +327,7 @@ export function kur(B) {
       }
     } else if (o.tip === 'madenAcildi') {
       katlariGuncelle(d)
-      const c = kartlar[o.i]
-      c.k.classList.remove('giris')
-      void c.k.offsetWidth
-      c.k.classList.add('giris')
+      canlandir(kartlar[o.i].k, [{ transform: 'scale(.85)', opacity: 0 }, { transform: 'none', opacity: 1 }], 300, { easing: 'cubic-bezier(.3,1.6,.5,1)' })
       B.bildir('basari', `${katNo(o.i)}. Kat açıldı!`)
     } else if (o.tip === 'yetenek') {
       if (o.yonetici) B.bildir('basari', `${yoneticiAdi(o.yonetici)}: ${yetenekEtki(o.yonetici)}!`)

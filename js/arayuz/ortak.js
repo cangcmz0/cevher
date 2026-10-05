@@ -150,4 +150,15 @@ export function titret(desen) { try { SesM.Ses?.titret?.(desen) } catch {} }
 export const Veriyolu = Olay.Veriyolu || { dinle() {}, yayinla() {} }
 export function yayinla(olay) { try { Veriyolu.yayinla(olay) } catch {} }
 
-export const azHareket = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+// Sınıf yeniden başlatma (offsetWidth) yerine WAAPI: zorunlu yerleşim hesaplatmaz
+export function canlandir(el, kareler, sure, secenek) {
+  if (!el || !el.animate || azHareket()) return null
+  try { return el.animate(kareler, { duration: sure, easing: 'ease-out', ...(secenek || {}) }) } catch { return null }
+}
+export const NABIZ = [{ transform: 'scale(1)' }, { transform: 'scale(1.04)' }, { transform: 'scale(1)' }]
+export const SALLA = [{ transform: 'translateX(0)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }]
+export const PARLA = [{ filter: 'brightness(2.2)' }, { filter: 'brightness(1)' }]
+export const YUVARLA = [{ transform: 'translateY(6px)', opacity: 0 }, { transform: 'none', opacity: 1 }]
+
+const azHareketSorgu = typeof matchMedia !== 'undefined' ? matchMedia('(prefers-reduced-motion: reduce)') : null
+export const azHareket = () => !!(azHareketSorgu && azHareketSorgu.matches)

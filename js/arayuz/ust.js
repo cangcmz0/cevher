@@ -6,7 +6,7 @@
 //    harcamada hemen düşer. Metin en çok 10/sn ve yalnız değişince yazılır.
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
-import { E, yaz, sinif, cubuk, bicim, oranYazi, tam, yuzde, artiYuzde, bolgeAl } from './ortak.js'
+import { E, yaz, sinif, cubuk, bicim, oranYazi, tam, yuzde, artiYuzde, bolgeAl, canlandir, PARLA } from './ortak.js'
 import { uretimArtisi } from '../benzetim.js'
 
 const AVATAR_TOHUM = 77031
@@ -67,13 +67,9 @@ export function kur(B) {
     const o = d.oyuncu
     const gerek = E.xpGerek(o.lv)
     yaz(el.seviye, 'Seviye ' + o.lv)
-    yaz(el.xpYazi, tam(o.xp) + ' / ' + tam(gerek))
+    yaz(el.xpYazi, o.lv >= 100 ? 'MAKS' : tam(o.xp) + ' / ' + tam(gerek))
     cubuk(el.xp, o.lv >= 100 ? 1 : o.xp / gerek)
-    if (sonLv && o.lv > sonLv) {
-      el.xp.classList.remove('parla')
-      void el.xp.offsetWidth
-      el.xp.classList.add('parla')
-    }
+    if (sonLv && o.lv > sonLv) canlandir(el.xp.firstElementChild, PARLA, 500)
     sonLv = o.lv
   }
 
@@ -101,10 +97,6 @@ export function kur(B) {
       const r = el.paraIkon.getBoundingClientRect(), k = B.kok.getBoundingClientRect()
       return { x: r.left - k.left + r.width / 2, y: r.top - k.top + r.height / 2 }
     },
-    paraVurgu() {
-      el.paraHap.classList.remove('vurgu')
-      void el.paraHap.offsetWidth
-      el.paraHap.classList.add('vurgu')
-    },
+    paraVurgu() { canlandir(el.paraHap, [{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }], 160) },
   }
 }

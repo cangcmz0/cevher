@@ -348,8 +348,8 @@ export const Sahne = {
     const b = durum.bolgeler[durum.aktifBolge]
     const n = b.madenler.length
     const ic = (k) => k && x >= k.x && x < k.x + k.w && y >= k.y && y < k.y + k.h
-    if (ic(yer.istasyonKutusu('depo', n))) return { istasyon: 'depo' }
     if (ic(yer.istasyonKutusu('asansor', n))) return { istasyon: 'asansor' }
+    if (ic(yer.istasyonKutusu('depo', n))) return { istasyon: 'depo' }
     for (let i = 0; i < n; i++) if (ic(yer.istasyonKutusu('m' + i, n))) return { istasyon: 'm' + i }
     if (y >= yuklemeY && y < yuklemeY + YUKLEME_H) return { istasyon: 'depo' }
     return null

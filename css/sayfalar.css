@@ -50,3 +50,33 @@
 .yakinda .ik { width: 96px; height: 96px; color: var(--panel); filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .35)); }
 .yakinda p { font: 600 15px/20px var(--f-govde); color: var(--acik-soluk); }
 .yakinda .btn { min-width: 180px; height: 46px; }
+
+/* ════ Görsel yön 2: Yöneticiler ızgarası (3. referans ekranı) ════ */
+#sayfa { background: radial-gradient(120% 40% at 50% 0%, #17414B, var(--arka) 60%); }
+.sayfa-baslik { background: linear-gradient(180deg, #153B46, var(--arka-800)); border-bottom: 1px solid var(--cerceve); }
+.mini-hap { background: rgba(0, 0, 0, .42); border: 1px solid rgba(95, 163, 172, .3); }
+.yon-sekmeler { background: rgba(0, 0, 0, .35); border: 1px solid var(--cerceve); }
+.yon-izgara { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.yon-kart {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  min-height: 0;
+  padding: 8px 6px;
+  background: linear-gradient(180deg, var(--kart-ust), var(--kart-alt));
+  border: 1.5px solid var(--nr, var(--cerceve));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 4px 10px rgba(0, 0, 0, .45);
+  color: var(--acik);
+}
+.yon-kart canvas { width: 64px; height: 64px; border-radius: 12px; box-shadow: 0 0 0 2px var(--nr, var(--sradan)); margin-bottom: 4px; }
+.yon-kart b { font: 800 13px/15px var(--f-baslik); }
+.yon-kart .nadir { font: 700 10px/12px var(--f-govde); }
+.yon-kart .yetenek { font: 500 10px/12px var(--f-govde); color: var(--acik-soluk); }
+.yon-kart .atama { font: 600 10px/12px var(--f-govde); color: var(--para); }
+.yon-kart .atama.bosta { color: var(--acik-soluk); }
+.yon-kart .hal { font: 600 9px/11px var(--f-govde); color: var(--acik-soluk); }
+.yon-kart .hal.hazir { color: var(--basari); }
+.yon-kart .etiket-btn { width: 100%; height: 28px; margin-top: 4px; padding: 0 6px; font-size: 12px !important; }
+.sayfa-not { background: rgba(0, 0, 0, .28); border: 1px solid var(--cerceve); }
+.sayfa-alt-bar { background: linear-gradient(180deg, var(--arka-800), var(--arka-900)); border-top: 1px solid var(--cerceve); }

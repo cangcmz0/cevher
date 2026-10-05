@@ -1,0 +1,145 @@
+{
+  "telefon": {
+    "profil": "telefon",
+    "bellek": {
+      "yigin": 3953782,
+      "onbellek": 11897216
+    },
+    "normal": {
+      "kaydirma": {
+        "kare": 637,
+        "sure": 10.61,
+        "aralik": {
+          "n": 637,
+          "p50": 16.7,
+          "p95": 16.7,
+          "p99": 16.8,
+          "max": 16.8
+        },
+        "is": {
+          "n": 637,
+          "p50": 0.4,
+          "p95": 1.2,
+          "p99": 1.6,
+          "max": 3.6
+        },
+        "uzun34": 0,
+        "uzunGorev": 0,
+        "domYazimKare": 0.26,
+        "cizKare": 1
+      },
+      "bos": {
+        "kare": 635,
+        "sure": 10.57,
+        "aralik": {
+          "n": 635,
+          "p50": 16.7,
+          "p95": 16.8,
+          "p99": 16.8,
+          "max": 16.8
+        },
+        "is": {
+          "n": 635,
+          "p50": 0.4,
+          "p95": 1.2,
+          "p99": 1.4,
+          "max": 1.8
+        },
+        "uzun34": 0,
+        "uzunGorev": 0,
+        "domYazimKare": 0.25,
+        "cizKare": 1
+      },
+      "yukseltme": {
+        "kare": 637,
+        "sure": 10.61,
+        "aralik": {
+          "n": 637,
+          "p50": 16.7,
+          "p95": 16.7,
+          "p99": 16.8,
+          "max": 16.8
+        },
+        "is": {
+          "n": 637,
+          "p50": 0.4,
+          "p95": 1.4,
+          "p99": 2,
+          "max": 3.8
+        },
+        "uzun34": 0,
+        "uzunGorev": 0,
+        "domYazimKare": 1.04,
+        "cizKare": 1
+      }
+    },
+    "kisitli4x": {
+      "kaydirma": {
+        "kare": 326,
+        "sure": 10.75,
+        "aralik": {
+          "n": 326,
+          "p50": 33.3,
+          "p95": 50,
+          "p99": 50.1,
+          "max": 66.7
+        },
+        "is": {
+          "n": 326,
+          "p50": 1.9,
+          "p95": 6.5,
+          "p99": 10.9,
+          "max": 12.4
+        },
+        "uzun34": 11.04,
+        "uzunGorev": 6,
+        "domYazimKare": 0.45,
+        "cizKare": 1
+      },
+      "bos": {
+        "kare": 336,
+        "sure": 10.69,
+        "aralik": {
+          "n": 336,
+          "p50": 33.3,
+          "p95": 50,
+          "p99": 50,
+          "max": 66.7
+        },
+        "is": {
+          "n": 336,
+          "p50": 1.9,
+          "p95": 5,
+          "p99": 6.9,
+          "max": 14.2
+        },
+        "uzun34": 6.55,
+        "uzunGorev": 3,
+        "domYazimKare": 0.37,
+        "cizKare": 1
+      },
+      "yukseltme": {
+        "kare": 291,
+        "sure": 10.75,
+        "aralik": {
+          "n": 291,
+          "p50": 33.4,
+          "p95": 50,
+          "p99": 66.7,
+          "max": 66.8
+        },
+        "is": {
+          "n": 291,
+          "p50": 2.5,
+          "p95": 6.9,
+          "p99": 10,
+          "max": 12.9
+        },
+        "uzun34": 27.15,
+        "uzunGorev": 6,
+        "domYazimKare": 1.73,
+        "cizKare": 1
+      }
+    }
+  }
+}

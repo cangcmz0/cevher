@@ -151,9 +151,9 @@
 @keyframes efsaneParla { 50% { box-shadow: 0 0 0 4px var(--para), 0 0 44px 12px var(--para); } }
 
 /* Seviye modalı */
-.madalya { position: relative; width: 112px; height: 112px; margin: 6px auto 10px; display: grid; place-items: center; }
-.madalya .ik { width: 112px; height: 112px; position: absolute; inset: 0; }
-.madalya b { position: relative; margin-top: 18px; font: 800 22px/24px var(--f-baslik); color: var(--metin); }
+.madalya { position: relative; width: 104px; height: 104px; margin: 4px auto 0; display: grid; place-items: center; }
+.madalya .ik { width: 104px; height: 104px; position: absolute; inset: 0; }
+.madalya-yazi { display: inline-block; margin: -6px auto 10px; padding: 2px 14px; border-radius: 999px; background: linear-gradient(180deg, var(--para-acik), var(--para-koyu)); border: 1px solid var(--para-kenar); font: 800 20px/26px var(--f-baslik); color: var(--metin); box-shadow: 0 2px 6px rgba(0,0,0,.4); }
 .odul-satirlar { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 2px; }
 .odul-satir { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; background: var(--panel-acik); border: 1px solid var(--panel-cizgi); font: 700 14px/18px var(--f-govde); text-align: left; }
 .odul-satir .ik { width: 20px; height: 20px; }
@@ -221,3 +221,43 @@
 .reklam-sayac { display: block; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .12); overflow: hidden; margin-top: 6px; }
 .reklam-sayac > i { display: block; height: 100%; background: linear-gradient(90deg, var(--para-koyu), var(--para)); transform-origin: 0 50%; animation: reklamDol 2s linear forwards; }
 @keyframes reklamDol { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ════ Görsel yön 2: koyu lacivert-yeşil paneller, açık çerçeve ════ */
+.alt-sayfa, .modal { background: linear-gradient(180deg, #17414B, #0B252E); color: var(--acik); border: 1px solid var(--cerceve-acik); }
+.alt-sayfa { border-bottom: 0; }
+.alt-sayfa .tutamac { background: rgba(255, 255, 255, .25); }
+.sayfa-kapat { background: rgba(0, 0, 0, .3) !important; color: var(--acik-soluk) !important; }
+.yk-ikon { background: radial-gradient(circle at 40% 32%, #6FA9B2, #2E6670 55%, #12343D); border: 2px solid rgba(201, 162, 74, .9); box-shadow: 0 2px 6px rgba(0,0,0,.45); border-radius: 50%; }
+.yk-bas h2 { color: var(--acik); }
+.yk-bas p { color: var(--acik-soluk); }
+.yk-bas p .hedef { color: var(--basari); }
+.alt-sayfa .bolumlu, .modal .bolumlu { background: rgba(0, 0, 0, .35); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .4); }
+.alt-sayfa .bolumlu > button { color: var(--acik-soluk) !important; }
+.alt-sayfa .bolumlu > button[aria-pressed="true"] { color: var(--acik) !important; }
+.yk-satirlar { background: rgba(0, 0, 0, .28); border-color: var(--cerceve); }
+.yk-satir + .yk-satir { border-top-color: rgba(95, 163, 172, .25); }
+.yk-satir .artis { color: var(--basari); }
+.yk-kademe { background: rgba(0, 0, 0, .28); border: 1px solid var(--cerceve); color: var(--acik); }
+.yk-kademe .cubuk { background: rgba(0, 0, 0, .5); }
+.ayar-bas { color: var(--acik); }
+.ayar-satir, .ayar-blok { border-bottom-color: rgba(95, 163, 172, .25); }
+.ayar-satir .sol .ik { color: var(--acik-soluk); }
+.ayar-dugme { color: var(--acik) !important; border-bottom-color: rgba(95, 163, 172, .25) !important; }
+.ayar-dugme.tehlike { color: #F07A62 !important; }
+.ayar-alt { color: var(--acik-soluk); }
+.anahtar { background: #3A5A62; }
+.secici-satir { background: rgba(0, 0, 0, .28) !important; border-color: var(--cerceve) !important; color: var(--acik) !important; }
+.secici-satir small { color: var(--acik-soluk); }
+.modal p { color: var(--acik-soluk); }
+.modal .kahraman { color: var(--acik); }
+.yon-mevcut, .yon-satir { background: rgba(0, 0, 0, .28); border-color: var(--cerceve); }
+.yon-bilgi .yetenek { color: var(--acik-soluk); }
+.yon-bilgi .hal { color: var(--acik-soluk); }
+.yon-bilgi .hal.hazir { color: var(--basari); }
+.yon-baslik, .yon-bos { color: var(--acik-soluk); }
+.yon-katildi { margin-top: 10px; color: var(--acik-soluk); font: 500 13px/18px var(--f-govde); }
+.yon-katildi b { color: var(--acik); font: 800 17px/22px var(--f-baslik); }
+.modal-kapat-btn { width: 100%; height: 40px !important; margin-top: 10px; }
+.odul-satir { background: rgba(0, 0, 0, .28); border-color: var(--cerceve); color: var(--acik); }
+.odul-satir.acilim { background: linear-gradient(180deg, rgba(46, 204, 113, .28), rgba(46, 204, 113, .12)); border-color: var(--basari); color: #BFF5D3; }
+.kirala .btn .ik { margin: 0 -2px 0 2px; }

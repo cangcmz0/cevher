@@ -233,7 +233,7 @@ async function senaryo2(tarayici, profil) {
   const s = await sayfaAc(tarayici, profil, { kayit: 'zengin.json' })
   const { sayfa } = s
   const eksik = []
-  for (const m of ['Zonguldak', 'Lv. 12', '482 / 1.200', '420', 'Toplam Üretim', 'Depo Doluluğu', 'Gelir', 'Topla']) {
+  for (const m of ['Seviye 12', '482 / 1.200', '420', 'Günlük Üretim', 'Depo Doluluğu', 'Gelir', 'Çevrimdışı Kazanç', 'Topla', '1. Kat', 'Yükleme']) {
     if (!(await metinVar(sayfa, m))) eksik.push(m)
   }
   // Para HUD'u: başlangıçta 318,6 bin (gelirle birkaç saniyede artar)
@@ -248,7 +248,8 @@ async function senaryo2(tarayici, profil) {
     }
     return g
   })
-  for (let i = 1; i <= 4; i++) if (!kartlar.some((t) => t.startsWith('Maden ' + i))) eksik.push('kart Maden ' + i)
+  // Görsel yön 2: katlar alttan üste; görünümde en az 1. Kat (yükleme) ve 2.–4. Kat kartları
+  for (let i = 2; i <= 4; i++) if (!kartlar.some((t) => t.startsWith(i + '. Kat'))) eksik.push('kart ' + i + '. Kat')
   await bekle(1200)
   await ekran(s, profil, 'zengin-ana.png')
   if (profil === 'telefon') await copyFile(join(EKRAN, profil, 'zengin-ana.png'), join(EKRAN, 'zengin-ana.png'))
@@ -323,12 +324,12 @@ async function senaryo4(tarayici, profil) {
   const s = await sayfaAc(tarayici, profil, { kayit: 'cevrimdisi.json', kayitDuzelt: (o) => { o.son = simdi - 3 * 3600 * 1000; o.enGec = o.son } })
   const { sayfa } = s
   const notlar = []
-  let ok = await metinVar(sayfa, 'Sen yokken madencilerin çalıştı!')
-  if (!ok) notlar.push('çevrimdışı penceresi yok')
+  let ok = await metinVar(sayfa, 'Sen yokken madencilerin çalıştı!') && await metinVar(sayfa, 'Çevrimdışı Kazanç')
+  if (!ok) notlar.push('çevrimdışı bildirimi/paneli yok')
   const once = await sayfa.evaluate(() => ({ para: __cevher.durum.bolgeler[__cevher.durum.aktifBolge].para, miktar: __cevher.durum.bekleyenCevrimdisi?.miktar || 0 }))
   await ekran(s, profil, 'modal-cevrimdisi.png')
-  const d = (await ustDugmeler(sayfa)).find((b) => /Topla x2/.test(b.ad))
-  if (!d) { ok = false; notlar.push('Topla x2 düğmesi yok') } else {
+  const d = (await ustDugmeler(sayfa)).find((b) => /2x Topla/.test(b.ad))
+  if (!d) { ok = false; notlar.push('2x Topla düğmesi yok') } else {
     await dokun(s, d.x, d.y)
     const perde = await sayfa.waitForSelector('.reklam-perde', { timeout: 1500 }).then(() => true, () => false)
     if (!perde) notlar.push('reklam önizleme perdesi görülmedi')
@@ -427,9 +428,9 @@ async function suruklemeler(s, cdp, saniye) {
       await bekle(700)
     }
     n++
-    const yk = await sayfa.evaluate(() => ({ y: __cevher.kaydirY, m: __cevher.kaydirMaks }))
+    const yk = await sayfa.evaluate(() => ({ y: __cevher.kaydirY, m: __cevher.kaydirMaks, a: __cevher.kaydirMin || 0 }))
     if (yk.y >= yk.m - 5) yon = -1
-    else if (yk.y <= 5) yon = 1
+    else if (yk.y <= yk.a + 5) yon = 1
   }
 }
 
