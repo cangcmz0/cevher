@@ -1,0 +1,9 @@
+{
+  "_aciklama": "Eski 3D oyunun kayıt biçimine örnek (yalnız aktarılan alanlar önemli).",
+  "cevher": 120,
+  "para": 98765,
+  "ses": false,
+  "titresim": true,
+  "satin": { "reklamsiz": true, "altinKazma": false, "baslangic": false },
+  "madenler": [{ "seviye": 40 }, { "seviye": 12 }]
+}

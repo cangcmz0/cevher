@@ -1,0 +1,33 @@
+{
+  "surum": 1,
+  "tohum": 20251005,
+  "olusturma": 1759000000000,
+  "son": 1759000000000,
+  "enGec": 1759000000000,
+  "zaman": 0,
+  "oyuncu": { "lv": 1, "xp": 0, "toplamXp": 0, "elmas": 0 },
+  "aktifBolge": "zonguldak",
+  "bolgeler": {
+    "zonguldak": {
+      "acik": true, "para": 20, "toplamKazanc": 0, "enIyiGelir": 0,
+      "madenler": [{ "L": 1, "yigin": 0, "kalan": 0 }],
+      "asansor": { "L": 1, "yuk": 0 },
+      "depo": { "L": 1, "stok": 0, "yoldaki": 0 },
+      "yoneticiler": [],
+      "kiralanan": { "maden": 0, "asansor": 0, "depo": 0 },
+      "ayrilis": null,
+      "gorev": { "sira": 0, "hazir": false }
+    }
+  },
+  "takviye": { "bitis": 0 },
+  "bekleyenCevrimdisi": null,
+  "arastirma": { "sv": {}, "suren": null },
+  "gunluk": { "son": "", "seri": 0 },
+  "reklamElmas": { "gun": "", "n": 0 },
+  "satin": { "reklamsiz": false, "altinKazma": false, "baslangic": false },
+  "ayarlar": { "ses": true, "titresim": true, "kalite": "yuksek" },
+  "ogretici": { "adim": 0, "bitti": false },
+  "alimModu": 1,
+  "istatistik": { "dokunus": 0, "yukseltme": 0, "yetenek": 0, "reklam": 0, "satis": 0 },
+  "aktarim": false
+}
