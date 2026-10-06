@@ -1,6 +1,8 @@
 # Cevher Madenci 2D: Design and Build Specification
 
 Status: frozen for stage 1. Source of truth for every engineer and reviewer.
+**Update:** the visuals now follow `docs/referans2.webp` and the game was expanded beyond stage 2. §10 at the end
+describes both and overrides earlier sections where they disagree.
 Reference: `docs/referans.png` (owner-approved mockup). Where this document and the mockup disagree on
 look, the mockup wins. Where they disagree on numbers or behaviour, this document wins.
 
@@ -1390,3 +1392,42 @@ All packages start at the same time from this document. Each package owns only i
 - **D2**: `magaza.js` wiring and the Play Billing flow on device, ad places `elmas` and `arastirma`, harness scenarios for every S2 page and modal.
 
 Each S2 package follows the same ownership, interfaces and acceptance rules as stage 1.
+
+---
+
+## 10. Addendum: visual direction 2 and the expansion (current)
+
+### 10.1 Visual direction 2 (`docs/referans2.webp`)
+
+- The owner replaced the first mockup with a three-screen reference: the mine, the Zonguldak region map and
+  `Maden Genişletme`. **The look must match it exactly.** The approach: textures are cut 1:1 from the reference
+  (`img/ref/*.png`, cut by a Playwright canvas script) and drawn as they are. Changing text is printed on a
+  same-colour patch over the painted text. Touch targets are transparent buttons placed in crop pixels and
+  converted to percentages. Text sizes use `cqw` so they scale with the width.
+- Mine screen: floors stack bottom-up (`1. Kat Yükleme` at the bottom, mine i = `(i+2). Kat`), geometry in
+  `js/yerlesim.js` (reference width 367 px, vertical squeeze 0.95). Each region tints the painted ore piles
+  (`CEVHER_TON` in `js/sahne/sahne.js`), and the card and stats icons come from the screen-3 resource tiles.
+- Tabs: `Harita` = screen 2 (`js/arayuz/harita.js`); `Yöneticiler` = screen 3 (`js/arayuz/genisletme.js`);
+  `Araştırma` and `Mağaza` have no reference and use the same navy/gold panel language
+  (`js/arayuz/arastirma.js`, `js/arayuz/dukkan.js`). Pages start under the HUD, with no header bar.
+
+### 10.2 Expansion
+
+| System | Where | Summary |
+|---|---|---|
+| Regions | `ayar.js BOLGELER`, `bolgeGit` | Zonguldak/Kömür (Lv.1), Ereğli/Demir (Lv.15), Karabük/Taş (Lv.30), Kastamonu/Bakır (Lv.45); one ore per region. Leaving a region stores `ayrilis`; returning adds managed income for the elapsed time, capped by `cevrimdisiSinir`. Opening gives +250 XP. |
+| Floors | `MADEN_SAYISI = 15` | `ACILIS` extended to 15 entries (×20 per step after floor 12). |
+| Quests | `GOREVLER` (15 conditions), `hikaye.js GOREV_YAZI` | The same 15 conditions in every region (level, manager, open floor, elevator/depot level, ability, contract, harbour), with region-specific titles. Finishing all 15 makes the region `Bölge Ustası` (+10% sales there, +100 elmas). |
+| Story | `js/hikaye.js` | 4 chapters + `Yeni Nesil`, 54 scenes. Triggers: start, tutorial end, quest claims, region unlock and first visit, prestige. The queue (`hikaye.bekleyen`) survives reloads. Visual-novel modal with typewriter text; `Hikâye Defteri` replays seen scenes. |
+| Partners | `ORTAKLAR`, `ortakYukselt` | Ahmet (+%25 production), Elif (+%40 elevator/carrier load), Mehmet (+%15 sales), Zeynep (−%20 upgrade cost). Each joins at their story scene and levels 1–10 with elmas. They are the four screen-3 manager cards. |
+| Contracts | `KONTRAT`, `kontratAl` | Per region, sequential and growing: target = automated ore flow × (10 + 5n) min. Sales in the active region count. |
+| Logistics | `LIMAN`, `AMBAR`, `lojistik` | Liman: region sales +8%/level (max 20). Ambar (`Depo` tile): offline and inactive-region cap +15 min/level (max 16). |
+| Research | `ARASTIRMALAR`, `arastirmaBaslat` | §2.15 tree is live: elmas + game time, one at a time, rewarded −15 min (2 per level) or an elmas finish. |
+| Daily | `gunlukAl`, `misyonKur/misyonAl`, `elmasReklam` | 7-day gift cycle; 3 date-seeded daily missions (+15 elmas bonus for all three); 3 rewarded-ad elmas per day. |
+| Events | `ETKINLIKLER`, `etkinlik` | A weekly rotating event set by the UI from the calendar (Monday start): region ×1.5 sales, hire −30%, floor opening −25%, contract rewards ×2. |
+| Prestige | `PRESTIJ`, `prestij` | Needs Lv.35 and 2 `Bölge Ustası`. Resets every region; keeps level, elmas, research, partners, story and opened regions. +50% sales per prestige, plus elmas. |
+
+All new state is in the save whitelist (`kayit.js`) and repaired by `dogrula`. Older saves get the new fields with
+defaults, and their partners unlock from tutorial/quest progress. Tests: `npm test` (44) and
+`node test/oyna.mjs` (scenarios 1–6, two profiles; story scenes are skipped with `Atla`).
+
