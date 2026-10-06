@@ -120,60 +120,81 @@ function anahtarKare(l, p) {
 }
 const kesir = (x) => x - Math.floor(x)
 const kukla = new Map()
-function kuklaParca(a, kod, m) {
-  const anahtar = a + '|' + kod + '|' + m
+let kuklaAnahtar = ''
+const KUKLA_KARE = 10
+// Hareketin k. pozu (kesim pikseli cinsinden kayma, derece, dikey ölçek)
+function kuklaPoz(kk, k) {
+  const p = k / KUKLA_KARE
+  if (kk.tur === 'kaz') return { dx: 0, dy: 0, aci: anahtarKare(KAZ_ACI, p) * kk.yon, olcek: anahtarKare(KAZ_OLCEK, p) }
+  const q = p * Math.PI * 2
+  return { dx: 2.6 * Math.sin(q) * kk.yon, dy: -0.9 * Math.abs(Math.cos(q)), aci: 2.4 * Math.sin(q + 0.6) * kk.yon, olcek: 1 }
+}
+// Pozlar ekran çözünürlüğünde bir kez hazırlanır (döndürme dahil); her karede yalnız piksel hizalı kopya çizilir
+function kuklaKareleri(a, kod, m) {
+  // Önbellek yalnız aktif bölge ve ekran boyutu için tutulur (bölge/boyut değişince boşalır)
+  const genel = kod + '|' + W + '|' + oran
+  if (genel !== kuklaAnahtar) { kukla.clear(); kuklaAnahtar = genel }
+  const anahtar = a + '|' + m
   const hazir = kukla.get(anahtar)
   if (hazir) return hazir
   if (!Varliklar.ozelMi(a)) return null
-  const [x, y0, w, h] = KUKLA[a][m].r
-  const c = document.createElement('canvas')
-  c.width = w
-  c.height = h
-  const g = c.getContext('2d')
-  g.drawImage(doku(a, kod), x, y0, w, h, 0, 0, w, h)
-  // Kenarları 4 px'te yumuşat: kıpırdayan parça zemine dikişsiz karışır
+  const kk = KUKLA[a][m]
+  const [x, y0, w, h] = kk.r, [px, py] = kk.p
+  const sx = yer.k * oran, sy = (yer.SATIR_H / 107) * oran
+  const cw = Math.ceil(w * sx), ch = Math.ceil(h * sy)
+  // Yumuşak kenarlı parça (kenarlar ~4 referans px'te saydamlaşır, kıpırdayınca zemine dikişsiz karışır)
+  const parca = document.createElement('canvas')
+  parca.width = cw
+  parca.height = ch
+  const g = parca.getContext('2d')
+  g.imageSmoothingQuality = 'high'
+  g.drawImage(doku(a, kod), x, y0, w, h, 0, 0, cw, ch)
   try {
-    const v = g.getImageData(0, 0, w, h), dd = v.data, f = 4
-    for (let yy = 0; yy < h; yy++) {
-      for (let xx = 0; xx < w; xx++) {
-        const e = Math.min(xx + 0.5, w - xx - 0.5, yy + 0.5, h - yy - 0.5)
-        if (e < f) dd[(yy * w + xx) * 4 + 3] *= e / f
+    const v = g.getImageData(0, 0, cw, ch), dd = v.data, f = 4 * sx
+    for (let yy = 0; yy < ch; yy++) {
+      for (let xx = 0; xx < cw; xx++) {
+        const e = Math.min(xx + 0.5, cw - xx - 0.5, yy + 0.5, ch - yy - 0.5)
+        if (e < f) dd[(yy * cw + xx) * 4 + 3] *= e / f
       }
     }
     g.putImageData(v, 0, 0)
   } catch { /* okunamayan tuval: yumuşatmasız kalır */ }
-  kukla.set(anahtar, c)
-  return c
+  const pad = Math.ceil(0.14 * Math.max(cw, ch)) + 6
+  const pvx = (px - x) * sx, pvy = (py - y0) * sy
+  const kareler = []
+  for (let k = 0; k < KUKLA_KARE; k++) {
+    const pz = kuklaPoz(kk, k)
+    const c = document.createElement('canvas')
+    c.width = cw + pad * 2
+    c.height = ch + pad * 2
+    const gk = c.getContext('2d')
+    gk.imageSmoothingQuality = 'high'
+    gk.translate(pad + pvx + pz.dx * sx, pad + pvy + pz.dy * sy)
+    gk.rotate(pz.aci * Math.PI / 180)
+    gk.scale(1, pz.olcek)
+    gk.drawImage(parca, -pvx, -pvy)
+    kareler.push(c)
+  }
+  // ox, oy: dönme noktasından karenin sol üstüne (cihaz pikseli)
+  const sonuc = { kareler, ox: pad + pvx, oy: pad + pvy }
+  kukla.set(anahtar, sonuc)
+  return sonuc
 }
 function kuklalariCiz(durum, i, v, sy, t) {
   const a = 'ref.kat.' + v
   const c = durum.calisma.madenler[i]
-  const calisiyor = !!(c && c.calisiyor)
+  if (!(c && c.calisiyor)) return   // boşta: boyalı duruş yeterli, çizim yok
   const sx = yer.k, syy = yer.SATIR_H / 107
   for (let m = 0; m < 2; m++) {
     const kk = KUKLA[a][m]
-    const parca = kuklaParca(a, durum.aktifBolge, m)
-    if (!parca) continue
-    let aci = 0, olcek = 1, dx = 0, dy = 0
-    if (calisiyor && kk.tur === 'kaz') {
-      const p = kesir((t + karma(i * 7 + m * 13) * 2) / 0.6)
-      aci = anahtarKare(KAZ_ACI, p) * kk.yon
-      olcek = anahtarKare(KAZ_OLCEK, p)
-    } else if (calisiyor) {
-      const p = kesir((t + karma(i * 5 + m * 11) * 3) / 1.1) * Math.PI * 2
-      dx = 2.6 * Math.sin(p) * kk.yon
-      dy = -0.9 * Math.abs(Math.cos(p))
-      aci = 2.4 * Math.sin(p + 0.6) * kk.yon
-    } else {
-      olcek = 1 + 0.01 * Math.sin(t * 1.8 + i * 1.3 + m * 2.1)   // boşta: nefes
-    }
-    const [x, y0, w, h] = kk.r, [px, py] = kk.p
-    ctx.save()
-    ctx.translate((px + dx) * sx, sy + (py + dy) * syy)
-    if (aci) ctx.rotate(aci * Math.PI / 180)
-    if (olcek !== 1) ctx.scale(1, olcek)
-    ctx.drawImage(parca, (x - px) * sx, (y0 - py) * syy, w * sx, h * syy)
-    ctx.restore()
+    const k = kuklaKareleri(a, durum.aktifBolge, m)
+    if (!k) continue
+    const p = kk.tur === 'kaz' ? kesir((t + karma(i * 7 + m * 13) * 2) / 0.6) : kesir((t + karma(i * 5 + m * 11) * 3) / 1.1)
+    const kare = k.kareler[Math.min(KUKLA_KARE - 1, Math.floor(p * KUKLA_KARE))]
+    // Piksel hizalı 1:1 kopya: yeniden örnekleme yok
+    const dx = Math.round(kk.p[0] * sx * oran - k.ox) / oran
+    const dy = Math.round((sy + kk.p[1] * syy - sonKaydir) * oran - k.oy) / oran + sonKaydir
+    ctx.drawImage(kare, dx, dy, kare.width / oran, kare.height / oran)
   }
 }
 
