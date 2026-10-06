@@ -21,6 +21,7 @@ let B = null
 let moduller = []
 let son10 = 0, son4 = 0, son2 = 0
 let sonW = 0
+let ilkKare = 0, hikayeBasladi = false
 
 function kokKur(kok) {
   kok.insertAdjacentHTML('afterbegin', DEFS)
@@ -136,6 +137,7 @@ export const Arayuz = {
 
   kare(durum, gorunum, simdiMs) {
     if (!B) return
+    if (!ilkKare) ilkKare = simdiMs
     B.kaydirY = gorunum.kaydirY
     B.gorunurYuk = gorunum.yuk || B.gorunurYuk
     if (gorunum.gen && gorunum.gen !== sonW) {
@@ -152,6 +154,11 @@ export const Arayuz = {
     if (simdiMs - son4 >= 250) {
       son4 = simdiMs
       for (const m of moduller) if (m.kare4) m.kare4(durum, simdiMs)
+    }
+    // Açılışta bekleyen hikâye sahneleri (yükleme perdesi kalktıktan sonra)
+    if (!hikayeBasladi && simdiMs - ilkKare > 900) {
+      hikayeBasladi = true
+      for (const id of durum.hikaye.bekleyen) B.pencere.hikayeSirala(id)
     }
     if (simdiMs - son2 >= 500) {
       son2 = simdiMs

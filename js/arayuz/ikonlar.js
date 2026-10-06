@@ -124,6 +124,30 @@ const GOVDE = {
 <circle cx="12" cy="15.8" r="3.5" fill="url(#ci-para)" stroke="#A8690F" stroke-width=".9"/>
 <path d="${yildiz(12, 15.9, 1.9, 0.85)}" fill="#FFE08A" stroke="#A8690F" stroke-width=".5"/>`,
 
+  'cevher.eregli': `<path d="M3.6 14.2 7.2 9.4h10.2l3.2 4.8-3.6 4.6H6.8Z" fill="url(#ci-kirmizi)" ${dis}/>
+<path d="M7.2 9.4h10.2l-2.4 3.2H9.4Z" fill="#F3B49A" fill-opacity=".45"/>
+<path d="M6 7.4 9 3.8h6.6l2.2 3.6-2.6 2H8.6Z" fill="url(#ci-celik)" ${dis}/>
+<path d="M9 3.8h6.6l-1.6 2.2h-3.6Z" fill="#FFFFFF" fill-opacity=".45"/>`,
+  'cevher.karabuk': `<path d="M4 15.6 6.4 8.2l6-3.4 6.4 2.6 1.6 7.6-4.2 4.8-7.8.4Z" fill="url(#ci-celik)" ${dis}/>
+<path d="M6.4 8.2l6-3.4 1 5.4-5.6 1.8Z" fill="#FFFFFF" fill-opacity=".4"/>
+<path d="M12.4 4.8l6.4 2.6-3 3.2-2.4-.4Z" fill="#FFFFFF" fill-opacity=".22"/>
+<path d="M8 12l5.6-1.8 2.8 4.2-3.8 3.6-5-1.2Z" fill="#5E6A74" fill-opacity=".28"/>`,
+  'cevher.kastamonu': `<path d="M4.2 13.4 8 7.6l7.2-1.2 4.6 4.8-1.4 6.4-6.2 2.6-6.4-2.4Z" fill="url(#ci-turuncu)" ${dis}/>
+<path d="M8 7.6l7.2-1.2-1.8 4.4-5.6 1Z" fill="#FFE0B8" fill-opacity=".5"/>
+<path d="M10.2 13.2c1.6-1 3.4-.6 4.6.6M8.6 16.2c2-.6 4 .2 5.4 1.2" fill="none" stroke="#3FBF8A" stroke-width="1.6" stroke-linecap="round"/>`,
+  kitap: `<path d="M3.6 5.4c2.8-.9 5.6-.7 8.4.8v14c-2.8-1.5-5.6-1.7-8.4-.8Z" fill="url(#ci-kirmizi)" ${dis}/>
+<path d="M20.4 5.4c-2.8-.9-5.6-.7-8.4.8v14c2.8-1.5 5.6-1.7 8.4-.8Z" fill="url(#ci-kirmizi)" ${dis}/>
+<path d="M5.4 7.6c1.8-.4 3.6-.2 5 .5M5.4 10.4c1.8-.4 3.6-.2 5 .5M13.6 8.1c1.4-.7 3.2-.9 5-.5M13.6 10.9c1.4-.7 3.2-.9 5-.5" fill="none" stroke="#FFE0B8" stroke-width=".9" stroke-linecap="round"/>`,
+  'kilit-acik': `<path d="M8 11V7.4a4 4 0 0 1 7.8-1.2" fill="none" stroke="${CIZGI}" stroke-width="3.6" stroke-linecap="round"/>
+<path d="M8 11V7.4a4 4 0 0 1 7.8-1.2" fill="none" stroke="url(#ci-kask)" stroke-width="2" stroke-linecap="round"/>
+<rect x="5" y="10.4" width="14" height="10.8" rx="2.4" fill="url(#ci-kask)" ${dis}/>
+<path d="M12 14.2a1.6 1.6 0 0 0-.8 3l-.3 2h2.2l-.3-2a1.6 1.6 0 0 0-.8-3Z" fill="${CIZGI}"/>`,
+  prestij: `<path d="M12 2.8 14.6 8l5.6.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4L9.4 8Z" fill="url(#ci-kask)" ${dis}/>
+<path d="M12 6.4 13.4 9.2l3 .4-2.2 2.1.5 3-2.7-1.4Z" fill="#FFFFFF" fill-opacity=".45"/>
+<path d="M5 20.6h14" stroke="url(#ci-turuncu)" stroke-width="2.4" stroke-linecap="round"/>`,
+  gemi: `<path d="M3 14.4h18l-2.6 5H5.6Z" fill="url(#ci-kirmizi)" ${dis}/>
+<path d="M6.4 14.4V9.6h11.2v4.8" fill="url(#ci-celik)" ${dis}/>
+<path d="M9.6 9.6V6h4.8v3.6" fill="url(#ci-koyu)" ${dis}/>`,
   kilit: `<path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="${CIZGI}" stroke-width="3.6" stroke-linecap="round"/>
 <path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="url(#ci-celik)" stroke-width="2" stroke-linecap="round"/>
 <rect x="5" y="10.4" width="14" height="10.8" rx="2.4" fill="url(#ci-celik)" ${dis}/>

@@ -12,9 +12,10 @@ import {
   yetenekHali, yetenekEtki, yoneticiAdi, kartHizi, madenMi, istasyonTipi,
 } from './ortak.js'
 import { DURAK, BOSALTMA } from '../ayar.js'
+import { KISILER, SAHNELER, BOLUMLER, sahneBolumu } from '../hikaye.js'
 
-const SAYFALAR = new Set(['yukseltme', 'ayarlar', 'istasyonSec'])
-const ONCELIK = { seviye: 1 }
+const SAYFALAR = new Set(['yukseltme', 'ayarlar', 'istasyonSec', 'defter'])
+const ONCELIK = { seviye: 2, hikaye: 1 }
 const MODLAR = [[1, 'x1'], [10, 'x10'], [50, 'x50'], ['max', 'Max']]
 const katAdi = (ist) => (ist === 'asansor' ? 'Asansör' : ist === 'depo' ? '1. Kat · Depo' : (+ist.slice(1) + 2) + '. Kat')
 const istIkon = (ist) => (ist === 'asansor' ? ikon('asansor') : ist === 'depo' ? ikon('sepet') : cevherIkonu('zonguldak'))
@@ -69,6 +70,7 @@ export function kur(B) {
       return
     }
     mGovde.innerHTML = ''
+    modalEl.dataset.tur = ad
     modal = { ad, veri, kare4: null, kapatilabilir: true }
     const s = kurucu(mGovde, veri, modal)
     modal.kare4 = s || null
@@ -415,14 +417,14 @@ export function kur(B) {
 
   // ════════ Seviye atlama ════════
   function seviyeKur(g, veri) {
-    const acilim = (veri.acilan || []).includes('takviye')
+    const acilimlar = (veri.acilan || []).map((k) => A.ACILIM_ADLARI && A.ACILIM_ADLARI[k]).filter(Boolean)
     g.innerHTML = `<i class="isinlar"></i>
       <h2>Seviye Atladın!</h2>
       <div class="madalya">${ikon('madalya')}</div><b class="madalya-yazi sayi">Lv. ${veri.lv}</b>
       <div class="odul-satirlar">
         <div class="odul-satir">${ikon('elmas')}<span class="sayi">+${veri.elmas} elmas</span></div>
         <div class="odul-satir">${ikon('para')}<span>Bütün satışlar +%${2 * (veri.adet || 1)}</span></div>
-        ${acilim ? `<div class="odul-satir acilim">${ikon('topla')}<span>2x Topla açıldı!</span></div>` : ''}
+        ${acilimlar.map((m) => `<div class="odul-satir acilim">${ikon('kilit-acik')}<span>${m} açıldı!</span></div>`).join('')}
       </div>
       <div class="modal-dugmeler"><button class="btn btn-turuncu" data-eylem="modal-kapat" data-ogretici-modal>Harika!</button></div>`
     return null
@@ -436,14 +438,120 @@ export function kur(B) {
     return null
   }
 
+  // ════════ Hikâye sahnesi (görsel roman) ════════
+  // veri: {id, tekrar}. Satırlar daktilo gibi yazılır; dokunuş satırı tamamlar, sonra ilerletir.
+  const MEKTUP_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="14" width="52" height="38" rx="4" fill="#F3E2BE" stroke="#8A6A3C" stroke-width="2.5"/><path d="M8 17 32 36 56 17" fill="none" stroke="#8A6A3C" stroke-width="2.5"/><circle cx="32" cy="40" r="7" fill="#B8322A"/><path d="M29 40h6M32 37v6" stroke="#F3C9A0" stroke-width="1.6"/></svg>'
+  function bolumAdi(id) {
+    const k = sahneBolumu(id)
+    if (k === 'prestij') return 'Yeni Nesil'
+    const b = BOLUMLER.find((x) => x.bolge === k)
+    return b ? `Bölüm ${b.no} · ${A.BOLGE[k] ? A.BOLGE[k].ad : ''}` : ''
+  }
+  function portreHtml(k) {
+    const kisi = KISILER[k] || KISILER.sen
+    if (k === 'mektup') return `<div class="hk-portre mektup">${MEKTUP_SVG}</div>`
+    if (kisi.resim) return `<div class="hk-portre"><img src="${kisi.resim}" alt="" draggable="false"></div>`
+    return `<div class="hk-portre"><canvas width="128" height="128" data-tohum="${kisi.tohum || 1}"></canvas></div>`
+  }
+  function hikayeKur(g, veri, m) {
+    const sahne = SAHNELER[veri.id]
+    if (!sahne) { setTimeout(modalKapat, 0); return null }
+    m.kapatilabilir = false
+    const satirlar = sahne.satirlar
+    let i = -1, yazilan = 0, hedef = '', zaman = 0, raf = 0
+    g.innerHTML = `<header class="hk-ust"><small>${bolumAdi(veri.id)}</small><h2>${sahne.baslik}</h2></header>
+      <div class="hk-sahne"><div class="hk-portre-kap"></div>
+        <button class="hk-balon" data-eylem="hikaye-devam"><b class="hk-ad"></b><small class="hk-unvan"></small><p class="hk-metin"></p><i class="hk-ok"></i></button></div>
+      <footer class="hk-alt"><span class="hk-sayac sayi"></span><button class="btn btn-krem" data-eylem="hikaye-atla">Atla</button><button class="btn btn-turuncu" data-eylem="hikaye-devam" data-ogretici-modal>Devam</button></footer>`
+    const el = {
+      portre: g.querySelector('.hk-portre-kap'), ad: g.querySelector('.hk-ad'), unvan: g.querySelector('.hk-unvan'),
+      metin: g.querySelector('.hk-metin'), sayac: g.querySelector('.hk-sayac'), balon: g.querySelector('.hk-balon'),
+      devam: g.querySelector('.hk-alt .btn-turuncu'),
+    }
+    let sonKisi = null
+    const azHareket = matchMedia('(prefers-reduced-motion: reduce)').matches
+    function yazdir(t) {
+      if (!zaman) zaman = t
+      yazilan = Math.min(hedef.length, Math.floor((t - zaman) * 0.05))
+      el.metin.textContent = hedef.slice(0, yazilan)
+      if (yazilan < hedef.length) raf = requestAnimationFrame(yazdir)
+      else raf = 0
+    }
+    function satir(n) {
+      i = n
+      const [k, metin] = satirlar[i]
+      const kisi = KISILER[k] || KISILER.sen
+      if (k !== sonKisi) {
+        el.portre.innerHTML = portreHtml(k)
+        const c = el.portre.querySelector('canvas')
+        if (c) try { B.sahne.portre(+c.dataset.tohum, 2, c, 128) } catch {}
+        el.portre.firstChild.animate([{ opacity: 0, transform: 'translateY(10px) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'ease-out' })
+        sonKisi = k
+      }
+      el.balon.classList.toggle('sen', k === 'sen')
+      el.balon.classList.toggle('mektup', k === 'mektup')
+      yaz(el.ad, kisi.ad)
+      yaz(el.unvan, kisi.unvan)
+      yaz(el.sayac, (i + 1) + '/' + satirlar.length)
+      yaz(el.devam, i === satirlar.length - 1 ? 'Tamam' : 'Devam')
+      hedef = metin
+      zaman = 0
+      if (raf) cancelAnimationFrame(raf)
+      if (azHareket) { el.metin.textContent = hedef; yazilan = hedef.length }
+      else { el.metin.textContent = ''; raf = requestAnimationFrame(yazdir) }
+    }
+    function bitir() {
+      if (raf) cancelAnimationFrame(raf)
+      raf = 0
+      B.eylem('hikayeGoruldu', { id: veri.id })
+      modalKapat()
+    }
+    m.devam = () => {
+      if (yazilan < hedef.length) {
+        if (raf) cancelAnimationFrame(raf)
+        raf = 0
+        yazilan = hedef.length
+        el.metin.textContent = hedef
+        return
+      }
+      if (i + 1 < satirlar.length) satir(i + 1)
+      else bitir()
+    }
+    m.atla = bitir
+    satir(0)
+    return null
+  }
+  B.eylemler['hikaye-devam'] = () => { if (modal && modal.devam) modal.devam() }
+  B.eylemler['hikaye-atla'] = () => { if (modal && modal.atla) modal.atla() }
+
+  // ════════ Hikâye defteri (görülen sahneler, yeniden oynatılabilir) ════════
+  function defterKur(g) {
+    const d = B.durumAl()
+    const gor = new Set(d.hikaye.goruldu)
+    const bolumler = [...BOLUMLER.map((b) => ({ k: b.bolge, ad: `Bölüm ${b.no}: ${b.ad}` })), { k: 'prestij', ad: 'Yeni Nesil' }]
+    const ids = Object.keys(SAHNELER)
+    g.innerHTML = `<div class="sayfa-baslik2">${ikon('kitap')}<div><h2>Hikâye Defteri</h2><small>${gor.size}/${ids.length} sahne</small></div></div>` +
+      bolumler.map((b) => {
+        const l = ids.filter((id) => sahneBolumu(id) === b.k)
+        const acik = l.filter((id) => gor.has(id))
+        return `<section class="defter-bolum"><h3>${b.ad}<small class="sayi">${acik.length}/${l.length}</small></h3>
+          <div class="defter-liste">${l.map((id) => gor.has(id)
+            ? `<button class="defter-sahne" data-eylem="defter-oynat" data-id="${id}">${ikon('oynat')}<span>${SAHNELER[id].baslik}</span></button>`
+            : `<div class="defter-sahne kilitli">${ikon('kilit')}<span>???</span></div>`).join('')}</div></section>`
+      }).join('')
+    return null
+  }
+  B.eylemler['defter-oynat'] = (b) => { sayfaKapat(); setTimeout(() => modalAc('hikaye', { id: b.dataset.id, tekrar: true }), 200) }
+  B.eylemler.defter = () => sayfaAc('defter', {})
+
   // Görsel yön 2: çevrimdışı kazanç alt bantta; eski "cevrimdisi" modal çağrısı bildirime döner
   function cevrimdisiYonlendir() {
     B.bildir('basari', 'Sen yokken madencilerin çalıştı!')
     return false
   }
 
-  const SAYFA_KUR = { yukseltme: yukseltmeKur, ayarlar: ayarlarKur, istasyonSec: istasyonSecKur }
-  const MODAL_KUR = { yonetici: yoneticiKur, seviye: seviyeKur, aktarim: aktarimKur }
+  const SAYFA_KUR = { yukseltme: yukseltmeKur, ayarlar: ayarlarKur, istasyonSec: istasyonSecKur, defter: defterKur }
+  const MODAL_KUR = { yonetici: yoneticiKur, seviye: seviyeKur, aktarim: aktarimKur, hikaye: hikayeKur }
 
   function ac(ad, veri) {
     if (ad === 'cevrimdisi') { cevrimdisiYonlendir(); return }
@@ -452,7 +560,14 @@ export function kur(B) {
   }
 
   // Arka arkaya seviye atlamaları tek pencerede birleşir (kuyruktaki seviye penceresi güncellenir)
+  // Hikâye kuyruğu: aynı sahne iki kez sıraya girmez
+  function hikayeSirala(id) {
+    if ((modal && modal.ad === 'hikaye' && modal.veri.id === id) || kuyruk.some((k) => k.ad === 'hikaye' && k.veri.id === id)) return
+    modalAc('hikaye', { id })
+  }
+
   function olay(o) {
+    if (o.tip === 'hikaye') { hikayeSirala(o.id); return }
     if (o.tip !== 'seviyeAtladi') return
     const k = kuyruk.find((x) => x.ad === 'seviye')
     if (k) {
@@ -468,7 +583,7 @@ export function kur(B) {
   }
 
   return {
-    ac, olay, kare4,
+    ac, olay, kare4, hikayeSirala,
     kapatSayfa: sayfaKapat,
     kapatModal: modalKapat,
     acikSayfa: () => (sayfa ? sayfa.ad : null),

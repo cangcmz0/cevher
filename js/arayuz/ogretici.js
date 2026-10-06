@@ -83,6 +83,8 @@ export function kur(B) {
     const acikModal = B.pencere.acikModal()
     const acikSayfa = B.pencere.acikSayfa()
     const b = bolgeAl(d)
+    // Hikâye sahnesi sürerken el gizlenir
+    if (acikModal === 'hikaye') return null
     // İlgisiz bir modal açıksa önce onu kapattır
     if (acikModal && acikModal !== 'yonetici') return elemanKutusu('.modal [data-ogretici-modal]')
     if (a === 1) return acikSayfa === 'yukseltme' ? elemanKutusu('[data-ogretici="sheet-yukselt"]') : elemanKutusu('[data-ogretici="m0-yukselt"]')
