@@ -3,6 +3,7 @@
 import {
   SURUM, BOLGE, BOLGELER, BASLANGIC_PARA, MADEN_SAYISI, MAKS_MADEN_SEVIYE, MAKS_ISTASYON_SEVIYE,
   MAKS_SEVIYE, YONETICI_TIPLERI, TIP_YETENEKLERI, NADIRLIKLER, ALIM_MODLARI, GECMIS_UZUNLUK, OGRETICI_SON_ADIM,
+  LIMAN, AMBAR, GOREVLER,
 } from './ayar.js'
 import { tasiyiciSayisi } from './ekonomi.js'
 
@@ -32,6 +33,12 @@ export function yeniBolge(kod) {
     kiralanan: { maden: 0, asansor: 0, depo: 0 },
     ayrilis: null,
     gorev: { sira: 0, hazir: false },
+    liman: 0,
+    ambar: 0,
+    kontrat: { no: 0, hedef: 0, ilerleme: 0, hazir: false, tamam: 0 },
+    yetenekSay: 0,
+    usta: false,
+    giris: false,
   }
 }
 
@@ -56,8 +63,12 @@ export function yeniDurum(simdiMs = Date.now(), tohum) {
     ayarlar: { ses: true, titresim: true, kalite: 'yuksek' },
     ogretici: { adim: 0, bitti: false },
     alimModu: 1,
-    istatistik: { dokunus: 0, yukseltme: 0, yetenek: 0, reklam: 0, satis: 0 },
+    istatistik: { dokunus: 0, yukseltme: 0, yetenek: 0, reklam: 0, satis: 0, kademe: 0, kontrat: 0, takviye: 0 },
     aktarim: false,
+    hikaye: { goruldu: [], bekleyen: ['giris'] },
+    misyon: { gun: '', liste: [], bonus: false },
+    etkinlik: { kod: '', bitis: 0 },
+    prestij: { sv: 0, hazirGoruldu: false },
   }
   d.calisma = yeniCalisma(d)
   return d
@@ -149,6 +160,9 @@ function bolgeDogrula(kod, b) {
   b.asansor.L = sinirla(b.asansor.L, 1, MAKS_ISTASYON_SEVIYE, 1)
   b.depo.L = sinirla(b.depo.L, 1, MAKS_ISTASYON_SEVIYE, 1)
   b.ayrilis = typeof b.ayrilis === 'number' && Number.isFinite(b.ayrilis) ? b.ayrilis : null
+  b.liman = sinirla(b.liman, 0, LIMAN.maks, 0)
+  b.ambar = sinirla(b.ambar, 0, AMBAR.maks, 0)
+  b.gorev.sira = sinirla(b.gorev.sira, 0, GOREVLER.length, 0)
   // yöneticiler
   const ids = new Set(), atananlar = new Set()
   const yl = []
@@ -220,6 +234,13 @@ export function dogrula(d) {
   if (!duzObje(d.arastirma.sv)) d.arastirma.sv = {}
   for (const k of Object.keys(d.arastirma.sv)) d.arastirma.sv[k] = Math.floor(sayi(d.arastirma.sv[k]))
   if (!duzObje(d.arastirma.suren)) d.arastirma.suren = null
+  // hikâye kuyrukları: yalnız dize kimlikler, tekrarsız
+  const dizeler = (l) => [...new Set((Array.isArray(l) ? l : []).filter((x) => typeof x === 'string' && x))]
+  d.hikaye.goruldu = dizeler(d.hikaye.goruldu)
+  d.hikaye.bekleyen = dizeler(d.hikaye.bekleyen).filter((x) => !d.hikaye.goruldu.includes(x))
+  d.misyon.liste = (Array.isArray(d.misyon.liste) ? d.misyon.liste : []).filter((m) => duzObje(m) && typeof m.kod === 'string')
+    .slice(0, 3).map((m) => ({ kod: m.kod, n: Math.max(1, Math.floor(sayi(m.n, 1))), bas: sayi(m.bas), zor: sinirla(m.zor, 0, 2, 0), alindi: !!m.alindi }))
+  d.prestij.sv = Math.floor(sayi(d.prestij.sv))
   d.calisma = yeniCalisma(d)
   return d
 }

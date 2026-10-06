@@ -13,14 +13,19 @@ import {
   KADEME_MADEN, KADEME_ISTASYON, MADEN_SAYISI, KAZI_SURESI, DURAK, BOSALTMA, YUKLEME, SATIS, TASIYICI_ARALIK,
   MAKS_YONETICI, ELMAS_KIRALAMA, NADIRLIK_ODDS, YONETICI_TIPLERI, TIP_YETENEKLERI, ISIMLER, DARBOGAZ_YUKSEL,
   DARBOGAZ_TEMIZLE, DEPO_BOSTA_SURE, GELIR_EMA_SURE, GECMIS_ARALIK, GECMIS_UZUNLUK, ALIM_MODLARI, MAKS_SEVIYE,
-  XP, ACILIMLAR, TAKVIYE_DAKIKA, TAKVIYE_SINIR_SAAT, OGRETICI_SON_ADIM, DARBOGAZ_ARALIK,
+  XP, ACILIMLAR, TAKVIYE_DAKIKA, TAKVIYE_SINIR_SAAT, OGRETICI_SON_ADIM, DARBOGAZ_ARALIK, GOREVLER, BOLGELER,
+  BOLGE, BOLGE_USTASI_ELMAS, BOLGE_ACMA_XP, LIMAN, AMBAR, KONTRAT, KONTRAT_MUSTERI, MISYONLAR, MISYON_ODUL,
+  ETKINLIKLER, PRESTIJ, ARASTIRMALAR, ARASTIRMA_MALIYET, ARASTIRMA_SURELER, ARASTIRMA_T3_SURE, GUNLUK_HEDIYE,
+  ELMAS_HARCAMA, TAKVIYE_MAGAZA_SINIR_SAAT,
 } from './ayar.js'
 import {
   madenUretim, uretimCarpani, yiginKap, asansorKap, asansorHiz, tasiyiciSayisi, tasiyiciYuk, depoYol, depoKap,
   satisCarpani, kapasiteler, otoGelir, toplamUretim, xpGerek, harcamaXp, teklif, madenAcilis, kiralamaMaliyeti,
-  yoneticiBul, yetenekDurum, yetenekSuresi, yetenekBekleme, gecilenKademeler,
+  yoneticiBul, yetenekDurum, yetenekSuresi, yetenekBekleme, gecilenKademeler, gelirRef, bolgeBilgi,
+  bolgeKodu, etkinlik, otoAkis, ar, limanMaliyet, ambarMaliyet, cevrimdisiSinir,
 } from './ekonomi.js'
-import { yeniCalisma, yeniTasiyici, yeniDurum, rastgele, istasyonGecerli, istasyonTip } from './durum.js'
+import { yeniCalisma, yeniTasiyici, yeniDurum, yeniBolge, rastgele, istasyonGecerli, istasyonTip } from './durum.js'
+import { SAHNELER, gorevYazi, gorevSahnesi } from './hikaye.js'
 
 export const ADIM = 0.05
 
@@ -72,6 +77,10 @@ export function adim(durum, dt, olaylar) {
     const h = c.sayac05
     c.sayac05 = 0
     istatistikVeDarbogaz(durum, b, c, h, olaylar)
+    gorevKontrol(durum, b, olaylar)
+    if (!(b.kontrat.hedef > 0)) kontratKur(durum, b)
+    arastirmaKontrol(durum, olaylar)
+    prestijKontrol(durum, olaylar)
   }
   c.sayac30 += dt
   if (c.sayac30 >= GECMIS_ARALIK - EPS) {
@@ -284,10 +293,11 @@ function tasiyicilarAdim(d, b, c, dt, olaylar) {
       if (t.durum === 'yukluyor') {
         t.durum = 'gidiyor'; t.t = 0; t.sure = depoYol(d, b)
       } else if (t.durum === 'gidiyor') {
-        const para = t.yuk * satisCarpani(d)
+        const para = t.yuk * satisCarpani(d, b)
         b.para += para
         b.toplamKazanc += para
         c.satilan += t.yuk
+        kontratIlerle(b, t.yuk, olaylar)
         c.pencereSatis += para
         d.istatistik.satis++
         yay(olaylar, { tip: 'satis', miktar: t.yuk, para, k })
@@ -358,6 +368,215 @@ function istatistikVeDarbogaz(d, b, c, h, olaylar) {
 }
 
 // Toplam Üretim'in 5 dk önceye göre oranı (0.12 = +%12)
+// ---- Bölge görevleri (§2.14): sırayla, yalnız şimdiki görev etkin ----
+
+// Görev şablonunun koşul metni ("5. Katı aç" gibi)
+export function gorevKosulu(g) {
+  if (!g) return ''
+  switch (g.tur) {
+    case 'seviye': return `${g.i + 2}. Katı ${g.L}. seviyeye çıkar`
+    case 'yonetici': return 'Bir yönetici tut'
+    case 'ac': return `${g.n + 1}. Katı aç`
+    case 'yon': return g.ist === 'asansor' ? 'Asansöre yönetici tut' : 'Depoya yönetici tut'
+    case 'yetenek': return 'Bir yönetici yeteneği kullan'
+    case 'L': return g.ist === 'asansor' ? `Asansörü ${g.L}. seviyeye çıkar` : `Depoyu ${g.L}. seviyeye çıkar`
+    case 'kontrat': return g.n > 1 ? `${g.n} kontrat teslim et` : 'Bir kontrat teslim et'
+    case 'liman': return `Limanı ${g.n}. seviyeye çıkar`
+  }
+  return ''
+}
+
+// Görev i'nin ilerlemesi: { simdi, hedef }
+export function gorevIlerleme(d, b, i) {
+  const g = GOREVLER[i]
+  const v = (s, h) => ({ simdi: Math.max(0, Math.min(s, h)), hedef: h })
+  if (!g) return v(0, 1)
+  switch (g.tur) {
+    case 'seviye': return v(b.madenler[g.i] ? b.madenler[g.i].L : 0, g.L)
+    case 'yonetici': return v(b.yoneticiler.length ? 1 : 0, 1)
+    case 'ac': return v(b.madenler.length, g.n)
+    case 'yon': return v(yoneticiBul(b, g.ist) ? 1 : 0, 1)
+    case 'yetenek': return v(b.yetenekSay || 0, g.n)
+    case 'L': return v(g.ist === 'asansor' ? b.asansor.L : b.depo.L, g.L)
+    case 'kontrat': return v(b.kontrat ? b.kontrat.tamam : 0, g.n)
+    case 'liman': return v(b.liman || 0, g.n)
+  }
+  return v(0, 1)
+}
+
+// Görev ödülü: XP × (1 + 0,5 r), elmas, para = N dakikalık gelirRef (en az 50 × ölçek)
+export function gorevOdulu(d, b, i) {
+  const g = GOREVLER[i]
+  if (!g) return null
+  const bb = bolgeBilgi(d, b)
+  const r = Math.max(0, BOLGELER.indexOf(bb))
+  const para = g.para ? Math.max(gelirRef(d, b) * g.para * 60, 50 * bb.olcek) : 0
+  return { xp: Math.round(g.xp * (1 + 0.5 * r)), elmas: g.elmas, para }
+}
+
+// Şimdiki görevin durumu ya da null (hepsi bitti)
+export function gorevDurumu(d, b) {
+  const i = b.gorev.sira
+  if (i >= GOREVLER.length) return null
+  const il = gorevIlerleme(d, b, i)
+  const kod = bolgeKodu(d, b)
+  const y = gorevYazi(kod, i)
+  return {
+    sira: i, metin: gorevKosulu(GOREVLER[i]), baslik: y ? y.baslik : gorevKosulu(GOREVLER[i]), aciklama: y ? y.aciklama : '',
+    hazir: !!b.gorev.hazir, ...il, odul: gorevOdulu(d, b, i), toplam: GOREVLER.length,
+  }
+}
+
+function gorevKontrol(d, b, olaylar) {
+  const gv = b.gorev
+  if (gv.hazir || gv.sira >= GOREVLER.length) return
+  const il = gorevIlerleme(d, b, gv.sira)
+  if (il.simdi >= il.hedef) {
+    gv.hazir = true
+    yay(olaylar, { tip: 'gorevHazir', sira: gv.sira, metin: gorevKosulu(GOREVLER[gv.sira]) })
+  }
+}
+
+// ---- Hikâye ----
+
+// Sahneyi kuyruğa ekler (görüldüyse eklemez; tekrar=true ise yeniden oynatır)
+export function hikayeEkle(d, id, olaylar, tekrar = false) {
+  if (!SAHNELER[id]) return false
+  const h = d.hikaye
+  if (h.bekleyen.includes(id)) return false
+  if (h.goruldu.includes(id)) {
+    if (!tekrar) return false
+    h.goruldu = h.goruldu.filter((x) => x !== id)
+  }
+  h.bekleyen.push(id)
+  yay(olaylar, { tip: 'hikaye', id })
+  return true
+}
+
+// ---- Kontratlar ----
+
+const kontratDk = (n) => Math.min(KONTRAT.dkTavan, KONTRAT.dkTaban + KONTRAT.dkArtis * n)
+
+// Olası cevher akışı (değer/s): bütün açık madenler çalışsa (yeteneksiz), asansör ve depo sınırıyla
+function olasiAkis(d, b) {
+  let P = 0
+  for (let i = 0; i < b.madenler.length; i++) P += madenUretim(d, b, i) * uretimCarpani(d, b, i, false)
+  const { A, D } = kapasiteler(d, b, { yetenek: false })
+  return Math.min(P, A, D)
+}
+
+function kontratKur(d, b) {
+  const k = b.kontrat
+  const akis = Math.max(otoAkis(d, b), olasiAkis(d, b) * 0.5, 0.5 * bolgeBilgi(d, b).olcek)
+  k.hedef = akis * 60 * kontratDk(k.no)
+  k.ilerleme = 0
+  k.hazir = false
+}
+
+// Kontrat bilgisi (arayüz için)
+export function kontratDurumu(d, b) {
+  const k = b.kontrat
+  const kod = bolgeKodu(d, b)
+  const ml = KONTRAT_MUSTERI[kod] || KONTRAT_MUSTERI.zonguldak
+  const n = k.no
+  const e = etkinlik(d).kontrat || 1
+  const dk = kontratDk(n)
+  return {
+    no: n, musteri: ml[n % ml.length], cevher: bolgeBilgi(d, b).cevher, hedef: k.hedef, ilerleme: Math.min(k.ilerleme, k.hedef),
+    hazir: k.hazir, tamam: k.tamam,
+    odul: {
+      para: gelirRef(d, b) * dk * 30 * e,
+      elmas: Math.round(Math.min(KONTRAT.elmasTavan, KONTRAT.elmasTaban + KONTRAT.elmasArtis * n) * e),
+      xp: KONTRAT.xpTaban + KONTRAT.xpArtis * Math.min(n, 30),
+    },
+  }
+}
+
+function kontratIlerle(b, miktar, olaylar) {
+  const k = b.kontrat
+  if (k.hazir || !(k.hedef > 0)) return
+  k.ilerleme += miktar
+  if (k.ilerleme >= k.hedef) {
+    k.ilerleme = k.hedef
+    k.hazir = true
+    yay(olaylar, { tip: 'kontratHazir', no: k.no })
+  }
+}
+
+// ---- Araştırma (§2.15) ----
+
+export const arastirmaBilgi = (kod) => ARASTIRMALAR.find((a) => a.kod === kod) || null
+
+// Bir sonraki seviyenin maliyeti ve süresi; maks ise null
+export function arastirmaTeklif(d, kod) {
+  const a = arastirmaBilgi(kod)
+  if (!a) return null
+  const sv = ar(d, kod)
+  if (sv >= a.sv) return null
+  const elmas = ARASTIRMA_MALIYET[a.tier][Math.min(sv, ARASTIRMA_MALIYET[a.tier].length - 1)]
+  const sure = a.tier === 3 ? ARASTIRMA_T3_SURE : ARASTIRMA_SURELER[Math.min(sv, ARASTIRMA_SURELER.length - 1)]
+  return { elmas, sure, sv }
+}
+
+// Şartlar sağlanıyor mu: {ok, eksik: 'Lv. 10' | 'Keskin Kazmalar 2' ...}
+export function arastirmaSart(d, kod) {
+  const a = arastirmaBilgi(kod)
+  if (!a) return { ok: false, eksik: '' }
+  for (const k of Object.keys(a.sart)) {
+    const gerek = a.sart[k]
+    if (k === 'lv') { if (d.oyuncu.lv < gerek) return { ok: false, eksik: 'Seviye ' + gerek } }
+    else if (ar(d, k) < gerek) return { ok: false, eksik: (arastirmaBilgi(k) || { ad: k }).ad + ' ' + gerek }
+  }
+  return { ok: true, eksik: '' }
+}
+
+function arastirmaKontrol(d, olaylar) {
+  const s = d.arastirma.suren
+  if (!s || d.zaman < s.bitis - EPS) return
+  arastirmaBitir(d, olaylar)
+}
+
+function arastirmaBitir(d, olaylar) {
+  const s = d.arastirma.suren
+  const a = arastirmaBilgi(s.kod)
+  d.arastirma.sv[s.kod] = (d.arastirma.sv[s.kod] || 0) + 1
+  d.arastirma.suren = null
+  yay(olaylar, { tip: 'arastirmaBitti', kod: s.kod, sv: d.arastirma.sv[s.kod] })
+  if (a) xpVer(d, 60 * a.tier, 'arastirma', olaylar)
+  for (const k of Object.keys(d.bolgeler)) enIyiGuncelle(d, d.bolgeler[k])
+  isaretle(d, true)
+}
+
+// ---- Günlük misyonlar ----
+
+// Basit dize özeti (tarihe göre seçim için)
+function ozet(str) {
+  let h = 2166136261
+  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619)
+  return h >>> 0
+}
+
+export function misyonIlerleme(d, m) {
+  const t = MISYONLAR.find((x) => x.kod === m.kod)
+  if (!t) return { simdi: 0, hedef: 1, metin: '' }
+  const simdi = Math.max(0, Math.min(m.n, (d.istatistik[t.sayac] || 0) - m.bas))
+  return { simdi, hedef: m.n, metin: t.metin.replace('{n}', m.n) }
+}
+
+// ---- Prestij ----
+
+export function prestijUygun(d) {
+  let usta = 0
+  for (const k of Object.keys(d.bolgeler)) if (d.bolgeler[k].usta) usta++
+  return d.oyuncu.lv >= PRESTIJ.lv && usta >= PRESTIJ.usta
+}
+
+function prestijKontrol(d, olaylar) {
+  if (d.prestij.hazirGoruldu || !prestijUygun(d)) return
+  d.prestij.hazirGoruldu = true
+  hikayeEkle(d, 'prestij-hazir', olaylar)
+}
+
 export function uretimArtisi(durum) {
   const c = durum.calisma
   const b = durum.bolgeler[c.bolge]
@@ -379,7 +598,9 @@ function xpVer(d, miktar, kaynak, olaylar) {
     o.lv++
     const elmas = 5 + o.lv
     o.elmas += elmas
-    yay(olaylar, { tip: 'seviyeAtladi', lv: o.lv, elmas, acilan: (ACILIMLAR[o.lv] || []).slice() })
+    const acilan = (ACILIMLAR[o.lv] || []).slice()
+    yay(olaylar, { tip: 'seviyeAtladi', lv: o.lv, elmas, acilan })
+    for (const k of acilan) if (BOLGE[k]) hikayeEkle(d, k + '-acik', olaylar)
   }
 }
 
@@ -423,6 +644,7 @@ const EYLEMLER = {
     else { const m = b.madenler[+ist.slice(1)]; eskiL = m.L; m.L = tk.yeniL; liste = KADEME_MADEN }
     const kademeler = gecilenKademeler(eskiL, tk.yeniL, liste)
     d.istatistik.yukseltme++
+    d.istatistik.kademe += kademeler.length
     yay(olaylar, { tip: 'yukseltildi', istasyon: ist, eskiL, yeniL: tk.yeniL, kademeler })
     xpVer(d, xp, 'harcama', olaylar)
     if (kademeler.length) xpVer(d, XP.kademe * kademeler.length, 'kademe', olaylar)
@@ -566,6 +788,7 @@ const EYLEMLER = {
     y.hazirZaman = d.zaman + sure + yetenekBekleme(d, y)
     d.calisma.yetenekler[y.id] = 'aktif'
     d.istatistik.yetenek++
+    b.yetenekSay = (b.yetenekSay || 0) + 1
     yay(olaylar, { tip: 'yetenek', istasyon: v.istasyon, yonetici: y })
     xpVer(d, XP.yetenek, 'yetenek', olaylar)
     isaretle(d, true)
@@ -581,6 +804,7 @@ const EYLEMLER = {
     const bitis = Math.min(Math.max(z, d.takviye.bitis) + dakika * 60, tavan)
     d.takviye.bitis = bitis
     d.istatistik.reklam++
+    d.istatistik.takviye++
     yay(olaylar, { tip: 'takviye', bitis })
     isaretle(d, true)
     return { ok: true, bitis, sinirli: bitis >= tavan - EPS }
@@ -624,8 +848,10 @@ const EYLEMLER = {
   ogretici(d, b, v, olaylar) {
     const o = d.ogretici
     if (Number.isFinite(v.adim)) o.adim = Math.max(o.adim, Math.min(OGRETICI_SON_ADIM, Math.floor(v.adim)))
+    const once = o.bitti
     if (v.bitti === true || o.adim >= OGRETICI_SON_ADIM) o.bitti = true
     yay(olaylar, { tip: 'ogretici', adim: o.adim, bitti: o.bitti })
+    if (o.bitti && !once) hikayeEkle(d, 'ogretici', olaylar)
     isaretle(d, true)
     return TAMAM()
   },
@@ -643,6 +869,320 @@ const EYLEMLER = {
     yay(olaylar, { tip: 'paraDegisti' })
     isaretle(d, true)
     return TAMAM()
+  },
+
+  // Hazır görevin ödülünü al, sıradaki göreve geç
+  gorevAl(d, b, v, olaylar) {
+    const gv = b.gorev
+    if (gv.sira >= GOREVLER.length) return RED('maks')
+    if (!gv.hazir) {
+      // Koşul az önce sağlandıysa (0,5 sn'lik kontrol beklenmeden) hazır say
+      const il = gorevIlerleme(d, b, gv.sira)
+      if (il.simdi < il.hedef) return RED('kilit')
+    }
+    const odul = gorevOdulu(d, b, gv.sira)
+    const sira = gv.sira
+    d.oyuncu.elmas += odul.elmas
+    if (odul.para > 0) { b.para += odul.para; b.toplamKazanc += odul.para; yay(olaylar, { tip: 'paraDegisti' }) }
+    gv.sira++
+    gv.hazir = false
+    yay(olaylar, { tip: 'gorevTamam', sira, ...odul })
+    xpVer(d, odul.xp, 'gorev', olaylar)
+    const kod = bolgeKodu(d, b)
+    const sahne = gorevSahnesi(kod, sira)
+    if (gv.sira >= GOREVLER.length && !b.usta) {
+      b.usta = true
+      d.oyuncu.elmas += BOLGE_USTASI_ELMAS
+      yay(olaylar, { tip: 'bolgeUstasi', bolge: kod, elmas: BOLGE_USTASI_ELMAS })
+      enIyiGuncelle(d, b)
+    }
+    if (sahne) hikayeEkle(d, sahne, olaylar)
+    gorevKontrol(d, b, olaylar)
+    isaretle(d, true)
+    return { ok: true, sira, ...odul }
+  },
+
+  // Hikâye sahnesi gösterildi
+  hikayeGoruldu(d, b, v) {
+    const h = d.hikaye
+    const id = v.id
+    if (typeof id !== 'string') return RED('gecersiz')
+    h.bekleyen = h.bekleyen.filter((x) => x !== id)
+    if (SAHNELER[id] && !h.goruldu.includes(id)) h.goruldu.push(id)
+    isaretle(d, true)
+    return TAMAM()
+  },
+
+  // Bölgeye geç (gerekirse aç). Ayrılınan bölge ayrilis zamanını tutar; dönüşte yöneticili zincir geliri eklenir.
+  bolgeGit(d, b, v, olaylar) {
+    const kod = v.kod
+    const bb = BOLGE[kod]
+    if (!bb) return RED('gecersiz')
+    if (kod === d.aktifBolge) return TAMAM()
+    let yeni = false
+    if (!d.bolgeler[kod]) {
+      if (d.oyuncu.lv < bb.acilisLv) return RED('kilit')
+      d.bolgeler[kod] = yeniBolge(kod)
+      yeni = true
+    }
+    b.ayrilis = d.zaman
+    d.aktifBolge = kod
+    const nb = d.bolgeler[kod]
+    nb.acik = true
+    let kazanc = 0, sure = 0
+    if (nb.ayrilis !== null && nb.ayrilis !== undefined) {
+      sure = Math.max(0, d.zaman - nb.ayrilis)
+      kazanc = otoGelir(d, nb) * Math.min(sure, cevrimdisiSinir(d, nb))
+      if (kazanc > 0 && Number.isFinite(kazanc)) { nb.para += kazanc; nb.toplamKazanc += kazanc } else kazanc = 0
+    }
+    nb.ayrilis = null
+    hazirla(d)
+    yay(olaylar, { tip: 'bolgeDegisti', bolge: kod, yeni, kazanc, sure })
+    if (yeni) {
+      yay(olaylar, { tip: 'bolgeAcildi', bolge: kod })
+      xpVer(d, BOLGE_ACMA_XP, 'bolge', olaylar)
+    }
+    if (!nb.giris) {
+      nb.giris = true
+      hikayeEkle(d, kod + '-giris', olaylar)
+    }
+    yay(olaylar, { tip: 'paraDegisti' })
+    isaretle(d, true)
+    return { ok: true, yeni, kazanc, sure }
+  },
+
+  // Lojistik: {tur: 'liman' | 'ambar'}
+  lojistik(d, b, v, olaylar) {
+    const tur = v.tur
+    const t = tur === 'liman' ? LIMAN : tur === 'ambar' ? AMBAR : null
+    if (!t) return RED('gecersiz')
+    const L = b[tur] || 0
+    if (L >= t.maks) return RED('maks')
+    const maliyet = tur === 'liman' ? limanMaliyet(d, b, L) : ambarMaliyet(d, b, L)
+    if (b.para < maliyet) return RED('para')
+    b.para -= maliyet
+    b[tur] = L + 1
+    d.istatistik.yukseltme++
+    yay(olaylar, { tip: 'lojistik', tur, L: L + 1 })
+    xpVer(d, harcamaXp(d, b, maliyet), 'harcama', olaylar)
+    enIyiGuncelle(d, b)
+    yay(olaylar, { tip: 'paraDegisti' })
+    isaretle(d, true)
+    return { ok: true, L: L + 1, maliyet }
+  },
+
+  // Hazır kontratın ödülünü al
+  kontratAl(d, b, v, olaylar) {
+    const k = b.kontrat
+    if (!k.hazir) return RED('kilit')
+    const kd = kontratDurumu(d, b)
+    const o = kd.odul
+    b.para += o.para
+    b.toplamKazanc += o.para
+    d.oyuncu.elmas += o.elmas
+    k.tamam++
+    k.no++
+    k.hedef = 0
+    k.ilerleme = 0
+    k.hazir = false
+    d.istatistik.kontrat++
+    yay(olaylar, { tip: 'kontratTamam', ...o, musteri: kd.musteri })
+    xpVer(d, o.xp, 'kontrat', olaylar)
+    kontratKur(d, b)
+    gorevKontrol(d, b, olaylar)
+    yay(olaylar, { tip: 'paraDegisti' })
+    isaretle(d, true)
+    return { ok: true, ...o }
+  },
+
+  // Araştırma başlat {kod}
+  arastirmaBaslat(d, b, v, olaylar) {
+    if (d.oyuncu.lv < 3) return RED('kilit')
+    if (d.arastirma.suren) return RED('mesgul')
+    const tk = arastirmaTeklif(d, v.kod)
+    if (!tk) return RED('maks')
+    if (!arastirmaSart(d, v.kod).ok) return RED('kilit')
+    if (d.oyuncu.elmas < tk.elmas) return RED('elmas')
+    d.oyuncu.elmas -= tk.elmas
+    d.arastirma.suren = { kod: v.kod, bitis: d.zaman + tk.sure, sure: tk.sure, reklam: 0 }
+    yay(olaylar, { tip: 'arastirmaBasladi', kod: v.kod })
+    isaretle(d, true)
+    return { ok: true, ...tk }
+  },
+
+  // Araştırmayı hızlandır {yontem: 'elmas' | 'reklam'}
+  arastirmaHizlandir(d, b, v, olaylar) {
+    const s = d.arastirma.suren
+    if (!s) return RED('gecersiz')
+    const kalan = Math.max(0, s.bitis - d.zaman)
+    if (v.yontem === 'reklam') {
+      if (s.reklam >= 2) return RED('maks')
+      s.reklam++
+      s.bitis -= 900
+      d.istatistik.reklam++
+    } else {
+      const elmas = Math.max(1, Math.ceil(kalan / 60 / 5))
+      if (d.oyuncu.elmas < elmas) return RED('elmas')
+      d.oyuncu.elmas -= elmas
+      s.bitis = d.zaman
+    }
+    if (d.zaman >= s.bitis - EPS) arastirmaBitir(d, olaylar)
+    isaretle(d, true)
+    return TAMAM()
+  },
+
+  // Günlük hediye {gun: 'YYYY-AA-GG'}
+  gunlukAl(d, b, v, olaylar) {
+    const gun = String(v.gun || '')
+    if (!gun) return RED('gecersiz')
+    if (d.gunluk.son === gun) return RED('alindi')
+    const h = GUNLUK_HEDIYE[d.gunluk.seri % GUNLUK_HEDIYE.length]
+    const sonuc = { ok: true, gun: d.gunluk.seri % GUNLUK_HEDIYE.length, hediye: h }
+    if (h.tur === 'para') {
+      const p = Math.max(gelirRef(d, b) * h.dk * 60, 100 * bolgeBilgi(d, b).olcek)
+      b.para += p; b.toplamKazanc += p; sonuc.para = p
+      yay(olaylar, { tip: 'paraDegisti' })
+    } else if (h.tur === 'elmas') {
+      d.oyuncu.elmas += h.n
+    } else if (h.tur === 'takviye') {
+      const z = d.zaman
+      d.takviye.bitis = Math.min(Math.max(z, d.takviye.bitis) + h.dk * 60, z + TAKVIYE_MAGAZA_SINIR_SAAT * 3600)
+      yay(olaylar, { tip: 'takviye', bitis: d.takviye.bitis })
+    } else if (h.tur === 'yonetici') {
+      const tip = YONETICI_TIPLERI[Math.floor(rastgele(d) * YONETICI_TIPLERI.length)]
+      if (b.yoneticiler.length < MAKS_YONETICI) sonuc.yonetici = EYLEMLER.yoneticiTut(d, b, { tip, odeme: 'hediye', nadirlik: h.nadirlik }, olaylar).yonetici
+      else { d.oyuncu.elmas += 50; sonuc.elmas = 50 }
+    }
+    d.gunluk.son = gun
+    d.gunluk.seri++
+    yay(olaylar, { tip: 'gunlukAlindi', ...sonuc })
+    xpVer(d, 25, 'gunluk', olaylar)
+    isaretle(d, true)
+    return sonuc
+  },
+
+  // Ödüllü reklamla elmas (günde 3) {gun}
+  elmasReklam(d, b, v, olaylar) {
+    const gun = String(v.gun || '')
+    const r = d.reklamElmas
+    if (r.gun !== gun) { r.gun = gun; r.n = 0 }
+    if (r.n >= 3) return RED('maks')
+    r.n++
+    d.oyuncu.elmas += 5
+    d.istatistik.reklam++
+    yay(olaylar, { tip: 'elmasKazanildi', miktar: 5 })
+    isaretle(d, true)
+    return { ok: true, kalan: 3 - r.n }
+  },
+
+  // Mağaza elmas harcamaları {kod}
+  magazaAl(d, b, v, olaylar) {
+    const u = ELMAS_HARCAMA[v.kod]
+    if (!u) return RED('gecersiz')
+    if (d.oyuncu.elmas < u.elmas) return RED('elmas')
+    if (v.kod === 'takviye4') {
+      const z = d.zaman, tavan = z + TAKVIYE_MAGAZA_SINIR_SAAT * 3600
+      if (d.takviye.bitis >= tavan - EPS) return RED('maks')
+      d.takviye.bitis = Math.min(Math.max(z, d.takviye.bitis) + 4 * 3600, tavan)
+      yay(olaylar, { tip: 'takviye', bitis: d.takviye.bitis })
+    } else if (v.kod === 'atla1' || v.kod === 'atla4') {
+      const p = otoGelir(d, b) * 3600 * u.saat
+      if (!(p > 0)) return RED('yonetici')
+      b.para += p; b.toplamKazanc += p
+      yay(olaylar, { tip: 'paraDegisti' })
+      d.oyuncu.elmas -= u.elmas
+      yay(olaylar, { tip: 'magazaAlindi', kod: v.kod, para: p })
+      isaretle(d, true)
+      return { ok: true, para: p }
+    } else if (v.kod === 'yenile') {
+      let n = 0
+      for (const y of b.yoneticiler) if (y.hazirZaman > d.zaman && !(d.zaman < y.aktifBitis)) { y.hazirZaman = d.zaman; n++ }
+      if (!n) return RED('gerek')
+    }
+    d.oyuncu.elmas -= u.elmas
+    yay(olaylar, { tip: 'magazaAlindi', kod: v.kod })
+    isaretle(d, true)
+    return TAMAM()
+  },
+
+  // Günün misyonlarını kurar (gün değiştiyse) {gun}
+  misyonKur(d, b, v) {
+    const gun = String(v.gun || '')
+    if (!gun) return RED('gecersiz')
+    const m = d.misyon
+    if (m.gun === gun && m.liste.length) return TAMAM()
+    const zor = d.oyuncu.lv < 10 ? 0 : d.oyuncu.lv < 30 ? 1 : 2
+    const havuz = MISYONLAR.slice()
+    let h = ozet(gun)
+    const liste = []
+    while (liste.length < 3 && havuz.length) {
+      const t = havuz.splice(h % havuz.length, 1)[0]
+      h = Math.imul(h ^ (h >>> 13), 0x5bd1e995) >>> 0
+      liste.push({ kod: t.kod, n: t.n[zor], bas: d.istatistik[t.sayac] || 0, zor, alindi: false })
+    }
+    m.gun = gun
+    m.liste = liste
+    m.bonus = false
+    isaretle(d, true)
+    return TAMAM()
+  },
+
+  // Misyon ödülü {i}; i = 'bonus' ise üçü bitince bonus
+  misyonAl(d, b, v, olaylar) {
+    const m = d.misyon
+    if (v.i === 'bonus') {
+      if (m.bonus || m.liste.length < 3 || !m.liste.every((x) => x.alindi)) return RED('kilit')
+      m.bonus = true
+      d.oyuncu.elmas += MISYON_ODUL.bonusElmas
+      yay(olaylar, { tip: 'misyonTamam', bonus: true, elmas: MISYON_ODUL.bonusElmas })
+      isaretle(d, true)
+      return { ok: true, elmas: MISYON_ODUL.bonusElmas }
+    }
+    const x = m.liste[v.i]
+    if (!x || x.alindi) return RED('gecersiz')
+    const il = misyonIlerleme(d, x)
+    if (il.simdi < il.hedef) return RED('kilit')
+    x.alindi = true
+    const elmas = MISYON_ODUL.elmas[x.zor], xp = MISYON_ODUL.xp[x.zor]
+    d.oyuncu.elmas += elmas
+    yay(olaylar, { tip: 'misyonTamam', i: v.i, elmas, xp })
+    xpVer(d, xp, 'misyon', olaylar)
+    isaretle(d, true)
+    return { ok: true, elmas, xp }
+  },
+
+  // Haftalık etkinliği ayarlar (arayüz takvime göre çağırır) {kod, bitis}
+  etkinlik(d, b, v) {
+    const kod = v.kod || ''
+    if (kod && !ETKINLIKLER.some((e) => e.kod === kod)) return RED('gecersiz')
+    if (d.etkinlik.kod === kod && d.etkinlik.bitis === (+v.bitis || 0)) return TAMAM()
+    d.etkinlik.kod = kod
+    d.etkinlik.bitis = +v.bitis || 0
+    for (const k of Object.keys(d.bolgeler)) enIyiGuncelle(d, d.bolgeler[k])
+    isaretle(d, false)
+    return TAMAM()
+  },
+
+  // Prestij: bütün bölgeleri yeniden kur, kalıcı satış bonusu al
+  prestij(d, b, v, olaylar) {
+    if (!prestijUygun(d)) return RED('kilit')
+    for (const kod of Object.keys(d.bolgeler)) {
+      const eski = d.bolgeler[kod]
+      const yeni = yeniBolge(kod)
+      yeni.giris = eski.giris
+      d.bolgeler[kod] = yeni
+    }
+    d.prestij.sv++
+    d.prestij.hazirGoruldu = false
+    const elmas = PRESTIJ.elmas * d.prestij.sv
+    d.oyuncu.elmas += elmas
+    d.bekleyenCevrimdisi = null
+    hazirla(d)
+    yay(olaylar, { tip: 'prestijYapildi', sv: d.prestij.sv, elmas })
+    hikayeEkle(d, 'prestij', olaylar, true)
+    yay(olaylar, { tip: 'paraDegisti' })
+    isaretle(d, true)
+    return { ok: true, sv: d.prestij.sv, elmas }
   },
 
   // Hata ayıklama / test düzeneği: XP ver (seviye atlama modalı için)

@@ -7,6 +7,7 @@ import {
   ASANSOR_KAP_TABAN, ASANSOR_HIZ_TABAN, DURAK, BOSALTMA, ISTASYON_MALIYET_TABAN, ISTASYON_MALIYET_G,
   MAKS_ISTASYON_SEVIYE, TASIYICI_ESIK, TASIYICI_YUK_TABAN, DEPO_YOL_TABAN, YUKLEME, SATIS, DEPO_KAP_SANIYE,
   HIZ_TAVAN, HIZ_ARTIS, KIRALAMA_TABAN, KIRALAMA_ARTIS, NADIRLIKLER, XP, SATIS_SEVIYE_ARTIS, YETENEKLER,
+  LIMAN, AMBAR, ETKINLIKLER, PRESTIJ, BOLGE_USTASI_SATIS, CEVRIMDISI_SINIR_SAAT,
 } from './ayar.js'
 
 // ---- Kademeler (§2.2) ----
@@ -114,7 +115,7 @@ export function madenMaliyet(d, b, i, L) {
 
 export function madenAcilis(d, b, i) {
   const bb = bolgeBilgi(d, b)
-  return ACILIS[i] * bb.zorluk * bb.olcek * (1 - 0.08 * ar(d, 'damar'))
+  return ACILIS[i] * bb.zorluk * bb.olcek * (1 - 0.08 * ar(d, 'damar')) * (etkinlik(d).acilis || 1)
 }
 
 export const yiginKap = (d, b, i, L) => madenUretim(d, b, i, L) * YIGIN_SANIYE
@@ -244,19 +245,66 @@ export function teklif(d, b, istasyon, mod) {
 export function kiralamaMaliyeti(d, b, tip) {
   const bb = bolgeBilgi(d, b)
   const n = (b.kiralanan && b.kiralanan[tip]) || 0
-  return KIRALAMA_TABAN[tip] * Math.pow(KIRALAMA_ARTIS, n) * bb.zorluk * bb.olcek * (1 - 0.15 * ar(d, 'ik'))
+  return KIRALAMA_TABAN[tip] * Math.pow(KIRALAMA_ARTIS, n) * bb.zorluk * bb.olcek * (1 - 0.15 * ar(d, 'ik')) *
+    (etkinlik(d).kiralama || 1)
+}
+
+// ---- Etkinlik, Liman, Ambar, Prestij ----
+
+const ETK_YOK = Object.freeze({})
+// Etkin haftalık etkinlik kaydı (yoksa boş nesne)
+export function etkinlik(d) {
+  const k = d && d.etkinlik && d.etkinlik.kod
+  if (!k) return ETK_YOK
+  for (const e of ETKINLIKLER) if (e.kod === k) return e
+  return ETK_YOK
+}
+
+// Bölgenin kodu (nesneden)
+export function bolgeKodu(d, b) {
+  if (!d || !b) return 'zonguldak'
+  if (d.bolgeler[d.aktifBolge] === b) return d.aktifBolge
+  for (const k in d.bolgeler) if (d.bolgeler[k] === b) return k
+  return 'zonguldak'
+}
+
+export const limanMaliyet = (d, b, L = b.liman || 0) => {
+  const bb = bolgeBilgi(d, b)
+  return LIMAN.taban * Math.pow(LIMAN.g, L) * bb.zorluk * bb.olcek
+}
+export const ambarMaliyet = (d, b, L = b.ambar || 0) => {
+  const bb = bolgeBilgi(d, b)
+  return AMBAR.taban * Math.pow(AMBAR.g, L) * bb.zorluk * bb.olcek
+}
+
+// Çevrimdışı ve pasif bölge birikim sınırı (s): 2 sa + Gece Vardiyası + Ambar
+export function cevrimdisiSinir(d, b) {
+  return (CEVRIMDISI_SINIR_SAAT + ar(d, 'gece')) * 3600 + ((b && b.ambar) || 0) * AMBAR.dakika * 60
+}
+
+export const prestijCarpani = (d) => 1 + PRESTIJ.satis * ((d && d.prestij && d.prestij.sv) || 0)
+
+// Bölgeye özgü satış çarpanı: Liman × Bölge Ustası × bölge etkinliği
+export function bolgeSatis(d, b) {
+  if (!b) return 1
+  let c = (1 + LIMAN.satis * (b.liman || 0)) * (b.usta ? 1 + BOLGE_USTASI_SATIS : 1)
+  const e = etkinlik(d)
+  if (e.satis && (!e.bolge || e.bolge === bolgeKodu(d, b))) c *= e.satis
+  return c
 }
 
 // ---- Satış çarpanları (§2.9) ----
 
-export function satisKalici(d) {
+// b verilmezse aktif bölge
+export function satisKalici(d, b) {
+  if (b === undefined) b = d.bolgeler && d.bolgeler[d.aktifBolge]
   return (1 + SATIS_SEVIYE_ARTIS * (d.oyuncu.lv - 1)) * (1 + 0.10 * ar(d, 'pazar')) *
-    (ar(d, 'ihracat') ? 1.5 : 1) * (d.satin && d.satin.altinKazma ? 2 : 1)
+    (ar(d, 'ihracat') ? 1.5 : 1) * (d.satin && d.satin.altinKazma ? 2 : 1) * prestijCarpani(d) * bolgeSatis(d, b)
 }
 
 export const takviyeAktif = (d) => d.zaman < d.takviye.bitis
 
-export const satisCarpani = (d) => satisKalici(d) * (takviyeAktif(d) ? 2 : 1)
+export const satisCarpani = (d, b) => satisKalici(d, b) * (takviyeAktif(d) ? 2 : 1)
 
 // ---- Zincir kapasiteleri ----
 
@@ -279,14 +327,20 @@ export function kapasiteler(d, b, secenek) {
 // Otomatik zincir geliri (para/s): min(P,A,D) yöneticili istasyonlar, yeteneksiz, takviyesiz × satisKalici
 export function otoGelir(d, b) {
   const { P, A, D } = kapasiteler(d, b, { oto: true, yetenek: false })
-  return Math.min(P, A, D) * satisKalici(d)
+  return Math.min(P, A, D) * satisKalici(d, b)
+}
+
+// Otomatik cevher akışı (değer/s, satış çarpanı olmadan): kontrat hedefleri için
+export function otoAkis(d, b) {
+  const { P, A, D } = kapasiteler(d, b, { oto: true, yetenek: false })
+  return Math.min(P, A, D)
 }
 
 // Toplam Üretim (para/s): açık madenler, yeteneksiz, × satisKalici
 export function toplamUretim(d, b) {
   let P = 0
   for (let i = 0; i < b.madenler.length; i++) P += madenUretim(d, b, i) * uretimCarpani(d, b, i, false)
-  return P * satisKalici(d)
+  return P * satisKalici(d, b)
 }
 
 // ---- XP (§2.11) ----

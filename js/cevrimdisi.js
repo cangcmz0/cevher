@@ -1,7 +1,7 @@
 // Paket A: çevrimdışı kazanç ve saat bekçisi (TASARIM §3.4). Saf; DOM yok.
 
-import { CEVRIMDISI_SINIR_SAAT, CEVRIMDISI_EN_AZ, SAAT_TOLERANS_MS } from './ayar.js'
-import { otoGelir, ar, yoneticiBul } from './ekonomi.js'
+import { CEVRIMDISI_EN_AZ, SAAT_TOLERANS_MS } from './ayar.js'
+import { otoGelir, yoneticiBul, cevrimdisiSinir } from './ekonomi.js'
 
 // Yöneticisi olmayan istasyon var mı (asansör, depo ya da açık bir maden)
 export function eksikYoneticiVar(b) {
@@ -14,9 +14,9 @@ export function eksikYoneticiVar(b) {
 export function hesapla(durum, simdiMs = Date.now()) {
   const geriAlindi = simdiMs < (durum.enGec || 0) - SAAT_TOLERANS_MS
   const gecen = geriAlindi ? 0 : Math.max(0, (simdiMs - (durum.son || simdiMs)) / 1000)
-  const sinir = (CEVRIMDISI_SINIR_SAAT + ar(durum, 'gece')) * 3600
-  const t = Math.min(gecen, sinir)
   const b = durum.bolgeler[durum.aktifBolge]
+  const sinir = cevrimdisiSinir(durum, b)
+  const t = Math.min(gecen, sinir)
   const gelir = otoGelir(durum, b)
   const ortak = Math.max(0, Math.min(t, (durum.takviye ? durum.takviye.bitis : 0) - durum.zaman))
   const miktar = gelir * (t + ortak)

@@ -13,11 +13,11 @@ export const ESKI = Object.freeze(['cevher-kayit-v3', 'cevher-kayit-v2'])
 const KOK_ALANLAR = Object.freeze([
   'surum', 'tohum', 'olusturma', 'son', 'enGec', 'zaman', 'oyuncu', 'aktifBolge', 'bolgeler', 'takviye',
   'bekleyenCevrimdisi', 'arastirma', 'gunluk', 'reklamElmas', 'satin', 'ayarlar', 'ogretici', 'alimModu',
-  'istatistik', 'aktarim',
+  'istatistik', 'aktarim', 'hikaye', 'misyon', 'etkinlik', 'prestij',
 ])
 const BOLGE_ALANLAR = Object.freeze([
   'acik', 'para', 'toplamKazanc', 'enIyiGelir', 'madenler', 'asansor', 'depo', 'yoneticiler', 'kiralanan',
-  'ayrilis', 'gorev',
+  'ayrilis', 'gorev', 'liman', 'ambar', 'kontrat', 'yetenekSay', 'usta', 'giris',
 ])
 const sec = (o, alanlar) => {
   const s = {}

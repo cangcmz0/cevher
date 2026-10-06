@@ -178,3 +178,155 @@ test('adım süresi ≤ 0.2 ms (12 maden)', () => {
   const ms = (performance.now() - t0) / (200 / ADIM)
   assert.ok(ms <= 0.2, ms + ' ms')
 })
+
+test('görev zinciri: koşul sağlanınca hazır olur, ödül verilir, sıradakine geçer', () => {
+  const d = yeniDurum(0, 21)
+  const b = d.bolgeler.zonguldak
+  b.para = 1e6
+  B.hazirla(d)
+  assert.equal(B.eylem(d, 'gorevAl', {}).ok, false)
+  B.eylem(d, 'yukselt', { istasyon: 'm0', adet: 10 })
+  const olaylar = []
+  kos(d, 1, olaylar)
+  assert.ok(olaylar.some((o) => o.tip === 'gorevHazir' && o.sira === 0))
+  assert.equal(b.gorev.hazir, true)
+  const e0 = d.oyuncu.elmas
+  const r = B.eylem(d, 'gorevAl', {}, olaylar)
+  assert.ok(r.ok)
+  assert.equal(d.oyuncu.elmas - e0 >= 5, true)
+  assert.equal(b.gorev.sira, 1)
+  assert.equal(b.gorev.hazir, false)
+  // Görev 6 (Maden 1 → 25) para ödülü verir
+  const g = B.gorevOdulu(d, b, 5)
+  assert.ok(g.para >= 50)
+})
+
+test('hikâye: yeni oyun girişle başlar, görev sahnesi kuyruğa girer, görüldü işaretlenir', () => {
+  const d = yeniDurum(0, 31)
+  assert.deepEqual(d.hikaye.bekleyen, ['giris'])
+  B.hazirla(d)
+  B.eylem(d, 'hikayeGoruldu', { id: 'giris' })
+  assert.deepEqual(d.hikaye.bekleyen, [])
+  assert.ok(d.hikaye.goruldu.includes('giris'))
+  d.bolgeler.zonguldak.para = 1e6
+  B.eylem(d, 'yukselt', { istasyon: 'm0', adet: 10 })
+  const olaylar = []
+  B.eylem(d, 'gorevAl', {}, olaylar)
+  assert.ok(olaylar.some((o) => o.tip === 'hikaye' && o.id === 'zonguldak-1'))
+  assert.ok(d.hikaye.bekleyen.includes('zonguldak-1'))
+  // aynı sahne ikinci kez eklenmez
+  assert.equal(B.hikayeEkle(d, 'zonguldak-1', null), false)
+})
+
+test('görev metinleri bölgeye göre: başlık, koşul ve 15 görev', () => {
+  const d = zenginDurum(33)
+  const g = B.gorevDurumu(d, d.bolgeler.zonguldak)
+  assert.equal(g.toplam, 15)
+  assert.equal(g.baslik, 'Ocağı Uyandır')
+  assert.equal(g.metin, '2. Katı 5. seviyeye çıkar')
+})
+
+test('bölge: seviye yetmezse kilitli; açılınca geçilir, dönüşte yöneticili gelir eklenir', () => {
+  const d = zenginDurum(34)
+  assert.equal(B.eylem(d, 'bolgeGit', { kod: 'eregli' }).sebep, 'kilit')
+  d.oyuncu.lv = 15
+  const olaylar = []
+  const r = B.eylem(d, 'bolgeGit', { kod: 'eregli' }, olaylar)
+  assert.ok(r.ok && r.yeni)
+  assert.equal(d.aktifBolge, 'eregli')
+  assert.equal(d.calisma.bolge, 'eregli')
+  assert.equal(d.bolgeler.eregli.para, 20 * 1e3)
+  assert.ok(olaylar.some((o) => o.tip === 'hikaye' && o.id === 'eregli-giris'))
+  const zg = E.otoGelir(d, d.bolgeler.zonguldak)
+  assert.ok(zg > 0)
+  const p0 = d.bolgeler.zonguldak.para
+  kos(d, 60)
+  const r2 = B.eylem(d, 'bolgeGit', { kod: 'zonguldak' })
+  assert.ok(r2.ok)
+  assert.ok(Math.abs(d.bolgeler.zonguldak.para - p0 - zg * 60) / (zg * 60) < 0.05, r2.kazanc + ' / ' + zg * 60)
+})
+
+test('kontrat: hedef kurulur, satışla dolar, ödül alınır', () => {
+  const d = zenginDurum(35)
+  const b = d.bolgeler.zonguldak
+  kos(d, 1)
+  assert.ok(b.kontrat.hedef > 0)
+  const kd = B.kontratDurumu(d, b)
+  assert.equal(kd.musteri, 'Ereğli Çelik Fabrikası')
+  assert.equal(B.eylem(d, 'kontratAl', {}).ok, false)
+  const olaylar = []
+  kos(d, 60 * 12, olaylar)
+  assert.ok(b.kontrat.hazir, b.kontrat.ilerleme + ' / ' + b.kontrat.hedef)
+  assert.ok(olaylar.some((o) => o.tip === 'kontratHazir'))
+  const e0 = d.oyuncu.elmas
+  const r = B.eylem(d, 'kontratAl', {})
+  assert.ok(r.ok && r.para > 0)
+  assert.equal(d.oyuncu.elmas - e0, 5)
+  assert.equal(b.kontrat.tamam, 1)
+  assert.equal(b.kontrat.no, 1)
+  assert.ok(b.kontrat.hedef > 0)
+})
+
+test('lojistik: liman satışı artırır, ambar çevrimdışı sınırını uzatır', () => {
+  const d = zenginDurum(36)
+  const b = d.bolgeler.zonguldak
+  const s0 = E.satisKalici(d, b)
+  const c0 = E.cevrimdisiSinir(d, b)
+  assert.ok(B.eylem(d, 'lojistik', { tur: 'liman' }).ok)
+  assert.ok(B.eylem(d, 'lojistik', { tur: 'ambar' }).ok)
+  assert.equal(b.liman, 1)
+  assert.ok(Math.abs(E.satisKalici(d, b) / s0 - 1.08) < 1e-9)
+  assert.equal(E.cevrimdisiSinir(d, b) - c0, 15 * 60)
+})
+
+test('araştırma: elmasla başlar, süre dolunca seviye artar', () => {
+  const d = zenginDurum(37)
+  d.oyuncu.lv = 1
+  assert.equal(B.eylem(d, 'arastirmaBaslat', { kod: 'kazma' }).sebep, 'kilit')
+  d.oyuncu.lv = 3
+  const e0 = d.oyuncu.elmas
+  assert.ok(B.eylem(d, 'arastirmaBaslat', { kod: 'kazma' }).ok)
+  assert.equal(e0 - d.oyuncu.elmas, 5)
+  assert.equal(B.eylem(d, 'arastirmaBaslat', { kod: 'halat' }).sebep, 'mesgul')
+  const olaylar = []
+  kos(d, 121, olaylar)
+  assert.equal(E.ar(d, 'kazma'), 1)
+  assert.ok(olaylar.some((o) => o.tip === 'arastirmaBitti'))
+  assert.ok(B.eylem(d, 'arastirmaBaslat', { kod: 'kazma' }).ok)
+  assert.ok(B.eylem(d, 'arastirmaHizlandir', { yontem: 'elmas' }).ok)
+  assert.equal(E.ar(d, 'kazma'), 2)
+})
+
+test('günlük hediye ve misyonlar', () => {
+  const d = zenginDurum(38)
+  assert.ok(B.eylem(d, 'gunlukAl', { gun: '2026-10-06' }).ok)
+  assert.equal(B.eylem(d, 'gunlukAl', { gun: '2026-10-06' }).sebep, 'alindi')
+  assert.ok(B.eylem(d, 'gunlukAl', { gun: '2026-10-07' }).ok)
+  B.eylem(d, 'misyonKur', { gun: '2026-10-06' })
+  assert.equal(d.misyon.liste.length, 3)
+  assert.equal(new Set(d.misyon.liste.map((m) => m.kod)).size, 3)
+  const m = d.misyon.liste[0]
+  assert.equal(B.eylem(d, 'misyonAl', { i: 0 }).sebep, 'kilit')
+  const sayac = { dokun: 'dokunus', yukselt: 'yukseltme', yetenek: 'yetenek', satis: 'satis', kademe: 'kademe', kontrat: 'kontrat', takviye: 'takviye' }[m.kod]
+  d.istatistik[sayac] += m.n
+  assert.ok(B.eylem(d, 'misyonAl', { i: 0 }).ok)
+})
+
+test('prestij: koşul sağlanınca bölgeler sıfırlanır, satış bonusu kalıcı', () => {
+  const d = zenginDurum(39)
+  assert.equal(B.eylem(d, 'prestij', {}).sebep, 'kilit')
+  d.oyuncu.lv = 40
+  d.bolgeler.zonguldak.usta = true
+  d.bolgeler.eregli = JSON.parse(JSON.stringify(d.bolgeler.zonguldak))
+  const olaylar = []
+  kos(d, 1, olaylar)
+  assert.ok(olaylar.some((o) => o.tip === 'hikaye' && o.id === 'prestij-hazir'))
+  const s0 = E.prestijCarpani(d)
+  const r = B.eylem(d, 'prestij', {})
+  assert.ok(r.ok)
+  assert.equal(d.prestij.sv, 1)
+  assert.equal(E.prestijCarpani(d) / s0, 1.5)
+  assert.equal(d.bolgeler.zonguldak.madenler.length, 1)
+  assert.equal(d.bolgeler.zonguldak.yoneticiler.length, 0)
+  assert.equal(d.oyuncu.lv, 40)
+})

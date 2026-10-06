@@ -47,12 +47,12 @@ export function kur(B) {
     sinif(el.panel, 'bekliyor', !!bc)
     if (bc) {
       yaz(el.panelMiktar, '+' + bicim(bc.miktar))
-      const sinirBc = (A.CEVRIMDISI_SINIR_SAAT + E.ar(d, 'gece')) * 3600
+      const sinirBc = E.cevrimdisiSinir(d, d.bolgeler[bc.bolge] || b)
       yaz(el.panelSure, '(' + sureKisa(Math.min(bc.sure, sinirBc)) + ')')
       yaz(el.toplaUst, 'Topla')
       yaz(el.toplaAlt, bicim(bc.miktar * 2))
     } else {
-      const sinir = (A.CEVRIMDISI_SINIR_SAAT + E.ar(d, 'gece')) * 3600
+      const sinir = E.cevrimdisiSinir(d, b)
       yaz(el.panelMiktar, '+' + bicim(E.otoGelir(d, b) * sinir))
       yaz(el.panelSure, '(' + sureKisa(sinir) + ')')
       if (kalan > 0) { yaz(el.toplaUst, 'Aktif'); yaz(el.toplaAlt, sayac(kalan)) }
@@ -85,7 +85,7 @@ export function kur(B) {
   B.eylemler['cevrimdisi-panel'] = (b) => {
     const d = B.durumAl()
     if (d.bekleyenCevrimdisi) topla(1, b)
-    else B.bildir('bilgi', 'Uygulama kapalıyken yöneticili katlar 2 saate kadar kazanır.')
+    else B.bildir('bilgi', `Uygulama kapalıyken yöneticili katlar ${sureKisa(E.cevrimdisiSinir(d, bolgeAl(d)))} kazanır. Ambar bu süreyi uzatır.`)
   }
 
   B.eylemler.topla2x = async (b) => {

@@ -126,7 +126,9 @@
 .ist-depo.dolu > i { background: linear-gradient(180deg, #F07A62, var(--uyari)); }
 .ist-gelir { display: flex; align-items: center; gap: 3px; margin-top: 3px; }
 .ist-gelir .ik { width: 14px; height: 14px; }
-.ist-gelir b { color: #1E7A44; font-size: 15px; }
+.ist-gelir b { color: #1E7A44; font-size: var(--gy, 15px); }
+.ist-sutun:nth-child(3) .ist-metin { right: 2px; }
+.ist-gelir.uzun .ik { display: none; }
 .ist-gelir.x2 b { color: var(--para-koyu); }
 .ist-gelir .x2-rozet { display: none; font: 700 9px/1 var(--f-govde); color: var(--acik); background: var(--yukselt); border-radius: 6px; padding: 2px 3px; }
 .ist-gelir.x2 .x2-rozet { display: inline-block; }

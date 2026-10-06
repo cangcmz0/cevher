@@ -6,7 +6,7 @@
 //    harcamada hemen düşer. Metin en çok 10/sn ve yalnız değişince yazılır.
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
-import { E, yaz, sinif, cubuk, bicim, oranYazi, tam, yuzde, artiYuzde, bolgeAl, canlandir, PARLA } from './ortak.js'
+import { E, yaz, sinif, cubuk, bicim, oranYazi, tam, yuzde, artiYuzde, bolgeAl, canlandir, PARLA, ozellik } from './ortak.js'
 import { uretimArtisi } from '../benzetim.js'
 
 
@@ -83,7 +83,12 @@ export function kur(B) {
     cubuk(el.depoCubuk, dol)
     sinif(el.depoCubuk, 'orta', dol >= 0.85 && dol < 0.98)
     sinif(el.depoCubuk, 'dolu', dol >= 0.98)
-    yaz(el.gelir, '+' + oranYazi(d.calisma.gelirEma))
+    const gm = '+' + oranYazi(d.calisma.gelirEma)
+    yaz(el.gelir, gm)
+    // Dar sütun: uzun değerlerde yazı küçülür (taşmasın)
+    const uzun = gm.length > 8
+    sinif(el.gelirKutu, 'uzun', uzun)
+    ozellik(el.gelir, '--gy', Math.min(15, Math.floor(((uzun ? 66 : 49) / (gm.length * 0.56)) * 2) / 2) + 'px')
     sinif(el.gelirKutu, 'x2', E.takviyeAktif(d))
   }
 
