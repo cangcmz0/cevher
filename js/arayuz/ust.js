@@ -76,7 +76,10 @@ export function kur(B) {
     const b = bolgeAl(d)
     const ik = IST_IKON[d.aktifBolge] || IST_IKON.zonguldak
     if (el.cevherIkon.getAttribute('src') !== ik) el.cevherIkon.setAttribute('src', ik)
-    yaz(el.uretim, oranYazi(E.toplamUretim(d, b)))
+    const um = oranYazi(E.toplamUretim(d, b))
+    yaz(el.uretim, um)
+    // Dar sütun (~70 px): uzun değerlerde yazı küçülür
+    ozellik(el.uretim, '--uy', Math.min(15, Math.floor((72 / (um.length * 0.54)) * 2) / 2) + 'px')
     const a = uretimArtisi(d)
     const n = Math.round(a * 100)
     sinif(el.artis, 'notr', Math.abs(n) < 1)

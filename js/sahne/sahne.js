@@ -5,12 +5,13 @@
 // Kare başına yalnız drawImage ve birkaç dönüşüm; shadowBlur, filter, getImageData yok.
 
 import { Varliklar } from './varliklar.js'
-import { portreCiz, madencileriKaydet, tasiyiciAnahtar, kareSec, TASIYICI_W, HUCRE_H, TASIYICI_AYAK_X, AYAK_Y } from './madenci.js'
+import { portreCiz } from './madenci.js'
 import { rozetCiz } from './yuzey.js'
 import { Havuz, parcacikSpritelari } from './parcacik.js'
 import { karma, dikey, yuvarlakYol, kalas, rastgele, cizgi, rgba } from './cizim.js'
 import { yerlesim, MAKS_MADEN } from '../yerlesim.js'
 import * as E from '../ekonomi.js'
+import { BOLGE as A_BOLGE } from '../ayar.js'
 import { bicim } from '../bicim.js'
 
 const DPR_TAVAN = { yuksek: 2, dengeli: 1.5, pil: 1.25 }
@@ -198,30 +199,118 @@ function kuklalariCiz(durum, i, v, sy, t) {
   }
 }
 
-// ── Taşıyıcılar: yükleme katında depodan satış noktasına araba iter, boş döner ──
-const DEPO_KAPI = 304, SATIS_X = 152, TAS_ZEMIN = 101   // yükleme kesim pikseli
+// ── Hareketli dokular: görselden silüetiyle kesilen parçalar (bölge cevherine boyalı), ekran çözünürlüğünde ──
+// Maden vagonu (kat görselindeki dolu araba), kesim pikseli çokgeni; boş hali tepedeki yığın olmadan
+const VAGON = {
+  a: 'ref.kat.0', kutu: [146, 30, 54, 44],
+  dolu: [[157, 41], [163, 35], [169, 31], [177, 31], [185, 33], [191, 38], [197, 43], [199, 44], [199, 49], [196, 65], [195, 72],
+    [183, 72], [183, 66], [165, 66], [165, 72], [154, 72], [152, 65], [147, 49], [147, 44]],
+  bos: [[147, 44], [199, 44], [199, 49], [196, 65], [195, 72], [183, 72], [183, 66], [165, 66], [165, 72], [154, 72], [152, 65], [147, 49]],
+  // kabindeki yük için tepe yığını (çokgen ve kutu)
+  yigin: [[152, 45], [157, 41], [163, 35], [169, 31], [177, 31], [185, 33], [191, 38], [197, 43], [199, 45]],
+  yiginKutu: [152, 30, 47, 15],
+}
+const kesik = new Map()
+let kesikAnahtar = ''
+function kesikParca(ad, kod, poli, kutu, olcek) {
+  const genel = kod + '|' + W + '|' + oran
+  if (genel !== kesikAnahtar) { kesik.clear(); kesikAnahtar = genel }
+  const hazir = kesik.get(ad)
+  if (hazir) return hazir
+  if (!Varliklar.ozelMi(VAGON.a)) return null
+  const [x, y, w, h] = kutu
+  const s = yer.k * oran * olcek
+  const c = document.createElement('canvas')
+  c.width = Math.ceil(w * s)
+  c.height = Math.ceil(h * s)
+  const g = c.getContext('2d')
+  g.imageSmoothingQuality = 'high'
+  if (poli) {
+    g.beginPath()
+    poli.forEach(([px, py], i) => (i ? g.lineTo((px - x) * s, (py - y) * s) : g.moveTo((px - x) * s, (py - y) * s)))
+    g.closePath()
+    g.clip()
+  }
+  g.drawImage(doku(VAGON.a, kod), x, y, w, h, 0, 0, c.width, c.height)
+  kesik.set(ad, c)
+  return c
+}
+
+// Taşıyıcılar: maden vagonları yükleme katında depodan satış noktasına (trene) dolu gider, boş döner
+const DEPO_KAPI = 300, SATIS_X = 196, TAS_ZEMIN = 102   // yükleme kesim pikseli (vagon tabanı)
+const VAGON_OLCEK = 0.82
 function tasiyicilariCiz(d, alfa, t) {
   const tl = d.calisma.tasiyicilar
+  const kod = d.aktifBolge
+  const dolu = kesikParca('vagon.dolu', kod, VAGON.dolu, VAGON.kutu, VAGON_OLCEK)
+  const bos = kesikParca('vagon.bos', kod, VAGON.bos, VAGON.kutu, VAGON_OLCEK)
+  if (!dolu || !bos) return
   const k = yer.k, ky = yer.YUKLEME_H / 107
   const zemin = yer.yuklemeY + TAS_ZEMIN * ky
-  const olcek = k * 0.9
+  const vw = dolu.width / oran, vh = dolu.height / oran
   let bosta = false
   for (let j = 0; j < tl.length; j++) {
     const ta = tl[j]
     const bekliyor = ta.durum === 'bekle'
     if (bekliyor) { if (bosta) continue; bosta = true }
     const konum = ta.oncekiKonum + (ta.konum - ta.oncekiKonum) * alfa
-    const x = (DEPO_KAPI + (SATIS_X - DEPO_KAPI) * konum + (j % 3) * 6) * k
-    const y = zemin + (j % 2) * 2 * ky
-    const yuklu = ta.durum === 'yukluyor' || ta.durum === 'gidiyor' || ta.durum === 'satiyor'
+    const yuklu = ta.durum === 'yukluyor' || ta.durum === 'gidiyor'
     const yuruyor = ta.durum === 'gidiyor' || ta.durum === 'donuyor'
-    const anim = yuklu ? 'it' : 'yuru'
-    const img = al(tasiyiciAnahtar(anim, yuruyor ? kareSec(anim, t + j * 0.31) : 0))
-    ctx.save()
-    ctx.translate(x, y)
-    ctx.scale(yuklu || bekliyor ? -olcek : olcek, olcek)    // satışa giderken sola bakar
-    ctx.drawImage(img, -TASIYICI_AYAK_X, -AYAK_Y, TASIYICI_W, HUCRE_H)
-    ctx.restore()
+    // Aynı anda yoldaki vagonlar üst üste binmesin: hafif sıra kayması
+    const x = (DEPO_KAPI + (SATIS_X - DEPO_KAPI) * konum) * k + (j % 3) * 5 - vw / 2
+    const sars = yuruyor ? Math.abs(Math.sin(t * 18 + j * 2.1)) * 0.9 : 0    // ray sarsıntısı
+    const y = zemin - vh - sars - (j % 2) * 1.5
+    const img = yuklu ? dolu : bos
+    ctx.drawImage(img, Math.round(x * oran) / oran, Math.round((y - sonKaydir) * oran) / oran + sonKaydir, vw, vh)
+  }
+}
+
+// Bant: çalışan katta cevher parçaları banttan asansöre akar (kesim pikseli: x0, x1, y)
+const BANT = [[166, 268, 95], [166, 262, 98]]
+const tasCache = new Map()
+function cevherTasi(kod, n) {
+  const anahtar = kod + '|' + n + '|' + oran
+  let c = tasCache.get(anahtar)
+  if (c) return c
+  const bb = A_BOLGE[kod] || A_BOLGE.zonguldak
+  const s = oran
+  c = document.createElement('canvas')
+  c.width = Math.ceil(9 * s)
+  c.height = Math.ceil(7 * s)
+  const g = c.getContext('2d')
+  g.scale(s, s)
+  const r = rastgele(31 + n * 7)
+  g.beginPath()
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2
+    const rr = 2.6 + r() * 1.4
+    const px = 4.5 + Math.cos(a) * rr * 1.15, py = 3.6 + Math.sin(a) * rr * 0.85
+    i ? g.lineTo(px, py) : g.moveTo(px, py)
+  }
+  g.closePath()
+  g.fillStyle = bb.renk
+  g.fill()
+  g.strokeStyle = 'rgba(0,0,0,.55)'
+  g.lineWidth = 0.7
+  g.stroke()
+  g.fillStyle = bb.vurgu
+  g.globalAlpha = 0.8
+  g.fillRect(2.6, 1.6, 2.2, 1.2)
+  tasCache.set(anahtar, c)
+  return c
+}
+function bantCiz(d, i, v, sy, t) {
+  const c = d.calisma.madenler[i]
+  if (!(c && c.calisiyor)) return
+  const [x0, x1, by] = BANT[v]
+  const k = yer.k, syy = yer.SATIR_H / 107
+  const hiz = 26, aralik = 17
+  const kayma = (t * hiz + karma(i * 3) * aralik) % aralik
+  for (let x = x0 + kayma, n = 0; x < x1; x += aralik, n++) {
+    const tas = cevherTasi(d.aktifBolge, (n + i) % 3)
+    const w = tas.width / oran, h = tas.height / oran
+    const yy = sy + by * syy - h + Math.sin(x * 0.9 + t * 9) * 0.3
+    ctx.drawImage(tas, Math.round(x * k * oran) / oran - w / 2, Math.round((yy - sonKaydir) * oran) / oran + sonKaydir, w, h)
   }
 }
 
@@ -264,7 +353,7 @@ function prosedurelKaydet() {
     c.strokeStyle = '#C9D1D8'; c.lineWidth = 2.2
     c.beginPath(); c.moveTo(tx + 31, y.ZEMIN_Y - 28); c.quadraticCurveTo(tx + 38, y.ZEMIN_Y - 27, tx + 44, y.ZEMIN_Y - 21); c.stroke()
   } })
-  return ['isik.sicak', 'dolu.etiket', 'kilit.ust', ...parcacikSpritelari(), ...madencileriKaydet()]
+  return ['isik.sicak', 'dolu.etiket', 'kilit.ust', ...parcacikSpritelari()]
 }
 
 // ---- Çizim yardımcıları ----
@@ -321,6 +410,24 @@ function kabinCiz(d, b, alfa, simdiMs) {
     }
   }
   ctx.drawImage(al('ref.kabin'), yer.tupX, alt - yer.KABIN_H, yer.tupG, yer.KABIN_H)
+  // Kabindeki yük: camın içinde, doluluk oranında cevher yığını
+  const kap = E.asansorKap(d, b)
+  const oranYuk = kap > 0 ? Math.min(1, a.yuk / kap) : 0
+  if (oranYuk > 0.01) {
+    const yig = kesikParca('kabin.yigin', d.aktifBolge, VAGON.yigin, VAGON.yiginKutu, 1)
+    if (yig) {
+      const kx = yer.tupX + yer.tupG * (8 / 47), kw = yer.tupG * (31 / 47)
+      const camAlt = alt - yer.KABIN_H * (9 / 82), camUst = alt - yer.KABIN_H * (65 / 82)
+      const yh = (camAlt - camUst) * (0.18 + 0.5 * oranYuk)
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(kx, camUst, kw, camAlt - camUst)
+      ctx.clip()
+      ctx.globalAlpha = 0.95
+      ctx.drawImage(yig, kx - kw * 0.08, camAlt - yh, kw * 1.16, yh * 1.25)
+      ctx.restore()
+    }
+  }
   // Hareket ederken ok parlar
   if (a.durum === 'iniyor' || a.durum === 'cikiyor') {
     ctx.globalCompositeOperation = 'lighter'
@@ -407,6 +514,7 @@ export const Sahne = {
       if (i < n) {
         ctx.drawImage(doku('ref.kat.' + (i % 2), durum.aktifBolge), 0, sy, W, y.SATIR_H)
         kuklalariCiz(durum, i, i % 2, sy, t)
+        bantCiz(durum, i, i % 2, sy, t)
         const kb = kaziBas[i]
         if (kb && simdiMs - kb < KAZI_MS) {
           const o = 1 - (simdiMs - kb) / KAZI_MS

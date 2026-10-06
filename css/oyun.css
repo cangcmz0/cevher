@@ -388,3 +388,6 @@
 /* Öğretici: sahne adımlarında üst katmanlar dokunuşu geçirir; zorunlu adımlarda Darboğaz kartı gizli */
 #oyun.ogretici-sahne #maden-ust > *, #oyun.ogretici-sahne #dunya .yonetici-rozet, #oyun.ogretici-sahne #dunya .yukselt-ok { pointer-events: none !important; }
 #oyun.ogretici-zorunlu .darbogaz-kart { opacity: 0 !important; pointer-events: none !important; }
+/* Gelir değeri uzunluğa göre küçülür (ust.js --gy); genel .ist-metin b kuralını ezmesin diye daha belirgin seçici */
+.ist-metin .ist-gelir b { font-size: var(--gy, 15px); }
+.ist-metin b.uretim { font-size: var(--uy, 15px); letter-spacing: -.2px; }
