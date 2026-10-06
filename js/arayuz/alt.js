@@ -8,6 +8,7 @@
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
 import { E, A, yaz, sinif, gizle, bicim, sayac, sure, bolgeAl, canlandir } from './ortak.js'
+import { gunKodu } from './harita.js'
 
 const SEKMELER = [
   ['maden', 'Maden', 'kazma'],
@@ -58,6 +59,10 @@ export function kur(B) {
       if (kalan > 0) { yaz(el.toplaUst, 'Aktif'); yaz(el.toplaAlt, sayac(kalan)) }
       else { yaz(el.toplaUst, 'Topla'); yaz(el.toplaAlt, A.TAKVIYE_DAKIKA + ' dk') }
     }
+    // Harita sekmesinde nokta: görev ya da kontrat hazır
+    sinif(el.sekmeler[1], 'rozetli', !!(b.gorev.hazir || b.kontrat.hazir))
+    sinif(el.sekmeler[3], 'rozetli', d.oyuncu.lv >= 3 && !d.arastirma.suren)
+    sinif(el.sekmeler[4], 'rozetli', d.gunluk.son !== gunKodu())
     sinif(el.topla, 'aktif', !bc && kalan > 0)
     sinif(el.topla, 'kilitli', !bc && d.oyuncu.lv < 2)
     gizle(el.reklam, !!d.satin.reklamsiz || (!bc && kalan > 0))

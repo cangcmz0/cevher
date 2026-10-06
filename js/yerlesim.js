@@ -7,7 +7,7 @@
 // Katlar alttan üste dizilir: en altta "1. Kat Yükleme", onun üstünde Maden 1 ("2. Kat").
 // Asansör konumu: 0 = yükleme katının hemen üstündeki boşaltma noktası, k = Maden k'nın zemini (yukarı).
 
-export const MAKS_MADEN = 12
+export const MAKS_MADEN = 15
 export const REF_G = 367            // referans ekran genişliği
 export const REF_KAT = 107          // referans kat yüksekliği
 export const KY = 0.95              // dikey sıkıştırma: referans ekran (367×826) 390×844'ten uzun

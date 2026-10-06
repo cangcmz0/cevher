@@ -553,6 +553,12 @@ export function kur(B) {
   const SAYFA_KUR = { yukseltme: yukseltmeKur, ayarlar: ayarlarKur, istasyonSec: istasyonSecKur, defter: defterKur }
   const MODAL_KUR = { yonetici: yoneticiKur, seviye: seviyeKur, aktarim: aktarimKur, hikaye: hikayeKur }
 
+  // Başka modüllerin alt sayfa / modal kurucusu kaydetmesi
+  function kaydet(ad, kurucu, tur = 'sayfa') {
+    if (tur === 'modal') MODAL_KUR[ad] = kurucu
+    else { SAYFA_KUR[ad] = kurucu; SAYFALAR.add(ad) }
+  }
+
   function ac(ad, veri) {
     if (ad === 'cevrimdisi') { cevrimdisiYonlendir(); return }
     if (SAYFALAR.has(ad)) sayfaAc(ad, veri || {})
@@ -583,7 +589,7 @@ export function kur(B) {
   }
 
   return {
-    ac, olay, kare4, hikayeSirala,
+    ac, olay, kare4, hikayeSirala, kaydet,
     kapatSayfa: sayfaKapat,
     kapatModal: modalKapat,
     acikSayfa: () => (sayfa ? sayfa.ad : null),

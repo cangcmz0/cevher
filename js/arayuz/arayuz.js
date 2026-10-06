@@ -6,7 +6,9 @@
 //  • Düğmeler data-eylem ile yönlendirilir: B.eylemler[ad](el, olay).
 // ════════════════════════════════════════════════════════════════
 import { DEFS, ikon } from './ikonlar.js'
-import { ogeYap, yayinla, Veriyolu, ses, bolgeAl, A, madenMi } from './ortak.js'
+import { ogeYap, yayinla, Veriyolu, ses, bolgeAl, A, madenMi, bicim, sure } from './ortak.js'
+import { cevherIkonu } from './ikonlar.js'
+import { gunKodu, haftaEtkinligi } from './harita.js'
 import * as Bildirim from './bildirim.js'
 import * as Ust from './ust.js'
 import * as Kartlar from './kartlar.js'
@@ -22,6 +24,7 @@ let moduller = []
 let son10 = 0, son4 = 0, son2 = 0
 let sonW = 0
 let ilkKare = 0, hikayeBasladi = false
+let sonGun = '', gecisVar = false
 
 function kokKur(kok) {
   kok.insertAdjacentHTML('afterbegin', DEFS)
@@ -39,6 +42,7 @@ function kokKur(kok) {
     '<div id="perde"></div>',
     '<div id="pencere-kok"></div>',
     '<div id="ogretici" hidden></div>',
+    '<div id="gecis" aria-hidden="true"><i class="gecis-ikon"></i><b></b><small></small></div>',
   ]) parca.appendChild(ogeYap(html))
   maden.after(parca)
 }
@@ -127,7 +131,44 @@ export const Arayuz = {
     B.pencere = Pencereler.kur(B)
     B.sayfa = Sayfalar.kur(B)
     B.ogretici = Ogretici.kur(B)
-    moduller = [B.ust, B.kartlar, B.alt, B.pencere, B.sayfa, B.ogretici]
+    // Yeni sistemlerin bildirimleri (görev, kontrat, araştırma, bölge ustası, prestij)
+    const haberler = {
+      olay(o) {
+        if (o.tip === 'gorevHazir') B.bildir('basari', `Görev hazır: ${o.metin}. Ödülü Harita'dan al!`)
+        else if (o.tip === 'kontratHazir') B.bildir('basari', 'Kontrat siparişi tamamlandı! Harita\'dan teslim al.')
+        else if (o.tip === 'arastirmaBitti') {
+          const a = A.ARASTIRMALAR.find((x) => x.kod === o.kod)
+          B.bildir('basari', `Araştırma bitti: ${a ? a.ad : o.kod} ${o.sv}. seviye`)
+        } else if (o.tip === 'bolgeUstasi') B.bildir('basari', `Bölge Ustası! ${A.BOLGE[o.bolge].ad} satışları kalıcı +%10 · +${o.elmas} elmas`)
+        else if (o.tip === 'prestijYapildi') B.bildir('basari', `Prestij ${o.sv}! Bütün satışlar kalıcı ×${(1 + A.PRESTIJ.satis * o.sv).toLocaleString('tr-TR')} · +${o.elmas} elmas`)
+      },
+    }
+    moduller = [B.ust, B.kartlar, B.alt, B.pencere, B.sayfa, B.ogretici, haberler]
+
+    // Bölge geçişi: perde iner, bölge değişir, katlar yeniden kurulur, perde kalkar
+    const gecis = kok.querySelector('#gecis')
+    B.bolgeyeGit = (kod) => {
+      if (gecisVar) return
+      const bb = A.BOLGE[kod]
+      if (!bb) return
+      gecisVar = true
+      gecis.querySelector('.gecis-ikon').innerHTML = cevherIkonu(kod)
+      gecis.querySelector('b').textContent = bb.ad
+      gecis.querySelector('small').textContent = bb.cevher + ' · ' + bb.alt
+      gecis.style.setProperty('--gr', bb.vurgu)
+      gecis.classList.add('acik')
+      setTimeout(() => {
+        const r = B.eylem('bolgeGit', { kod })
+        if (r && r.ok) {
+          B.sayfa.kapat()
+          B.pencere.kapatSayfa()
+          B.kaydirKonumu(1e9, { anim: false })
+          if (r.yeni) B.bildir('basari', `${bb.ad} bölgesi açıldı! +${A.BOLGE_ACMA_XP} XP`)
+          else if (r.kazanc > 0) B.bildir('basari', `${bb.ad} sen yokken +${bicim(r.kazanc)} kazandı (${sure(Math.min(r.sure, 864000))})`)
+        } else if (r && r.sebep === 'kilit') B.bildir('bilgi', `${bb.ad} Seviye ${bb.acilisLv}'te açılır.`)
+        setTimeout(() => { gecis.classList.remove('acik'); gecisVar = false }, 450)
+      }, 420)
+    }
 
     kok.addEventListener('click', tikla)
     Veriyolu.dinle('uzunBasma', (o) => B.kartlar.uzunBasma(o.el))
@@ -162,6 +203,14 @@ export const Arayuz = {
     }
     if (simdiMs - son2 >= 500) {
       son2 = simdiMs
+      // Takvim: gün değişince misyonlar, hafta değişince etkinlik
+      const simdi = Date.now()
+      const gun = gunKodu(simdi)
+      if (gun !== sonGun || (durum.etkinlik.bitis && simdi >= durum.etkinlik.bitis)) {
+        sonGun = gun
+        B.eylem('misyonKur', { gun })
+        B.eylem('etkinlik', haftaEtkinligi(simdi))
+      }
       for (const m of moduller) if (m.kare2) m.kare2(durum, simdiMs)
     }
   },

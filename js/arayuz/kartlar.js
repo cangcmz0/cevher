@@ -13,9 +13,12 @@ import {
   kartHizi, ogeYap, yoneticiAdi, yetenekEtki, canlandir, NABIZ, SALLA, PARLA, YUVARLA,
 } from './ortak.js'
 
-const MAKS = 12
+const MAKS = A.MADEN_SAYISI
 const katNo = (i) => i + 2            // Maden i → "(i+2). Kat" (1. Kat yükleme katıdır)
 const cevherAdi = (d) => (A.BOLGE[d.aktifBolge] || A.BOLGELER[0]).cevher
+// Kat kartındaki cevher görseli (referans 3. ekranın kaynak kutularından)
+export const KART_IKON = { zonguldak: 'img/ref/kart-komur.png', eregli: 'img/ref/ikon-demir.png', karabuk: 'img/ref/ikon-tas.png', kastamonu: 'img/ref/ikon-bakir.png' }
+const kartIkonu = (d) => KART_IKON[d.aktifBolge] || KART_IKON.zonguldak
 
 export function kur(B) {
   const D = B.dunya
@@ -28,7 +31,7 @@ export function kur(B) {
     const k = ogeYap(`<div class="kart" data-eylem="yukselt-ac" data-istasyon="m${i}" hidden>
       <b class="kart-ad">${katNo(i)}. Kat</b>
       <span class="kart-cevher">${cevherAdi(d0)}</span>
-      <span class="kart-ikon"><img src="img/ref/kart-komur.png" alt="" draggable="false"></span>
+      <span class="kart-ikon"><img src="${kartIkonu(d0)}" alt="" draggable="false"></span>
       <span class="kart-hiz">${ikon('para')}<span class="sayi">0/sn</span></span>
       <span class="cubuk kart-bar"><i></i></span>
       <span class="kart-yuzde sayi">%0</span>
@@ -47,6 +50,8 @@ export function kur(B) {
       bar: k.querySelector('.kart-bar'),
       yuzde: k.querySelector('.kart-yuzde'),
       portre: r.querySelector('.portre'),
+      cevher: k.querySelector('.kart-cevher'),
+      ikon: k.querySelector('.kart-ikon img'),
       sonL: 0, yonId: null,
     })
   }
@@ -311,6 +316,20 @@ export function kur(B) {
         serit(o.istasyon, `Kademe ${m} · ${kat}`)
         B.bildir('basari', `Kademe ${m}! ${stat} ${kat}`)
       }
+    } else if (o.tip === 'bolgeDegisti') {
+      // Yeni bölge: cevher adı/ikonu, katlar ve rozetler baştan bağlanır
+      for (const c of kartlar) {
+        yaz(c.cevher, cevherAdi(d))
+        if (c.ikon.getAttribute('src') !== kartIkonu(d)) c.ikon.src = kartIkonu(d)
+        c.yonId = null
+        c.sonL = 0
+      }
+      rA.yonId = null
+      rD.yonId = null
+      sonDarbogaz = null
+      for (const k of Object.keys(atanan)) delete atanan[k]
+      sonAcik = -1
+      katlariGuncelle(d)
     } else if (o.tip === 'madenAcildi') {
       katlariGuncelle(d)
       canlandir(kartlar[o.i].k, [{ transform: 'scale(.85)', opacity: 0 }, { transform: 'none', opacity: 1 }], 300, { easing: 'cubic-bezier(.3,1.6,.5,1)' })
