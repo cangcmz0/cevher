@@ -16,7 +16,7 @@ import {
   XP, ACILIMLAR, TAKVIYE_DAKIKA, TAKVIYE_SINIR_SAAT, OGRETICI_SON_ADIM, DARBOGAZ_ARALIK, GOREVLER, BOLGELER,
   BOLGE, BOLGE_USTASI_ELMAS, BOLGE_ACMA_XP, LIMAN, AMBAR, KONTRAT, KONTRAT_MUSTERI, MISYONLAR, MISYON_ODUL,
   ETKINLIKLER, PRESTIJ, ARASTIRMALAR, ARASTIRMA_MALIYET, ARASTIRMA_SURELER, ARASTIRMA_T3_SURE, GUNLUK_HEDIYE,
-  ELMAS_HARCAMA, TAKVIYE_MAGAZA_SINIR_SAAT,
+  ELMAS_HARCAMA, TAKVIYE_MAGAZA_SINIR_SAAT, ORTAKLAR, ORTAK_MAKS, ORTAK_MALIYET,
 } from './ayar.js'
 import {
   madenUretim, uretimCarpani, yiginKap, asansorKap, asansorHiz, tasiyiciSayisi, tasiyiciYuk, depoYol, depoKap,
@@ -450,6 +450,14 @@ export function hikayeEkle(d, id, olaylar, tekrar = false) {
   }
   h.bekleyen.push(id)
   yay(olaylar, { tip: 'hikaye', id })
+  // Tanışma sahnesi: ortak katılır
+  for (const o of ORTAKLAR) {
+    if (o.sahne === id && !(d.ortak[o.kod] >= 1)) {
+      d.ortak[o.kod] = 1
+      yay(olaylar, { tip: 'ortakKatildi', kod: o.kod })
+      for (const k of Object.keys(d.bolgeler)) enIyiGuncelle(d, d.bolgeler[k])
+    }
+  }
   return true
 }
 
@@ -900,6 +908,24 @@ const EYLEMLER = {
     gorevKontrol(d, b, olaylar)
     isaretle(d, true)
     return { ok: true, sira, ...odul }
+  },
+
+  // Ortağı elmasla bir seviye yükselt {kod}
+  ortakYukselt(d, b, v, olaylar) {
+    const o = ORTAKLAR.find((x) => x.kod === v.kod)
+    if (!o) return RED('gecersiz')
+    const L = d.ortak[o.kod] || 0
+    if (L < 1) return RED('kilit')
+    if (L >= ORTAK_MAKS) return RED('maks')
+    const maliyet = ORTAK_MALIYET[L]
+    if (d.oyuncu.elmas < maliyet) return RED('elmas')
+    d.oyuncu.elmas -= maliyet
+    d.ortak[o.kod] = L + 1
+    yay(olaylar, { tip: 'ortakYukseldi', kod: o.kod, L: L + 1 })
+    xpVer(d, 20 * L, 'ortak', olaylar)
+    for (const k of Object.keys(d.bolgeler)) enIyiGuncelle(d, d.bolgeler[k])
+    isaretle(d, true)
+    return { ok: true, L: L + 1, maliyet }
   },
 
   // Hikâye sahnesi gösterildi

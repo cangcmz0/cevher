@@ -3,7 +3,7 @@
 import {
   SURUM, BOLGE, BOLGELER, BASLANGIC_PARA, MADEN_SAYISI, MAKS_MADEN_SEVIYE, MAKS_ISTASYON_SEVIYE,
   MAKS_SEVIYE, YONETICI_TIPLERI, TIP_YETENEKLERI, NADIRLIKLER, ALIM_MODLARI, GECMIS_UZUNLUK, OGRETICI_SON_ADIM,
-  LIMAN, AMBAR, GOREVLER,
+  LIMAN, AMBAR, GOREVLER, ORTAKLAR, ORTAK_MAKS,
 } from './ayar.js'
 import { tasiyiciSayisi } from './ekonomi.js'
 
@@ -69,6 +69,7 @@ export function yeniDurum(simdiMs = Date.now(), tohum) {
     misyon: { gun: '', liste: [], bonus: false },
     etkinlik: { kod: '', bitis: 0 },
     prestij: { sv: 0, hazirGoruldu: false },
+    ortak: { ahmet: 1, elif: 0, mehmet: 0, zeynep: 0 },
   }
   d.calisma = yeniCalisma(d)
   return d
@@ -241,6 +242,16 @@ export function dogrula(d) {
   d.misyon.liste = (Array.isArray(d.misyon.liste) ? d.misyon.liste : []).filter((m) => duzObje(m) && typeof m.kod === 'string')
     .slice(0, 3).map((m) => ({ kod: m.kod, n: Math.max(1, Math.floor(sayi(m.n, 1))), bas: sayi(m.bas), zor: sinirla(m.zor, 0, 2, 0), alindi: !!m.alindi }))
   d.prestij.sv = Math.floor(sayi(d.prestij.sv))
+  // ortaklar: 0..maks; tanışma sahnesi görüldüyse (ya da sıradaysa) en az 1
+  for (const o of ORTAKLAR) {
+    d.ortak[o.kod] = sinirla(d.ortak[o.kod], 0, ORTAK_MAKS, 0)
+    if (d.ortak[o.kod] < 1 && (d.hikaye.goruldu.includes(o.sahne) || d.hikaye.bekleyen.includes(o.sahne))) d.ortak[o.kod] = 1
+  }
+  // Hikâyeden önceki kayıtlar: ilerlemeye göre tanışılmış say
+  const zg = d.bolgeler.zonguldak.gorev.sira
+  if (d.ogretici.bitti && d.ortak.mehmet < 1) d.ortak.mehmet = 1
+  if (zg >= 5 && d.ortak.elif < 1) d.ortak.elif = 1
+  if (zg >= 6 && d.ortak.zeynep < 1) d.ortak.zeynep = 1
   d.calisma = yeniCalisma(d)
   return d
 }

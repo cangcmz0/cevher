@@ -65,7 +65,7 @@ test('elle kazı: bir dokunuş tam olarak hız × 3 sn üretir', () => {
   const r = B.eylem(d, 'dokun', { istasyon: 'm0' })
   assert.ok(r.ok)
   kos(d, 5)
-  assert.ok(Math.abs(b.madenler[0].yigin - E.madenUretim(d, b, 0) * KAZI_SURESI) < 1e-9)
+  assert.ok(Math.abs(b.madenler[0].yigin - E.madenUretim(d, b, 0) * E.uretimCarpani(d, b, 0) * KAZI_SURESI) < 1e-9)
 })
 
 test('asansör: yukarıdan aşağı ziyaret, kapasite, boş yığını atlar, dolunca döner', () => {
@@ -329,4 +329,22 @@ test('prestij: koşul sağlanınca bölgeler sıfırlanır, satış bonusu kalı
   assert.equal(d.bolgeler.zonguldak.madenler.length, 1)
   assert.equal(d.bolgeler.zonguldak.yoneticiler.length, 0)
   assert.equal(d.oyuncu.lv, 40)
+})
+
+test('ortaklar: Ahmet baştan, Mehmet öğretici sonunda katılır; elmasla seviye atlar', () => {
+  const d = yeniDurum(0, 41)
+  B.hazirla(d)
+  assert.equal(d.ortak.ahmet, 1)
+  assert.equal(d.ortak.mehmet, 0)
+  assert.ok(Math.abs(E.ortakEtki(d, 'uretim') - 0.25) < 1e-12)
+  const olaylar = []
+  B.eylem(d, 'ogretici', { bitti: true }, olaylar)
+  assert.equal(d.ortak.mehmet, 1)
+  assert.ok(olaylar.some((o) => o.tip === 'ortakKatildi' && o.kod === 'mehmet'))
+  assert.equal(B.eylem(d, 'ortakYukselt', { kod: 'ahmet' }).sebep, 'elmas')
+  d.oyuncu.elmas = 100
+  assert.ok(B.eylem(d, 'ortakYukselt', { kod: 'ahmet' }).ok)
+  assert.equal(d.oyuncu.elmas, 70)
+  assert.ok(Math.abs(E.ortakEtki(d, 'uretim') - 0.30) < 1e-12)
+  assert.equal(B.eylem(d, 'ortakYukselt', { kod: 'elif' }).sebep, 'kilit')
 })

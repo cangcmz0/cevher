@@ -316,7 +316,7 @@ export function kur(B) {
         serit(o.istasyon, `Kademe ${m} · ${kat}`)
         B.bildir('basari', `Kademe ${m}! ${stat} ${kat}`)
       }
-    } else if (o.tip === 'bolgeDegisti') {
+    } else if (o.tip === 'bolgeDegisti' || o.tip === 'prestijYapildi') {
       // Yeni bölge: cevher adı/ikonu, katlar ve rozetler baştan bağlanır
       for (const c of kartlar) {
         yaz(c.cevher, cevherAdi(d))

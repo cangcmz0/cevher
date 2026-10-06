@@ -237,6 +237,17 @@ export const ETKINLIKLER = don([
   { kod: 'bakir', ad: 'Bakır Haftası', metin: 'Kastamonu satışları ×1,5', bolge: 'kastamonu', satis: 1.5 },
 ])
 
+// Ortaklar: hikâyenin dört karakteri (referans 3. ekranın yönetici kartları). Sahnede tanışınca katılır,
+// elmasla seviye atlar; etki = taban + artis × (L − 1). maliyet etkisi yükseltme fiyatlarını düşürür.
+export const ORTAKLAR = don([
+  { kod: 'ahmet', etiket: 'Verimlilik', etki: 'uretim', taban: 0.25, artis: 0.05, metin: '+%{p} üretim', sahne: 'giris' },
+  { kod: 'elif', etiket: 'Lojistik', etki: 'tasima', taban: 0.40, artis: 0.08, metin: '+%{p} taşıma', sahne: 'zonguldak-5' },
+  { kod: 'mehmet', etiket: 'Gelir', etki: 'gelir', taban: 0.15, artis: 0.03, metin: '+%{p} gelir', sahne: 'ogretici' },
+  { kod: 'zeynep', etiket: 'Ar-Ge', etki: 'maliyet', taban: 0.20, artis: 0.025, metin: '-%{p} maliyet', sahne: 'zonguldak-6' },
+])
+export const ORTAK_MAKS = 10
+export const ORTAK_MALIYET = don([0, 30, 60, 100, 160, 240, 350, 500, 700, 950])   // L → L+1 (elmas)
+
 // Prestij: bütün bölgeler sıfırlanır; seviye, elmas, araştırma ve hikâye kalır. Her prestij satışı +%50
 export const PRESTIJ = don({ lv: 35, usta: 2, satis: 0.5, elmas: 50 })
 

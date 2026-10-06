@@ -7,7 +7,7 @@ import {
   ASANSOR_KAP_TABAN, ASANSOR_HIZ_TABAN, DURAK, BOSALTMA, ISTASYON_MALIYET_TABAN, ISTASYON_MALIYET_G,
   MAKS_ISTASYON_SEVIYE, TASIYICI_ESIK, TASIYICI_YUK_TABAN, DEPO_YOL_TABAN, YUKLEME, SATIS, DEPO_KAP_SANIYE,
   HIZ_TAVAN, HIZ_ARTIS, KIRALAMA_TABAN, KIRALAMA_ARTIS, NADIRLIKLER, XP, SATIS_SEVIYE_ARTIS, YETENEKLER,
-  LIMAN, AMBAR, ETKINLIKLER, PRESTIJ, BOLGE_USTASI_SATIS, CEVRIMDISI_SINIR_SAAT,
+  LIMAN, AMBAR, ETKINLIKLER, PRESTIJ, BOLGE_USTASI_SATIS, CEVRIMDISI_SINIR_SAAT, ORTAKLAR,
 } from './ayar.js'
 
 // ---- Kademeler (§2.2) ----
@@ -54,6 +54,18 @@ export function bolgeBilgi(d, b) {
     for (const k in d.bolgeler) if (d.bolgeler[k] === b) return BOLGE[k] || BOLGELER[0]
   }
   return BOLGELER[0]
+}
+
+// Ortak etkisi (0..): etki = 'uretim' | 'tasima' | 'gelir' | 'maliyet'
+export function ortakEtki(d, etki) {
+  const o = d && d.ortak
+  if (!o) return 0
+  for (const t of ORTAKLAR) {
+    if (t.etki !== etki) continue
+    const L = o[t.kod] || 0
+    return L > 0 ? t.taban + t.artis * (L - 1) : 0
+  }
+  return 0
 }
 
 // Araştırma seviyesi (S1'de hep 0)
@@ -110,7 +122,7 @@ export function madenUretim(d, b, i, L) {
 export function madenMaliyet(d, b, i, L) {
   const bb = bolgeBilgi(d, b)
   return MADEN_MALIYET_TABAN * Math.pow(MADEN_MALIYET_ARTIS, i) * Math.pow(MADEN_MALIYET_G, madenL(b, i, L) - 1) *
-    bb.zorluk * bb.olcek * (1 - 0.05 * ar(d, 'usta'))
+    bb.zorluk * bb.olcek * (1 - 0.05 * ar(d, 'usta')) * (1 - ortakEtki(d, 'maliyet'))
 }
 
 export function madenAcilis(d, b, i) {
@@ -124,7 +136,7 @@ export const madenciSayisi = (L) => 1 + (L >= 10 ? 1 : 0) + (L >= 50 ? 1 : 0)
 
 // (1 + 0.10 kazma) * (matkap ? 1.5 : 1) * yetenek. yetenekDahil=false: kalıcı çarpan
 export function uretimCarpani(d, b, i, yetenekDahil = true) {
-  let c = (1 + 0.10 * ar(d, 'kazma')) * (ar(d, 'matkap') ? 1.5 : 1)
+  let c = (1 + 0.10 * ar(d, 'kazma')) * (ar(d, 'matkap') ? 1.5 : 1) * (1 + ortakEtki(d, 'uretim'))
   if (yetenekDahil) c *= yetenekCarpani(d, b, 'm' + i, 'kazi')
   return c
 }
@@ -134,7 +146,8 @@ export function uretimCarpani(d, b, i, yetenekDahil = true) {
 const hizKatsayi = (L) => Math.min(HIZ_TAVAN, 1 + HIZ_ARTIS * (L - 1))
 
 export function asansorKap(d, b, L = b.asansor.L, yetenekDahil = true) {
-  let k = ASANSOR_KAP_TABAN * guc(L, KADEME_ISTASYON) * bolgeBilgi(d, b).olcek * (1 + 0.15 * ar(d, 'halat'))
+  let k = ASANSOR_KAP_TABAN * guc(L, KADEME_ISTASYON) * bolgeBilgi(d, b).olcek * (1 + 0.15 * ar(d, 'halat')) *
+    (1 + ortakEtki(d, 'tasima'))
   if (yetenekDahil) k *= yetenekCarpani(d, b, 'asansor', 'genis')
   return k
 }
@@ -161,7 +174,7 @@ export function tasiyiciSayisi(L) {
 }
 
 export function tasiyiciYuk(d, b, L = b.depo.L, yetenekDahil = true) {
-  let y = TASIYICI_YUK_TABAN * guc(L, KADEME_ISTASYON) * bolgeBilgi(d, b).olcek
+  let y = TASIYICI_YUK_TABAN * guc(L, KADEME_ISTASYON) * bolgeBilgi(d, b).olcek * (1 + ortakEtki(d, 'tasima'))
   if (yetenekDahil) y *= yetenekCarpani(d, b, 'depo', 'dolu')
   return y
 }
@@ -200,7 +213,7 @@ export function istasyonSeviye(b, istasyon) {
 export function istasyonMaliyet(d, b, istasyon, L = istasyonSeviye(b, istasyon)) {
   if (istasyon === 'asansor' || istasyon === 'depo') {
     const bb = bolgeBilgi(d, b)
-    return ISTASYON_MALIYET_TABAN * Math.pow(ISTASYON_MALIYET_G, L - 1) * bb.zorluk * bb.olcek
+    return ISTASYON_MALIYET_TABAN * Math.pow(ISTASYON_MALIYET_G, L - 1) * bb.zorluk * bb.olcek * (1 - ortakEtki(d, 'maliyet'))
   }
   const i = madenIndeks(istasyon)
   return madenMaliyet(d, b, i, L) * yetenekCarpani(d, b, istasyon, 'pazarlik')
@@ -299,7 +312,8 @@ export function bolgeSatis(d, b) {
 export function satisKalici(d, b) {
   if (b === undefined) b = d.bolgeler && d.bolgeler[d.aktifBolge]
   return (1 + SATIS_SEVIYE_ARTIS * (d.oyuncu.lv - 1)) * (1 + 0.10 * ar(d, 'pazar')) *
-    (ar(d, 'ihracat') ? 1.5 : 1) * (d.satin && d.satin.altinKazma ? 2 : 1) * prestijCarpani(d) * bolgeSatis(d, b)
+    (ar(d, 'ihracat') ? 1.5 : 1) * (d.satin && d.satin.altinKazma ? 2 : 1) * prestijCarpani(d) * bolgeSatis(d, b) *
+    (1 + ortakEtki(d, 'gelir'))
 }
 
 export const takviyeAktif = (d) => d.zaman < d.takviye.bitis
