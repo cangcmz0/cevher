@@ -910,6 +910,14 @@ const EYLEMLER = {
     return { ok: true, sira, ...odul }
   },
 
+  // Satın alınan paketteki yönetici (rastgele tür, en az verilen nadirlik) {yonetici: {nadirlik}}
+  urunVer(d, b, v, olaylar) {
+    const tip = YONETICI_TIPLERI[Math.floor(rastgele(d) * YONETICI_TIPLERI.length)]
+    if (b.yoneticiler.length >= MAKS_YONETICI) { d.oyuncu.elmas += ELMAS_KIRALAMA; isaretle(d, true); return { ok: true, elmas: ELMAS_KIRALAMA } }
+    const n = v.yonetici && Number.isInteger(v.yonetici.nadirlik) ? v.yonetici.nadirlik : 2
+    return EYLEMLER.yoneticiTut(d, b, { tip, odeme: 'hediye', nadirlik: n }, olaylar)
+  },
+
   // Ortağı elmasla bir seviye yükselt {kod}
   ortakYukselt(d, b, v, olaylar) {
     const o = ORTAKLAR.find((x) => x.kod === v.kod)

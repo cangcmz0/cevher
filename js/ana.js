@@ -109,8 +109,9 @@ function otoKayit(simdiMs) {
 // 1 sn ertelenmiş kayıt isteyenler (§3.4) ve hemen kaydedilenler
 const ERTELI = new Set(['yukselt', 'madenAc', 'yoneticiTut', 'yoneticiAta', 'yoneticiCikar', 'yetenek', 'ogretici',
   'alimModu', 'ayar', 'bolgeAc', 'bolgeGit', 'arastirmaBaslat', 'arastirmaHizlandir', 'arastirmaBitir', 'gorevAl',
-  'hediyeAl', 'elmasHarca', 'zamanAtla', 'urunVer'])
-const HEMEN = new Set(['takviye', 'cevrimdisiTopla', 'sifirla'])
+  'hediyeAl', 'elmasHarca', 'zamanAtla', 'urunVer', 'hikayeGoruldu', 'lojistik', 'kontratAl', 'misyonAl',
+  'ortakYukselt', 'elmasReklam'])
+const HEMEN = new Set(['takviye', 'cevrimdisiTopla', 'sifirla', 'prestij', 'gunlukAl', 'magazaAl'])
 
 function eylem(ad, veri = {}) {
   let s
@@ -389,7 +390,7 @@ async function basla(hot = {}) {
   Magaza.kur({
     durumAl,
     elmasEkle: (n) => { durum.oyuncu.elmas += n },
-    takviyeEkle: (dk) => eylem('takviye', { dakika: dk }),
+    takviyeEkle: (dk) => eylem('takviye', { dakika: dk, sinirSaat: 24 }),
     yoneticiVer: (o) => eylem('urunVer', { yonetici: o }),
     kaydet,
     yayinla: (o) => Veriyolu.yayinla(o),
