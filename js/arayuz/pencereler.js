@@ -127,6 +127,9 @@ export function kur(B) {
       <div class="bolumlu" role="group" aria-label="Alım miktarı">${MODLAR.map(([m, ad]) => `<button data-eylem="alim-modu" data-mod="${m}" aria-pressed="false">${ad}</button>`).join('')}</div>
       <div class="yk-satirlar"></div>
       <div class="yk-kademe"><span class="sayi"></span><span class="cubuk"><i></i></span></div>
+      <div class="yk-yonetici"><canvas width="72" height="72"></canvas><span class="yon-bilgi"><b></b><span class="yetenek"></span><span class="hal sayi"></span></span>
+        <button class="btn btn-yesil kucuk-btn" data-eylem="yetenek-kullan" data-istasyon="${ist}" hidden>${ikon('yildirim')}Kullan</button>
+        <button class="btn btn-krem kucuk-btn" data-eylem="yonetici-ac" data-istasyon="${ist}">Yönetici</button></div>
       <button class="btn btn-turuncu buyuk-btn" data-eylem="yukselt-al" data-istasyon="${ist}" data-uzun data-ogretici="sheet-yukselt"><span class="parla"></span>${ikon('yukari')}<span class="etiket sayi">Yükselt</span></button>`
     const satirAdlari = madenMi_ ? ['Üretim', 'Madenci', 'Yığın kapasitesi'] : ist === 'asansor' ? ['Kapasite', 'Hız', 'Tur süresi'] : ['Vagon', 'Vagon yükü', 'Depo kapasitesi']
     const satirlar = g.querySelector('.yk-satirlar')
@@ -140,7 +143,15 @@ export function kur(B) {
       kademeBar: g.querySelector('.yk-kademe .cubuk'),
       btn: g.querySelector('.buyuk-btn'),
       etiket: g.querySelector('.buyuk-btn .etiket'),
+      yonKutu: g.querySelector('.yk-yonetici'),
+      yonPortre: g.querySelector('.yk-yonetici canvas'),
+      yonAd: g.querySelector('.yk-yonetici b'),
+      yonYetenek: g.querySelector('.yk-yonetici .yetenek'),
+      yonHal: g.querySelector('.yk-yonetici .hal'),
+      yonKullan: g.querySelector('.yk-yonetici [data-eylem="yetenek-kullan"]'),
+      yonDugme: g.querySelector('.yk-yonetici [data-eylem="yonetici-ac"]'),
     }
+    let yonId = undefined
     const degerler = (d, b, L) => {
       if (madenMi_) {
         const i = +ist.slice(1)
@@ -178,6 +189,23 @@ export function kur(B) {
       if (sonraki && ist === 'depo' && A.TASIYICI_ESIK.includes(sonraki)) ek = ' · +1 vagon'
       yaz(el.kademeYazi, sonraki ? `Sonraki kademe: ${sonraki} → ${stat} ×2${ek}` : 'Bütün kademeler tamam')
       cubuk(el.kademeBar, sonraki ? E.kademeIlerleme(L, liste) : 1)
+      // Yönetici bölümü
+      const yon = b.yoneticiler.find((x) => x.atanan === ist) || null
+      if ((yon ? yon.id : null) !== yonId) {
+        yonId = yon ? yon.id : null
+        el.yonKutu.style.setProperty('--nr', yon ? nadirlik(yon.nadirlik).renk : 'rgba(255,255,255,.25)')
+        if (yon) { try { B.sahne.portre(yon.tohum, yon.nadirlik, el.yonPortre, 36) } catch {} }
+        else { const c = el.yonPortre.getContext('2d'); c.clearRect(0, 0, el.yonPortre.width, el.yonPortre.height) }
+        yaz(el.yonAd, yon ? yoneticiAdi(yon) : 'Yönetici yok')
+        yaz(el.yonYetenek, yon ? yetenekEtki(yon) : 'Yönetici bu istasyonu otomatik çalıştırır.')
+        yaz(el.yonDugme, yon ? 'Yönetici' : 'Yönetici Tut')
+      }
+      if (yon) {
+        const h = yetenekHali(d, yon)
+        yaz(el.yonHal, h.durum === 'hazir' ? 'Yetenek hazır' : h.durum === 'aktif' ? 'Aktif · ' + sayac(h.kalan) : 'Bekleme · ' + sayac(h.kalan))
+        sinif(el.yonHal, 'hazir', h.durum === 'hazir')
+        gizle(el.yonKullan, h.durum !== 'hazir')
+      } else { yaz(el.yonHal, ''); gizle(el.yonKullan, true) }
       if (tk.maks) {
         el.btn.disabled = true
         el.btn.className = 'btn btn-altin buyuk-btn'
@@ -376,8 +404,10 @@ export function kur(B) {
   }
   B.eylemler['yetenek-kullan'] = (b) => {
     const s = B.eylem('yetenek', { istasyon: b.dataset.istasyon })
-    if (s && s.ok) modalKapat()
+    if (s && s.ok && modal && modal.ad === 'yonetici') modalKapat()
+    if (sayfa && sayfa.kare4) sayfa.kare4(B.durumAl())
   }
+  B.eylemler['yonetici-ac'] = (b) => modalAc('yonetici', { istasyon: b.dataset.istasyon })
   B.eylemler['gorevden-al'] = (b) => {
     B.eylem('yoneticiCikar', { istasyon: b.dataset.istasyon })
     if (modal && modal.yenile) modal.yenile()

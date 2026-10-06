@@ -22,8 +22,8 @@ const sureKisa = (sn) => (sn >= 3600 ? Math.floor(sn / 3600) + ' saat' : sure(sn
 export function kur(B) {
   const serit = B.kok.querySelector('#alt-serit')
   serit.innerHTML = `
-    <button class="cevrimdisi-panel" data-eylem="cevrimdisi-panel">${ikon('topla')}<span class="metin"><small>Çevrimdışı Kazanç</small><span class="satir"><b class="sayi">+0</b><em>(2 saat)</em></span></span></button>
-    <button class="topla2x" data-eylem="topla2x" aria-label="2x Topla"><span class="rozet2x">2x</span><span class="metin"><b>Topla</b><strong class="sayi">30 dk</strong></span><i class="reklam-rozet">${ikon('oynat')}</i></button>`
+    <button class="cevrimdisi-panel" data-eylem="cevrimdisi-panel"><img class="sikke" src="img/ref/alt-sikke.png" alt="" draggable="false"><span class="metin"><small>Çevrimdışı Kazanç</small><span class="satir"><b class="sayi">+0</b><em>(2 saat)</em></span></span></button>
+    <button class="topla2x" data-eylem="topla2x" aria-label="2x Topla"><img class="rozet2x" src="img/ref/alt-2x.png" alt="2x" draggable="false"><span class="metin"><b>Topla</b><strong class="sayi">30 dk</strong></span><i class="reklam-rozet">${ikon('oynat')}</i></button>`
   const nav = B.kok.querySelector('#gezinti')
   nav.setAttribute('role', 'tablist')
   nav.innerHTML = SEKMELER.map(([k, ad, ik]) => `<button class="sekme" role="tab" data-eylem="sekme" data-sekme="${k}" aria-selected="${k === 'maden'}">${ikon(ik)}<span>${ad}</span><i class="nokta"></i></button>`).join('')
@@ -47,7 +47,8 @@ export function kur(B) {
     sinif(el.panel, 'bekliyor', !!bc)
     if (bc) {
       yaz(el.panelMiktar, '+' + bicim(bc.miktar))
-      yaz(el.panelSure, '(' + sureKisa(bc.sure) + ')')
+      const sinirBc = (A.CEVRIMDISI_SINIR_SAAT + E.ar(d, 'gece')) * 3600
+      yaz(el.panelSure, '(' + sureKisa(Math.min(bc.sure, sinirBc)) + ')')
       yaz(el.toplaUst, 'Topla')
       yaz(el.toplaAlt, bicim(bc.miktar * 2))
     } else {

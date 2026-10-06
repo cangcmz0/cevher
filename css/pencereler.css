@@ -261,3 +261,10 @@
 .odul-satir { background: rgba(0, 0, 0, .28); border-color: var(--cerceve); color: var(--acik); }
 .odul-satir.acilim { background: linear-gradient(180deg, rgba(46, 204, 113, .28), rgba(46, 204, 113, .12)); border-color: var(--basari); color: #BFF5D3; }
 .kirala .btn .ik { margin: 0 -2px 0 2px; }
+.yk-yonetici { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 8px 10px; border-radius: 12px; background: rgba(0, 0, 0, .28); border: 1px solid var(--cerceve); text-align: left; }
+.yk-yonetici canvas { width: 36px; height: 36px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px var(--nr, rgba(255,255,255,.25)); background: rgba(0,0,0,.3); }
+.yk-yonetici .yon-bilgi { flex: 1; min-width: 0; }
+.yk-yonetici .yon-bilgi b { font: 800 14px/17px var(--f-baslik); }
+.yk-yonetici .yetenek { font: 500 11px/14px var(--f-govde); color: var(--acik-soluk); }
+.kucuk-btn { height: 32px !important; padding: 0 10px !important; font-size: 13px !important; flex: none; }
+.kucuk-btn .ik { width: 13px; height: 13px; }

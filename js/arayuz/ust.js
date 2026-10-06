@@ -9,24 +9,23 @@ import { ikon } from './ikonlar.js'
 import { E, yaz, sinif, cubuk, bicim, oranYazi, tam, yuzde, artiYuzde, bolgeAl, canlandir, PARLA } from './ortak.js'
 import { uretimArtisi } from '../benzetim.js'
 
-const AVATAR_TOHUM = 77031
 
 export function kur(B) {
   const ust = B.kok.querySelector('#ust')
   ust.innerHTML = `
-    <button class="ust-avatar" data-eylem="avatar" aria-label="Oyuncu"><canvas width="116" height="116"></canvas></button>
+    <button class="ust-avatar" data-eylem="avatar" aria-label="Oyuncu"><img src="img/ref/avatar.png" alt="" draggable="false"></button>
     <b class="ust-seviye sayi">Seviye 1</b>
     <span class="ust-xp" role="progressbar" aria-label="Deneyim"><i></i><span class="sayi">0 / 100</span></span>
-    <div class="ust-para hap">${ikon('para')}<b class="sayi">0</b><button class="arti-btn" data-eylem="magaza-yakinda" aria-label="Para al">${ikon('arti')}</button></div>
-    <div class="ust-elmas hap">${ikon('elmas')}<b class="sayi">0</b><button class="arti-btn" data-eylem="magaza-yakinda" aria-label="Elmas al">${ikon('arti')}</button></div>
+    <div class="ust-para hap"><img class="hud-ikon" src="img/ref/hud-para.png" alt="" draggable="false"><b class="sayi">0</b><button class="arti-btn" data-eylem="magaza-yakinda" aria-label="Para al">${ikon('arti')}</button></div>
+    <div class="ust-elmas hap"><img class="hud-ikon" src="img/ref/hud-elmas.png" alt="" draggable="false"><b class="sayi">0</b><button class="arti-btn" data-eylem="magaza-yakinda" aria-label="Elmas al">${ikon('arti')}</button></div>
     <button class="ust-ayar" data-eylem="ayarlar" aria-label="Ayarlar">${ikon('ayar')}</button>`
   const ist = B.kok.querySelector('#istatistik')
   ist.innerHTML = `
-    <button class="ist-sutun" data-eylem="istatistik" data-k="0"><span class="ist-ikon">${ikon('cevher.zonguldak')}</span>
+    <button class="ist-sutun" data-eylem="istatistik" data-k="0"><span class="ist-ikon komur"><img src="img/ref/ist-komur.png" alt="" draggable="false"></span>
       <span class="ist-metin"><small>Günlük Üretim</small><b class="sayi uretim">0/sn</b><em class="ist-artis notr"><i class="ok"></i><span>%0</span></em></span></button>
-    <button class="ist-sutun" data-eylem="istatistik" data-k="1"><span class="ist-ikon">${ikon('sepet')}</span>
+    <button class="ist-sutun" data-eylem="istatistik" data-k="1"><span class="ist-ikon araba"><img src="img/ref/ist-araba.png" alt="" draggable="false"></span>
       <span class="ist-metin"><small>Depo Doluluğu</small><b class="sayi depo">%0</b><span class="cubuk ist-depo"><i></i></span></span></button>
-    <button class="ist-sutun" data-eylem="istatistik" data-k="2"><span class="ist-ikon">${ikon('kasa')}</span>
+    <button class="ist-sutun" data-eylem="istatistik" data-k="2"><span class="ist-ikon kilit"><img src="img/ref/ist-kilit.png" alt="" draggable="false"></span>
       <span class="ist-metin"><small>Gelir</small><span class="ist-gelir">${ikon('para')}<b class="sayi gelir">+0/sn</b><i class="x2-rozet">x2</i></span></span></button>`
 
   const el = {
@@ -34,10 +33,9 @@ export function kur(B) {
     xp: ust.querySelector('.ust-xp'),
     xpYazi: ust.querySelector('.ust-xp span'),
     paraHap: ust.querySelector('.ust-para'),
-    paraIkon: ust.querySelector('.ust-para > .ik'),
+    paraIkon: ust.querySelector('.ust-para > .hud-ikon'),
     para: ust.querySelector('.ust-para b'),
     elmas: ust.querySelector('.ust-elmas b'),
-    avatar: ust.querySelector('.ust-avatar canvas'),
     uretim: ist.querySelector('.uretim'),
     artis: ist.querySelector('.ist-artis'),
     artisYazi: ist.querySelector('.ist-artis span'),
@@ -46,7 +44,6 @@ export function kur(B) {
     gelirKutu: ist.querySelector('.ist-gelir'),
     gelir: ist.querySelector('.gelir'),
   }
-  try { B.sahne.portre(AVATAR_TOHUM, 2, el.avatar, 58) } catch {}
 
   let gosterilenPara = null
   let sonLv = 0

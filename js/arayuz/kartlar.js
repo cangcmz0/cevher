@@ -28,14 +28,14 @@ export function kur(B) {
     const k = ogeYap(`<div class="kart" data-eylem="yukselt-ac" data-istasyon="m${i}" hidden>
       <b class="kart-ad">${katNo(i)}. Kat</b>
       <span class="kart-cevher">${cevherAdi(d0)}</span>
-      <span class="kart-ikon">${cevherIkonu('zonguldak')}</span>
-      <i class="kart-sv sayi">Sv.1</i>
+      <span class="kart-ikon"><img src="img/ref/kart-komur.png" alt="" draggable="false"></span>
       <span class="kart-hiz">${ikon('para')}<span class="sayi">0/sn</span></span>
       <span class="cubuk kart-bar"><i></i></span>
       <span class="kart-yuzde sayi">%0</span>
+      <i class="kart-sv sayi">Sv.1</i>
     </div>`)
     D.appendChild(k)
-    const ok = ogeYap(`<button class="yukselt-ok pasif" data-eylem="yukselt-ac" data-istasyon="m${i}" data-uzun aria-label="${katNo(i)}. Kat yükselt" ${i === 0 ? 'data-ogretici="m0-yukselt"' : ''} hidden>${ikon('yukari')}</button>`)
+    const ok = ogeYap(`<button class="yukselt-ok seffaf pasif" data-eylem="yukselt-ac" data-istasyon="m${i}" data-uzun aria-label="${katNo(i)}. Kat yükselt" ${i === 0 ? 'data-ogretici="m0-yukselt"' : ''} hidden>${ikon('yukari')}</button>`)
     D.appendChild(ok)
     const r = ogeYap(`<button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="m${i}" aria-label="${katNo(i)}. Kat yöneticisi" ${i === 0 ? 'data-ogretici="m0-yonetici"' : ''} hidden>
       ${ikon('arti')}<span class="rozet-etiket">Yönetici</span><canvas class="portre" width="48" height="48"></canvas><i class="simsek">${ikon('yildirim')}</i></button>`)
@@ -66,24 +66,19 @@ export function kur(B) {
     <b class="kart-ad">1. Kat</b>
     <span class="kart-cevher">Yükleme</span>
     <i class="kart-ok-sari">${ikon('geri')}</i>
-    <i class="kart-sv sayi" style="top:36px;right:20px">Sv.1</i>
-    <span class="kart-hiz">${ikon('sepet')}<span class="sayi">1 vagon</span></span>
-    <span class="cubuk kart-bar"><i></i></span>
-    <span class="kart-yuzde sayi">%0</span>
+    <i class="kart-sv sayi">Sv.1</i>
   </div>`)
   D.appendChild(yk)
-  const ykOk = ogeYap(`<button class="yukselt-ok pasif" data-eylem="yukselt-ac" data-istasyon="depo" data-uzun aria-label="Depoyu yükselt">${ikon('yukari')}</button>`)
-  D.appendChild(ykOk)
-  const ykEl = { sv: yk.querySelector('.kart-sv'), hiz: yk.querySelector('.kart-hiz .sayi'), bar: yk.querySelector('.kart-bar'), yuzde: yk.querySelector('.kart-yuzde') }
+  const ykEl = { sv: yk.querySelector('.kart-sv') }
   const rozetD = ogeYap(`<button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="depo" aria-label="Depo yöneticisi" data-ogretici="depo-yonetici">
     ${ikon('arti')}<span class="rozet-etiket">Yönetici</span><canvas class="portre" width="48" height="48"></canvas><i class="simsek">${ikon('yildirim')}</i></button>`)
   D.appendChild(rozetD)
   const rD = { r: rozetD, portre: rozetD.querySelector('.portre'), yonId: null }
 
   // ── Görünüme sabit: Asansör etiketi ve Darboğaz kartı ──
-  const asansorKap = ogeYap(`<div class="asansor-kap" style="position:absolute;right:4px;top:34%">
-    <button class="asansor-etiket" data-eylem="yukselt-ac" data-istasyon="asansor" style="position:relative;right:0;top:0"><b>Asansör</b><span class="sayi">Sv.1</span></button>
-    <button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="asansor" aria-label="Asansör yöneticisi" data-ogretici="asansor-yonetici" style="left:-24px;top:7px;width:26px;height:26px">
+  const asansorKap = ogeYap(`<div class="asansor-kap">
+    <button class="asansor-etiket" data-eylem="yukselt-ac" data-istasyon="asansor"><b>Asansör</b><span class="sayi">(Sv.1)</span></button>
+    <button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="asansor" aria-label="Asansör yöneticisi" data-ogretici="asansor-yonetici" style="left:-29px;top:5px">
       ${ikon('arti')}<canvas class="portre" width="40" height="40" style="inset:2px;width:20px;height:20px"></canvas><i class="simsek">${ikon('yildirim')}</i></button>
   </div>`)
   ustKat.appendChild(asansorKap)
@@ -103,16 +98,14 @@ export function kur(B) {
     for (let i = 0; i < MAKS; i++) {
       const c = kartlar[i]
       const ust = y.satirY(i) + y.KART_UST
-      c.k.style.cssText = `left:${y.kenar}px;top:${ust}px;width:${y.kartG}px`
-      c.ok.style.cssText = `left:${y.kenar + y.kartG - 8}px;top:${ust + y.KART_H - 20}px`
-      c.r.style.cssText = `left:${y.odaX + 12}px;top:${y.satirY(i) + 16}px`
+      c.k.style.cssText = `left:${y.kenar}px;top:${ust}px;width:${y.kartG}px;height:${y.KART_H}px`
+      c.ok.style.cssText = `left:${y.okX - 5}px;top:${y.satirY(i) + y.okY - 5}px;width:${y.okG + 10}px;height:${y.okH + 10}px`
+      c.r.style.cssText = `left:${y.odaX + y.r(4)}px;top:${y.satirY(i) + y.r(4)}px`
     }
     kilitli.style.left = y.kenar + 'px'
     kilitli.style.width = y.kartG + 'px'
-    const ykUst = y.yuklemeY + 16
-    yk.style.cssText = `left:${y.kenar}px;top:${ykUst}px;width:${y.kartG}px`
-    ykOk.style.cssText = `left:${y.kenar + y.kartG - 8}px;top:${ykUst + y.KART_H - 20}px`
-    rozetD.style.cssText = `left:${y.depo.x + 8}px;top:${y.yuklemeY + 36}px`
+    yk.style.cssText = `left:${y.yKart.x}px;top:${y.yuklemeY + y.yKart.y}px;width:${y.yKart.w}px;height:${y.yKart.h}px`
+    rozetD.style.cssText = `left:${y.depo.x + y.r(6)}px;top:${y.yuklemeY + y.r(8)}px`
     sonAcik = -1
     if (d) katlariGuncelle(d)
   }
@@ -175,17 +168,8 @@ export function kur(B) {
       sinif(kil.btn, 'pasif', !yetiyor)
     }
     // Yükleme katı (depo)
-    if (y.yuklemeY < alt) {
-      const L = b.depo.L
-      yaz(ykEl.sv, 'Sv.' + L)
-      yaz(ykEl.hiz, E.tasiyiciSayisi(L) + ' vagon')
-      const maks = L >= A.MAKS_ISTASYON_SEVIYE
-      const il = E.kademeIlerleme(L, A.KADEME_ISTASYON)
-      cubuk(ykEl.bar, maks ? 1 : il)
-      yaz(ykEl.yuzde, maks ? 'MAKS' : '%' + Math.floor(il * 100))
-      okBagla(ykOk, maks ? null : E.teklif(d, b, 'depo', d.alimModu), maks)
-    }
-    yaz(asSv, 'Sv.' + b.asansor.L)
+    if (y.yuklemeY < alt) yaz(ykEl.sv, 'Sv.' + b.depo.L)
+    yaz(asSv, '(Sv.' + b.asansor.L + ')')
     // Darboğaz
     const db = d.calisma.darbogaz
     if (db !== sonDarbogaz) {
@@ -309,7 +293,9 @@ export function kur(B) {
       const i = E.madenIndeks(o.istasyon)
       const c = i >= 0 ? kartlar[i] : null
       const kartEl = c ? c.k : o.istasyon === 'depo' ? yk : null
-      if (kartEl) {
+      const simdi = performance.now()
+      if (kartEl && !(kartEl.__nabiz > simdi - 220)) {
+        kartEl.__nabiz = simdi
         canlandir(kartEl, NABIZ, 240)
         if (!kartEl.classList.contains('halka')) {
           kartEl.classList.add('halka')
@@ -317,7 +303,7 @@ export function kur(B) {
         }
       }
       if (o.kademeler && o.kademeler.length) {
-        const bar = c ? c.bar : o.istasyon === 'depo' ? ykEl.bar : null
+        const bar = c ? c.bar : null
         if (bar) canlandir(bar.firstElementChild, PARLA, 300)
         const m = o.kademeler[o.kademeler.length - 1]
         const kat = o.kademeler.length > 1 ? '×' + Math.pow(2, o.kademeler.length) : '×2'

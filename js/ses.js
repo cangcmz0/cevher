@@ -141,8 +141,12 @@ export const Ses = (() => {
   }
 
   // Titreşim (destekleyen telefonlarda): kısa dokunuş hissi
+  let sonTitresim = 0
   function titret(desen) {
     if (ayar()?.titresim === false) return
+    const t = performance.now()
+    if (t - sonTitresim < 120) return
+    sonTitresim = t
     try { navigator.vibrate?.(desen) } catch {}
   }
 

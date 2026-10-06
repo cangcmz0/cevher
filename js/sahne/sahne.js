@@ -1,31 +1,38 @@
-// Sahne (Paket B, §6.5, görsel yön 2): fırınlanmış varlıklarla maden görünümünü çizer.
-// Katlar alttan üste dizilir; en altta yükleme katı (depo, raylar, sarı vagonlar).
+// Sahne (Paket B, §6.5, görsel yön 2): maden görünümünü referans2 dokularıyla çizer.
+// Dokular docs/referans2.webp'den birebir kesilmiştir (img/ref/*.png): kat şeritleri, yükleme katı,
+// tepe taş şeridi, kuyu dilimi, sarı oklu kabin ve yeşil oklu tüp. Üstüne kare başına efektler:
+// fener ışıkları, kıvılcım, toz, hareket eden kabin, dolu yığınlar için yeşil tüp, satış sayıları.
 // Kare başına yalnız drawImage ve birkaç dönüşüm; shadowBlur, filter, getImageData yok.
 
 import { Varliklar } from './varliklar.js'
-import {
-  katlariKaydet, KAT_CESIT, KABIN_H, ARABA_W, ARABA_H, YIGIN_W, YIGIN_H, FENER_Y, kabinG, depoKapiX, RAY_Y,
-  LOKO_W, LOKO_H, VAGON_W, VAGON_H,
-} from './satir.js'
-import {
-  madencileriKaydet, portreCiz, kareSec, madenciAnahtar, HUCRE_W, HUCRE_H, AYAK_X, AYAK_Y, VURUS_KARE, VARYANT_SAYISI,
-} from './madenci.js'
+import { portreCiz } from './madenci.js'
 import { rozetCiz } from './yuzey.js'
 import { Havuz, parcacikSpritelari } from './parcacik.js'
-import { karma } from './cizim.js'
-import {
-  yerlesim, SATIR_H, TEPE_H, YUKLEME_H, ODA_UST, ZEMIN_Y, MAKS_MADEN, kabinAltY, satirY, yuklemeY, DUNYA_H,
-} from '../yerlesim.js'
+import { karma, dikey, yuvarlakYol, kalas, rastgele, cizgi, rgba } from './cizim.js'
+import { yerlesim, MAKS_MADEN } from '../yerlesim.js'
 import * as E from '../ekonomi.js'
 import { bicim } from '../bicim.js'
 
 const DPR_TAVAN = { yuksek: 2, dengeli: 1.5, pil: 1.25 }
 const KAZI_MS = 1600
 const SATIS_TOPLA_MS = 450
-const SLOT = [0.17, 0.78, 0.33]          // madenci konumları (oda genişliğine oran)
-const SLOT_YON = [-1, 1, -1]             // -1 sola bakar
-const ARABA_X = 0.53
-const MADENCI_OLCEK = 1.08
+const KOK = new URL('../../img/ref/', import.meta.url).href
+
+// Referans dokuları: anahtar → [dosya, genişlik, yükseklik] (referans px)
+const DOKU = {
+  'ref.kat.0': ['kat-a.png', 367, 107],
+  'ref.kat.1': ['kat-b.png', 367, 107],
+  'ref.yukleme': ['yukleme.png', 367, 107],
+  'ref.tepe': ['tepe.png', 367, 16],
+  'ref.kabin': ['kabin-sari.png', 47, 82],
+  'ref.tup': ['tup-yesil.png', 47, 74],
+  'ref.kuyu': ['kuyu-dilim.png', 78, 38],
+}
+// Kat şeritlerindeki boyalı ayrıntıların yerleri (referans px, şeridin sol üstüne göre)
+const FENER = [[[142, 6], [221, 6]], [[143, 15], [218, 6]]]
+const KIVILCIM = [[[145, 52, -1], [245, 42, 1]], [[132, 58, -1], [227, 50, 1]]]
+const DOLU = [[155, 26], [163, 30]]
+const SATIS_NOKTA = [145, 40]
 
 let tuval = null, ctx = null, efektTuval = null, ectx = null
 let W = 390, H = 600, oran = 2, efOran = 2, efW = 390, efH = 844
@@ -36,77 +43,89 @@ let sonMs = 0
 let sonKaydir = 0
 let kabinOturma = 0, sonKabinDurum = 'bekle'
 const kaziBas = new Float64Array(MAKS_MADEN)
-const sevinBitis = new Float64Array(MAKS_MADEN)
-const sonKare = new Int8Array(MAKS_MADEN * 3).fill(-1)
+const sonVurus = new Int32Array(MAKS_MADEN * 2).fill(-1)
 let satisToplam = 0, satisSon = 0
 const dunyaP = new Havuz(256)
 const efektP = new Havuz(256)
 let efektCanli = false
 let kalite = 'yuksek'
 
-function al(a) { return Varliklar.al(a) }
+const al = (a) => Varliklar.al(a)
 const dpTavan = () => DPR_TAVAN[kalite] || 2
 
-function anahtarListesi() {
-  return [...katlariKaydet(), ...madencileriKaydet(), ...parcacikSpritelari(), ...isikKaydet()]
-}
-
-function isikKaydet() {
-  const parilti = (c, w, h, d) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); for (const [o, r] of d) g.addColorStop(o, r); c.fillStyle = g; c.fillRect(0, 0, w, h) }
-  Varliklar.kaydet('isik.sicak', { w: 64, h: 64, ciz: (c, w, h) => parilti(c, w, h, [[0, 'rgba(255,248,220,0.95)'], [0.18, 'rgba(255,200,115,0.55)'], [0.5, 'rgba(255,170,80,0.16)'], [1, 'rgba(255,160,60,0)']]) })
-  Varliklar.kaydet('isik.far', { w: 48, h: 24, ciz: (c, w, h) => { const g = c.createLinearGradient(w, 0, 0, 0); g.addColorStop(0, 'rgba(255,240,190,.55)'); g.addColorStop(1, 'rgba(255,240,190,0)'); c.fillStyle = g; c.beginPath(); c.moveTo(w, h / 2 - 2); c.lineTo(0, 0); c.lineTo(0, h); c.lineTo(w, h / 2 + 2); c.fill() } })
-  return ['isik.sicak', 'isik.far']
-}
-
-function madenciCiz(anahtar, x, y, yon) {
-  const img = al(anahtar)
-  const s = MADENCI_OLCEK
-  ctx.translate(x, y)
-  ctx.scale(yon < 0 ? -s : s, s)
-  ctx.drawImage(img, -AYAK_X, -AYAK_Y, HUCRE_W, HUCRE_H)
-  ctx.setTransform(oran, 0, 0, oran, 0, -sonKaydir * oran)
-}
-
-function yiginSeviye(o) {
-  if (!(o > 0)) return 0
-  return Math.max(1, Math.min(4, Math.ceil(o * 4 - 1e-9)))
-}
-
-// ---- Kat dinamikleri ----
-function katDinamik(d, b, i, simdiMs, t, yonetimli) {
-  const sy = satirY(i)
-  const zemin = sy + ZEMIN_Y
-  const c = d.calisma.madenler[i] || { calisiyor: false, dolu: false }
-  const m = b.madenler[i]
-  const ax = yer.odaX + yer.odaG * ARABA_X - ARABA_W / 2
-  ctx.drawImage(al('araba.maden'), ax, zemin - ARABA_H, ARABA_W, ARABA_H)
-  const sv = yiginSeviye(m.yigin / E.yiginKap(d, b, i))
-  if (sv) ctx.drawImage(al('yigin.' + sv), ax + (ARABA_W - YIGIN_W) / 2, zemin - ARABA_H - YIGIN_H + 6, YIGIN_W, YIGIN_H)
-  const n = E.madenciSayisi(m.L) + 1   // görseldeki gibi en az iki madenci
-  const sevin = simdiMs < sevinBitis[i]
-  for (let k = 0; k < Math.min(3, n); k++) {
-    const v = (i + k) % VARYANT_SAYISI
-    const ofs = karma(i * 7 + k * 13) * 2
-    let anim = 'bekle'
-    if (sevin) anim = 'sevin'
-    else if (c.dolu) anim = 'otur'
-    else if (c.calisiyor) anim = 'kaz'
-    const kare = kareSec(anim, t + ofs)
-    const x = yer.odaX + yer.odaG * SLOT[k]
-    madenciCiz(madenciAnahtar(v, anim, kare), x, zemin, SLOT_YON[k])
-    const j = i * 3 + k
-    if (anim === 'kaz' && kare === VURUS_KARE && sonKare[j] !== VURUS_KARE && (!yonetimli || karma(t * 13 + j) < 0.4)) {
-      const yon = SLOT_YON[k]
-      const px = x + yon * 26, py = zemin - 15
-      dunyaP.patlat(px, py, 'kivilcim', 4, { yon: yon < 0 ? Math.PI : 0 })
-      dunyaP.patlat(px, py + 4, 'toz', 2)
-    }
-    sonKare[j] = anim === 'kaz' ? kare : -1
+// ---- Kayıt ----
+async function dokulariYukle(ilerleme) {
+  const sozler = []
+  for (const [a, [dosya, w, h]] of Object.entries(DOKU)) {
+    // Yedek: dosya yüklenemezse koyu düz renk (oyun oynanabilir kalır)
+    Varliklar.kaydet(a, { w, h, ciz: (c, ww, hh) => { c.fillStyle = a === 'ref.tepe' ? '#3A3430' : '#1C2A33'; c.fillRect(0, 0, ww, hh) } })
+    sozler.push(Varliklar.png(a, KOK + dosya))
   }
-  if (c.dolu) ctx.drawImage(al('dolu.etiket'), ax + 2, zemin - ARABA_H - YIGIN_H - 6, 30, 12)
+  let n = 0
+  await Promise.all(sozler.map((s) => s.then((ok) => { n++; try { ilerleme && ilerleme(0.4 * n / sozler.length) } catch {} return ok })))
 }
 
-// ---- Asansör ----
+function prosedurelKaydet() {
+  Varliklar.kaydet('isik.sicak', { w: 64, h: 64, ciz: (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,248,220,0.95)'); g.addColorStop(0.18, 'rgba(255,200,115,0.5)'); g.addColorStop(0.5, 'rgba(255,170,80,0.14)'); g.addColorStop(1, 'rgba(255,160,60,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h) } })
+  Varliklar.kaydet('dolu.etiket', { w: 30, h: 12, ciz: (c, w, h) => {
+    const yol = yuvarlakYol(0.5, 0.5, w - 1, h - 1, h / 2)
+    c.fillStyle = dikey(c, 0, h, ['#F07A62', '#E25A43', '#B03E2C']); c.fill(yol)
+    c.strokeStyle = '#FFFFFF'; c.lineWidth = 1; c.stroke(yol)
+    c.fillStyle = '#FFFFFF'; c.font = '700 8px Rubik, "Segoe UI", Roboto, system-ui, sans-serif'
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('DOLU', w / 2, h / 2 + 0.5)
+  } })
+  // Kilitli kat üst katmanı (saydam): kesik çizgili oda, KAZI tabelası, yaslanmış kazma
+  Varliklar.kaydet('kilit.ust', { w: 'W', h: (Wd) => yerlesim(Wd).SATIR_H, ciz: (c, w, h) => {
+    const y = yerlesim(w)
+    const r = rastgele(4711)
+    c.fillStyle = 'rgba(0,0,0,.35)'
+    c.fillRect(0, 0, w, h)
+    c.save(); c.setLineDash([5, 4]); c.strokeStyle = 'rgba(255,230,190,.35)'; c.lineWidth = 1.3
+    c.strokeRect(y.odaX + 6, y.ODA_UST + 6, y.kuyuX - y.odaX - 12, y.ZEMIN_Y - y.ODA_UST - 8); c.restore()
+    const tx = (y.odaX + y.kuyuX) / 2, ty = y.ZEMIN_Y * 0.42
+    const kr = ['#8A5A32', '#6B4425']
+    for (const dx of [-16, 13]) kalas(c, tx + dx, ty, 3, y.ZEMIN_Y - ty, r, kr[0], kr[1], false)
+    kalas(c, tx - 26, ty - 9, 52, 20, r, kr[0], kr[1], true)
+    c.fillStyle = '#F6C453'; c.font = '800 12px "Baloo 2", "Trebuchet MS", system-ui, sans-serif'
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('KAZI', tx, ty + 1.8)
+    cizgi(c, tx + 30, y.ZEMIN_Y, tx + 38, y.ZEMIN_Y - 26, 1.8, kr[0])
+    c.strokeStyle = '#C9D1D8'; c.lineWidth = 2.2
+    c.beginPath(); c.moveTo(tx + 31, y.ZEMIN_Y - 28); c.quadraticCurveTo(tx + 38, y.ZEMIN_Y - 27, tx + 44, y.ZEMIN_Y - 21); c.stroke()
+  } })
+  return ['isik.sicak', 'dolu.etiket', 'kilit.ust', ...parcacikSpritelari()]
+}
+
+// ---- Çizim yardımcıları ----
+// Taş dolgusu: tepe şeridini dikey tekrarlar (her ikinci şerit aynalı), üstüne karartma
+function tasDoldur(y0, h, karart) {
+  const t = al('ref.tepe')
+  const th = yer.TEPE_H
+  ctx.save()
+  ctx.beginPath(); ctx.rect(0, y0, W, h); ctx.clip()
+  let n = 0
+  for (let yy = y0; yy < y0 + h; yy += th, n++) {
+    if (n % 2) { ctx.translate(W, 0); ctx.scale(-1, 1); ctx.drawImage(t, 0, yy, W, th); ctx.setTransform(oran, 0, 0, oran, 0, -sonKaydir * oran) }
+    else ctx.drawImage(t, 0, yy, W, th)
+  }
+  ctx.restore()
+  if (karart) { ctx.fillStyle = 'rgba(4,12,18,' + karart + ')'; ctx.fillRect(0, y0, W, h) }
+}
+
+// Kuyu dilimini [ust, alt) aralığına alttan hizalı döşer
+function kuyuDose(ust, alt) {
+  if (alt <= ust) return
+  const img = al('ref.kuyu')
+  const kw = yer.kuyuG, kh = yer.rd(38)
+  const sw = img.naturalWidth || img.width, sh = img.naturalHeight || img.height
+  for (let yy = alt - kh; yy > ust - kh; yy -= kh) {
+    if (yy >= ust) ctx.drawImage(img, yer.kuyuX, yy, kw, kh)
+    else {
+      const kes = (ust - yy) / kh
+      ctx.drawImage(img, 0, sh * kes, sw, sh * (1 - kes), yer.kuyuX, ust, kw, kh * (1 - kes))
+    }
+  }
+}
+
 function kabinCiz(d, b, alfa, simdiMs) {
   const a = d.calisma.asansor
   const konum = a.onceki + (a.konum - a.onceki) * alfa
@@ -114,94 +133,23 @@ function kabinCiz(d, b, alfa, simdiMs) {
     if (a.durum === 'yukluyor' || a.durum === 'bosaltiyor') kabinOturma = simdiMs
     sonKabinDurum = a.durum
   }
-  const kg = kabinG(yer.kuyuG)
-  const x = yer.kuyuX + (yer.kuyuG - kg) / 2
-  let alt = kabinAltY(konum)
+  let alt = yer.kabinAltY(konum)
   const os = simdiMs - kabinOturma
   if (os < 150) alt += Math.sin((os / 150) * Math.PI) * 2
-  const ust = alt - KABIN_H
-  // Halat (kuyunun tepesinden kabine)
-  const n = b.madenler.length
-  const halatUst = satirY(n - 1) + 2
-  ctx.fillStyle = 'rgba(20,22,26,.9)'
-  ctx.fillRect(x + kg / 2 - 1.5, halatUst, 1, ust - halatUst + 2)
-  ctx.fillRect(x + kg / 2 + 0.5, halatUst, 1, ust - halatUst + 2)
-  ctx.drawImage(al('kabin.arka'), x, ust, kg, KABIN_H)
-  const sv = yiginSeviye(b.asansor.yuk / E.asansorKap(d, b))
-  if (sv) ctx.drawImage(al('yigin.' + sv), x + 3, alt - 6 - YIGIN_H + 3, kg - 6, YIGIN_H)
-  const L = b.asansor.L
-  ctx.drawImage(al('kabin.on.' + (L >= 200 ? 2 : L >= 50 ? 1 : 0)), x, ust, kg, KABIN_H)
-  // Parlayan yön oku (yukarı çıkarken ↑, yüklü inerken ↓)
+  ctx.drawImage(al('ref.kabin'), yer.tupX, alt - yer.KABIN_H, yer.tupG, yer.KABIN_H)
+  // Hareket ederken ok parlar
   if (a.durum === 'iniyor' || a.durum === 'cikiyor') {
-    const yon = a.durum === 'iniyor' ? 1 : -1
-    const nab = 0.8 + 0.2 * Math.sin(simdiMs / 120)
-    ctx.globalAlpha = nab
-    ctx.drawImage(al('kabin.ok.' + yon), x + kg / 2 - 11, ust - 24, 22, 22)
-    ctx.globalAlpha = 1
-  }
-}
-
-// ---- Yükleme katı: depo yığını ve vagonlar ----
-function yuklemeDinamik(d, b, t) {
-  const dep = yer.depo
-  const sv = yiginSeviye(b.depo.stok / E.depoKap(d, b))
-  if (sv) {
-    const pw = Math.min(dep.w - 20, 48)
-    ctx.drawImage(al('yigin.' + sv), dep.x + (dep.w - pw) / 2, yuklemeY + RAY_Y - 6 - 22, pw, 22)
-  }
-  const kapi = depoKapiX(W)
-  const disari = -LOKO_W - VAGON_W - 10
-  const ray = yuklemeY + RAY_Y + 2
-  const tl = d.calisma.tasiyicilar
-  for (let j = 0; j < tl.length; j++) {
-    const ts = tl[j]
-    let x = null, dolu = false
-    if (ts.durum === 'yukluyor') { x = kapi - LOKO_W - VAGON_W; dolu = ts.t > ts.sure * 0.5 }
-    else if (ts.durum === 'gidiyor' || ts.durum === 'donuyor') {
-      const u = ts.oncekiKonum + (ts.konum - ts.oncekiKonum) * 0.5
-      x = (kapi - LOKO_W - VAGON_W) + (disari - (kapi - LOKO_W - VAGON_W)) * u
-      dolu = ts.durum === 'gidiyor'
-    }
-    if (x === null || x > W) continue
-    const sal = Math.sin(t * 18 + j) * 0.4
-    // Lokomotif solda (sola gider), vagon arkada
-    ctx.drawImage(al('vagon.' + (dolu ? 1 : 0)), x + LOKO_W - 2, ray - VAGON_H + sal, VAGON_W, VAGON_H)
-    ctx.drawImage(al('lokomotif'), x, ray - LOKO_H + 1 + sal, LOKO_W, LOKO_H)
     ctx.globalCompositeOperation = 'lighter'
-    ctx.globalAlpha = 0.7
-    ctx.drawImage(al('isik.far'), x - 44, ray - 22, 48, 24)
+    ctx.globalAlpha = 0.25 + 0.2 * Math.sin(simdiMs / 110)
+    ctx.drawImage(al('isik.sicak'), yer.tupX - 6, alt - yer.KABIN_H * 0.75, yer.tupG + 12, yer.KABIN_H * 0.6)
     ctx.globalAlpha = 1
     ctx.globalCompositeOperation = 'source-over'
   }
 }
 
-function isiklar(b, ilk, son, t, yuklemeGorunur) {
-  const isik = al('isik.sicak')
-  ctx.globalCompositeOperation = 'lighter'
-  for (let i = ilk; i <= son; i++) {
-    if (i >= b.madenler.length) continue
-    const sy = satirY(i)
-    for (let f = 0; f < 2; f++) {
-      const x = yer.odaX + yer.odaG * (f ? 0.7 : 0.3)
-      const a = 0.82 + 0.1 * Math.sin(t * 7.3 + i * 3.1 + f * 1.7) + 0.06 * (karma(Math.floor(t * 9) + i * 5 + f) - 0.5)
-      ctx.globalAlpha = Math.max(0, Math.min(1, a)) * 0.9
-      ctx.drawImage(isik, x - 28, sy + FENER_Y - 28, 56, 56)
-    }
-  }
-  if (yuklemeGorunur) {
-    for (const fx of [0.12, 0.38]) {
-      ctx.globalAlpha = 0.85 + 0.1 * Math.sin(t * 6.1 + fx * 9)
-      ctx.drawImage(isik, W * fx - 30, yuklemeY + 29 - 30, 60, 60)
-    }
-  }
-  ctx.globalAlpha = 1
-  ctx.globalCompositeOperation = 'source-over'
-}
-
 function istasyonMerkez(ist, n) {
   const k = yer.istasyonKutusu(ist, n)
-  if (!k) return null
-  return { x: k.x + k.w / 2, y: k.y + k.h / 2 }
+  return k ? { x: k.x + k.w / 2, y: k.y + k.h / 2 } : null
 }
 
 export const Sahne = {
@@ -217,7 +165,8 @@ export const Sahne = {
     Varliklar.ayarla({ olcek: Math.min(dpr, 2), dunyaG: W })
     ctx = tuval.getContext('2d', { alpha: false })
     ectx = efektTuval ? efektTuval.getContext('2d') : null
-    await Varliklar.hazirla(anahtarListesi(), ilerleme)
+    await dokulariYukle(ilerleme)
+    await Varliklar.hazirla(prosedurelKaydet(), (o) => { try { ilerleme && ilerleme(0.4 + 0.6 * o) } catch {} })
     dunyaP.kalite = efektP.kalite = kalite
     hazir = true
   },
@@ -251,50 +200,100 @@ export const Sahne = {
     const t = simdiMs / 1000
     const b = durum.bolgeler[durum.aktifBolge]
     const n = b.madenler.length
+    const y = yer, k = y.k
     const ky = gorunum.kaydirY
     sonKaydir = ky
     const ust = ky - 40, alt = ky + H + 40
     ctx.setTransform(oran, 0, 0, oran, 0, -ky * oran)
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
 
-    // Dünyanın üstü/altı (kaydırma lastiği için)
-    if (ust < 0) { ctx.fillStyle = '#07161C'; ctx.fillRect(0, ust, W, -ust) }
-    if (alt > DUNYA_H) { ctx.fillStyle = '#0A0705'; ctx.fillRect(0, DUNYA_H, W, alt - DUNYA_H) }
-    if (ust < TEPE_H) ctx.drawImage(al('tepe'), 0, 0, W, TEPE_H)
-    // Kat arka planları (görünür olanlar)
+    // Dünya dışı (kaydırma lastiği)
+    if (ust < 0) { ctx.fillStyle = '#041A2A'; ctx.fillRect(0, ust, W, -ust) }
+    if (alt > y.DUNYA_H) { ctx.fillStyle = '#041A2A'; ctx.fillRect(0, y.DUNYA_H, W, alt - y.DUNYA_H) }
+    // Tepe
+    if (ust < y.TEPE_H) ctx.drawImage(al('ref.tepe'), 0, 0, W, y.TEPE_H)
+    // Katlar
     let ilk = MAKS_MADEN, son = -1
     for (let i = 0; i < MAKS_MADEN; i++) {
-      const sy = satirY(i)
-      if (sy + SATIR_H < ust || sy > alt) continue
+      const sy = y.satirY(i)
+      if (sy + y.SATIR_H < ust || sy > alt) continue
       if (i < ilk) ilk = i
       if (i > son) son = i
       if (i < n) {
-        ctx.drawImage(al('kat.' + (i % KAT_CESIT)), 0, sy, W, SATIR_H)
+        ctx.drawImage(al('ref.kat.' + (i % 2)), 0, sy, W, y.SATIR_H)
         const kb = kaziBas[i]
         if (kb && simdiMs - kb < KAZI_MS) {
-          ctx.globalAlpha = 1 - (simdiMs - kb) / KAZI_MS
-          ctx.drawImage(al('kat.kilitli'), 0, sy, W, SATIR_H)
+          const o = 1 - (simdiMs - kb) / KAZI_MS
+          ctx.globalAlpha = o
+          tasDoldur(sy, y.SATIR_H, 0.35)
+          ctx.drawImage(al('kilit.ust'), 0, sy, W, y.SATIR_H)
           ctx.globalAlpha = 1
-          if (karma(simdiMs * 0.01 + i) < 0.35) dunyaP.patlat(yer.odaX + yer.odaG * karma(simdiMs + i * 3), sy + ODA_UST + 16 + 60 * karma(simdiMs * 1.7), 'toz', 2)
+          if (karma(simdiMs * 0.01 + i) < 0.35) dunyaP.patlat(y.odaX + y.odaG * karma(simdiMs + i * 3), sy + y.ODA_UST + 10 + 50 * karma(simdiMs * 1.7), 'toz', 2)
         }
-      } else if (i === n) ctx.drawImage(al('kat.kilitli'), 0, sy, W, SATIR_H)
-      else ctx.drawImage(al('kat.kaya.' + (i % 2)), 0, sy, W, SATIR_H)
+      } else if (i === n) {
+        tasDoldur(sy, y.SATIR_H, 0.25)
+        ctx.drawImage(al('kilit.ust'), 0, sy, W, y.SATIR_H)
+      } else tasDoldur(sy, y.SATIR_H, 0.5)
     }
-    const yuklemeGorunur = yuklemeY < alt && yuklemeY + YUKLEME_H > ust
-    if (yuklemeGorunur) ctx.drawImage(al('yukleme'), 0, yuklemeY, W, YUKLEME_H)
-    // Kat dinamikleri
+    // Yükleme katı
+    const yuklemeGorunur = y.yuklemeY < alt && y.yuklemeY + y.YUKLEME_H > ust
+    if (yuklemeGorunur) ctx.drawImage(al('ref.yukleme'), 0, y.yuklemeY, W, y.YUKLEME_H)
+    // Kuyu (açık katların hizasında; boyalı etiket ve kabinleri örter)
+    if (n > 0) {
+      const kUst = Math.max(ust, y.satirY(n - 1))
+      const kAlt = Math.min(alt, y.yuklemeY + y.rd(4))
+      kuyuDose(kUst, kAlt)
+    }
+    // Yeşil tüp: yığını olan katlarda cevher bekliyor
     for (let i = ilk; i <= Math.min(son, n - 1); i++) {
-      if (kaziBas[i] && simdiMs - kaziBas[i] < KAZI_MS * 0.6) continue
-      let yonetimli = false
-      for (const y of b.yoneticiler) if (y.atanan === 'm' + i) { yonetimli = true; break }
-      katDinamik(durum, b, i, simdiMs, t, yonetimli)
+      if (b.madenler[i].yigin > 0) ctx.drawImage(al('ref.tup'), y.tupX, y.satirY(i) + y.rd(24), y.tupG, y.rd(74))
     }
     kabinCiz(durum, b, alfa || 0, simdiMs)
-    if (yuklemeGorunur) yuklemeDinamik(durum, b, t)
-    isiklar(b, ilk, son, t, yuklemeGorunur)
-    // Satış: soldaki tünel çıkışında uçan sayı
+
+    // Işıklar ve kıvılcımlar
+    ctx.globalCompositeOperation = 'lighter'
+    const isik = al('isik.sicak')
+    for (let i = ilk; i <= Math.min(son, n - 1); i++) {
+      const v = i % 2, sy = y.satirY(i)
+      for (let f = 0; f < 2; f++) {
+        const [fx, fy] = FENER[v][f]
+        const a = 0.72 + 0.12 * Math.sin(t * 7.3 + i * 3.1 + f * 1.7) + 0.08 * (karma(Math.floor(t * 9) + i * 5 + f) - 0.5)
+        ctx.globalAlpha = Math.max(0, Math.min(1, a)) * 0.75
+        ctx.drawImage(isik, fx * k - 24, sy + fy * k * 0.95 - 22, 48, 48)
+      }
+    }
+    if (yuklemeGorunur) {
+      for (const fx of [145, 208]) {
+        ctx.globalAlpha = 0.6 + 0.1 * Math.sin(t * 6.1 + fx)
+        ctx.drawImage(isik, fx * k - 26, y.yuklemeY + y.rd(18) - 26, 52, 52)
+      }
+    }
+    ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = 'source-over'
+    for (let i = ilk; i <= Math.min(son, n - 1); i++) {
+      const c = durum.calisma.madenler[i]
+      if (!c) continue
+      const v = i % 2, sy = y.satirY(i)
+      if (c.calisiyor && !(kaziBas[i] && simdiMs - kaziBas[i] < KAZI_MS)) {
+        for (let m = 0; m < 2; m++) {
+          const evre = Math.floor((t + karma(i * 7 + m * 13) * 2) / 0.6)
+          const j = i * 2 + m
+          if (evre !== sonVurus[j]) {
+            sonVurus[j] = evre
+            const [px, py, yon] = KIVILCIM[v][m]
+            dunyaP.patlat(px * k, sy + y.rd(py), 'kivilcim', 3, { yon: yon < 0 ? Math.PI : 0 })
+            if (karma(evre + j) < 0.5) dunyaP.patlat(px * k, sy + y.rd(py) + 4, 'toz', 1)
+          }
+        }
+      }
+      if (c.dolu) ctx.drawImage(al('dolu.etiket'), DOLU[v][0] * k, sy + y.rd(DOLU[v][1]), 30, 12)
+    }
+    // Satış sayıları (yükleme katındaki vagonun üstünde)
     if (satisToplam > 0 && simdiMs - satisSon >= SATIS_TOPLA_MS) {
-      dunyaP.sayi(46, yuklemeY + 52, '+' + bicim(satisToplam))
-      dunyaP.patlat(26, yuklemeY + 80, 'sikke', 4)
+      const sx = SATIS_NOKTA[0] * k, sy = y.yuklemeY + y.rd(SATIS_NOKTA[1])
+      dunyaP.sayi(sx, sy - 14, '+' + bicim(satisToplam))
+      dunyaP.patlat(sx, sy, 'sikke', 4)
       satisToplam = 0
       satisSon = simdiMs
     }
@@ -306,31 +305,28 @@ export const Sahne = {
     const b = durum.bolgeler[durum.aktifBolge]
     const n = b.madenler.length
     const simdi = performance.now()
-    for (let k = 0; k < liste.length; k++) {
-      const o = liste[k]
+    for (let k2 = 0; k2 < liste.length; k2++) {
+      const o = liste[k2]
       switch (o.tip) {
         case 'madenAcildi':
           kaziBas[o.i] = simdi
           break
-        case 'yukseltildi': {
-          const i = E.madenIndeks(o.istasyon)
-          if (i >= 0) sevinBitis[i] = simdi + 900
+        case 'yukseltildi':
           if (o.kademeler && o.kademeler.length) {
             const m = istasyonMerkez(o.istasyon, n)
             if (m) dunyaP.patlat(m.x, m.y, 'parilti', 10, { yaricap: 30 })
           }
           break
-        }
         case 'yetenek': {
           const m = istasyonMerkez(o.istasyon, n)
           if (m) dunyaP.patlat(m.x, m.y, 'parilti', 12, { yaricap: 34 })
           break
         }
         case 'bosaltildi':
-          dunyaP.patlat(yer.kuyuX + yer.kuyuG / 2, kabinAltY(0) + 10, 'parca', 4, { zemin: yuklemeY + RAY_Y - 10 })
+          dunyaP.patlat(yer.tupX + yer.tupG / 2, yer.yuklemeY + yer.r(8), 'parca', 4, { zemin: yer.yuklemeY + yer.r(30) })
           break
         case 'asansorDurak':
-          dunyaP.patlat(yer.kuyuX + 4, satirY(o.kat) + ZEMIN_Y - 4, 'toz', 2)
+          dunyaP.patlat(yer.tupX, yer.satirY(o.kat) + yer.ZEMIN_Y - 4, 'toz', 2)
           break
         case 'satis':
           if (!satisToplam) satisSon = Math.max(satisSon, simdi - SATIS_TOPLA_MS + 120)
@@ -343,7 +339,7 @@ export const Sahne = {
     }
   },
 
-  // Dünya koordinatı → istasyon. Kartlar ve rozetler DOM'da.
+  // Dünya koordinatı → istasyon. Kartlar ve düğmeler DOM'da.
   isabet(x, y, durum) {
     const b = durum.bolgeler[durum.aktifBolge]
     const n = b.madenler.length
@@ -351,7 +347,7 @@ export const Sahne = {
     if (ic(yer.istasyonKutusu('asansor', n))) return { istasyon: 'asansor' }
     if (ic(yer.istasyonKutusu('depo', n))) return { istasyon: 'depo' }
     for (let i = 0; i < n; i++) if (ic(yer.istasyonKutusu('m' + i, n))) return { istasyon: 'm' + i }
-    if (y >= yuklemeY && y < yuklemeY + YUKLEME_H) return { istasyon: 'depo' }
+    if (y >= yer.yuklemeY && y < yer.yuklemeY + yer.YUKLEME_H) return { istasyon: 'depo' }
     return null
   },
 
@@ -363,8 +359,8 @@ export const Sahne = {
     const n = b.madenler.length
     let k
     if (capa === 'asansor') {
-      const alt = kabinAltY(d.calisma.asansor.konum)
-      k = { x: yer.kuyuX, y: alt - KABIN_H - 6, w: yer.kuyuG, h: KABIN_H + 12 }
+      const alt = yer.kabinAltY(d.calisma.asansor.konum)
+      k = { x: yer.tupX - 6, y: alt - yer.KABIN_H, w: yer.tupG + 12, h: yer.KABIN_H }
     } else k = yer.istasyonKutusu(capa, n)
     if (!k) return null
     const kok = tuval.closest('#oyun') || tuval.parentElement

@@ -12,7 +12,7 @@ import { Ses } from './ses.js'
 import { Reklam } from './reklam.js'
 import { Magaza } from './magaza.js'
 import { Sahne } from './sahne/sahne.js'
-import { yerlesim, ustSinir } from './yerlesim.js'
+import { yerlesim } from './yerlesim.js'
 import { Arayuz } from './arayuz/arayuz.js'
 
 const ADIM = Benzetim.ADIM || 0.05
@@ -408,8 +408,8 @@ async function basla(hot = {}) {
   kaydirma = kaydirmaKur({
     kok, alan, dunya,
     dunyaYukAl: dunyaYuk,
-    ustSinirAl: () => ustSinir(bolge().madenler.length),
-    altPay: 16,
+    ustSinirAl: () => (yer ? yer.ustSinir(bolge().madenler.length) : 0),
+    altPay: 0,
     dokun, uiMi,
     yayinla: (o) => Veriyolu.yayinla(o),
   })
