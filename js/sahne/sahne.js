@@ -5,7 +5,7 @@
 // Kare başına yalnız drawImage ve birkaç dönüşüm; shadowBlur, filter, getImageData yok.
 
 import { Varliklar } from './varliklar.js'
-import { portreCiz } from './madenci.js'
+import { portreCiz, madencileriKaydet, tasiyiciAnahtar, kareSec, TASIYICI_W, HUCRE_H, TASIYICI_AYAK_X, AYAK_Y } from './madenci.js'
 import { rozetCiz } from './yuzey.js'
 import { Havuz, parcacikSpritelari } from './parcacik.js'
 import { karma, dikey, yuvarlakYol, kalas, rastgele, cizgi, rgba } from './cizim.js'
@@ -101,6 +101,109 @@ function doku(a, kod) {
 }
 const dpTavan = () => DPR_TAVAN[kalite] || 2
 
+// ── Canlı madenciler ──
+// Kat görselindeki boyalı madenciler yumuşak kenarlı parça olarak kesilir ve ayak hizasından oynatılır.
+// r: parça [x, y, w, h] (kesim pikseli), p: dönme noktası (ayaklar), yon: baktığı yön (+1 sağ, -1 sol)
+// tur: kaz (kazma vuruşu, kıvılcımla eş zamanlı) | it (araba itme/çekme)
+const KUKLA = {
+  'ref.kat.0': [{ r: [106, 14, 46, 64], p: [129, 73], yon: 1, tur: 'it' }, { r: [220, 8, 54, 70], p: [252, 73], yon: -1, tur: 'kaz' }],
+  'ref.kat.1': [{ r: [126, 24, 44, 58], p: [147, 77], yon: 1, tur: 'kaz' }, { r: [206, 16, 56, 66], p: [234, 77], yon: -1, tur: 'it' }],
+}
+// Kazma döngüsü (0,6 s): p = 0 vuruş anı (kıvılcım), sonra toparlanma, geri çekilme ve hızlı iniş
+const KAZ_ACI = [[0, 7], [0.12, 4], [0.35, 0], [0.82, -6], [1, 7]]
+const KAZ_OLCEK = [[0, 0.95], [0.2, 1], [0.82, 1.035], [1, 0.95]]
+function anahtarKare(l, p) {
+  for (let i = 1; i < l.length; i++) {
+    if (p <= l[i][0]) { const [p0, v0] = l[i - 1], [p1, v1] = l[i]; return v0 + (v1 - v0) * (p - p0) / (p1 - p0) }
+  }
+  return l[l.length - 1][1]
+}
+const kesir = (x) => x - Math.floor(x)
+const kukla = new Map()
+function kuklaParca(a, kod, m) {
+  const anahtar = a + '|' + kod + '|' + m
+  const hazir = kukla.get(anahtar)
+  if (hazir) return hazir
+  if (!Varliklar.ozelMi(a)) return null
+  const [x, y0, w, h] = KUKLA[a][m].r
+  const c = document.createElement('canvas')
+  c.width = w
+  c.height = h
+  const g = c.getContext('2d')
+  g.drawImage(doku(a, kod), x, y0, w, h, 0, 0, w, h)
+  // Kenarları 4 px'te yumuşat: kıpırdayan parça zemine dikişsiz karışır
+  try {
+    const v = g.getImageData(0, 0, w, h), dd = v.data, f = 4
+    for (let yy = 0; yy < h; yy++) {
+      for (let xx = 0; xx < w; xx++) {
+        const e = Math.min(xx + 0.5, w - xx - 0.5, yy + 0.5, h - yy - 0.5)
+        if (e < f) dd[(yy * w + xx) * 4 + 3] *= e / f
+      }
+    }
+    g.putImageData(v, 0, 0)
+  } catch { /* okunamayan tuval: yumuşatmasız kalır */ }
+  kukla.set(anahtar, c)
+  return c
+}
+function kuklalariCiz(durum, i, v, sy, t) {
+  const a = 'ref.kat.' + v
+  const c = durum.calisma.madenler[i]
+  const calisiyor = !!(c && c.calisiyor)
+  const sx = yer.k, syy = yer.SATIR_H / 107
+  for (let m = 0; m < 2; m++) {
+    const kk = KUKLA[a][m]
+    const parca = kuklaParca(a, durum.aktifBolge, m)
+    if (!parca) continue
+    let aci = 0, olcek = 1, dx = 0, dy = 0
+    if (calisiyor && kk.tur === 'kaz') {
+      const p = kesir((t + karma(i * 7 + m * 13) * 2) / 0.6)
+      aci = anahtarKare(KAZ_ACI, p) * kk.yon
+      olcek = anahtarKare(KAZ_OLCEK, p)
+    } else if (calisiyor) {
+      const p = kesir((t + karma(i * 5 + m * 11) * 3) / 1.1) * Math.PI * 2
+      dx = 2.6 * Math.sin(p) * kk.yon
+      dy = -0.9 * Math.abs(Math.cos(p))
+      aci = 2.4 * Math.sin(p + 0.6) * kk.yon
+    } else {
+      olcek = 1 + 0.01 * Math.sin(t * 1.8 + i * 1.3 + m * 2.1)   // boşta: nefes
+    }
+    const [x, y0, w, h] = kk.r, [px, py] = kk.p
+    ctx.save()
+    ctx.translate((px + dx) * sx, sy + (py + dy) * syy)
+    if (aci) ctx.rotate(aci * Math.PI / 180)
+    if (olcek !== 1) ctx.scale(1, olcek)
+    ctx.drawImage(parca, (x - px) * sx, (y0 - py) * syy, w * sx, h * syy)
+    ctx.restore()
+  }
+}
+
+// ── Taşıyıcılar: yükleme katında depodan satış noktasına araba iter, boş döner ──
+const DEPO_KAPI = 304, SATIS_X = 152, TAS_ZEMIN = 101   // yükleme kesim pikseli
+function tasiyicilariCiz(d, alfa, t) {
+  const tl = d.calisma.tasiyicilar
+  const k = yer.k, ky = yer.YUKLEME_H / 107
+  const zemin = yer.yuklemeY + TAS_ZEMIN * ky
+  const olcek = k * 0.9
+  let bosta = false
+  for (let j = 0; j < tl.length; j++) {
+    const ta = tl[j]
+    const bekliyor = ta.durum === 'bekle'
+    if (bekliyor) { if (bosta) continue; bosta = true }
+    const konum = ta.oncekiKonum + (ta.konum - ta.oncekiKonum) * alfa
+    const x = (DEPO_KAPI + (SATIS_X - DEPO_KAPI) * konum + (j % 3) * 6) * k
+    const y = zemin + (j % 2) * 2 * ky
+    const yuklu = ta.durum === 'yukluyor' || ta.durum === 'gidiyor' || ta.durum === 'satiyor'
+    const yuruyor = ta.durum === 'gidiyor' || ta.durum === 'donuyor'
+    const anim = yuklu ? 'it' : 'yuru'
+    const img = al(tasiyiciAnahtar(anim, yuruyor ? kareSec(anim, t + j * 0.31) : 0))
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(yuklu || bekliyor ? -olcek : olcek, olcek)    // satışa giderken sola bakar
+    ctx.drawImage(img, -TASIYICI_AYAK_X, -AYAK_Y, TASIYICI_W, HUCRE_H)
+    ctx.restore()
+  }
+}
+
 // ---- Kayıt ----
 async function dokulariYukle(ilerleme) {
   const sozler = []
@@ -140,7 +243,7 @@ function prosedurelKaydet() {
     c.strokeStyle = '#C9D1D8'; c.lineWidth = 2.2
     c.beginPath(); c.moveTo(tx + 31, y.ZEMIN_Y - 28); c.quadraticCurveTo(tx + 38, y.ZEMIN_Y - 27, tx + 44, y.ZEMIN_Y - 21); c.stroke()
   } })
-  return ['isik.sicak', 'dolu.etiket', 'kilit.ust', ...parcacikSpritelari()]
+  return ['isik.sicak', 'dolu.etiket', 'kilit.ust', ...parcacikSpritelari(), ...madencileriKaydet()]
 }
 
 // ---- Çizim yardımcıları ----
@@ -184,6 +287,18 @@ function kabinCiz(d, b, alfa, simdiMs) {
   let alt = yer.kabinAltY(konum)
   const os = simdiMs - kabinOturma
   if (os < 150) alt += Math.sin((os / 150) * Math.PI) * 2
+  // Çelik halatlar: en üst açık katın tavanından kabinin tepesine
+  const ust = yer.satirY(Math.max(0, b.madenler.length - 1)) + yer.rd(2)
+  const tepe = alt - yer.KABIN_H + 3
+  if (tepe > ust) {
+    for (const [renk, kal, kay] of [['rgba(14,18,22,.9)', 1.8, 0], ['rgba(205,215,225,.45)', 0.7, -0.4]]) {
+      ctx.strokeStyle = renk
+      ctx.lineWidth = kal
+      ctx.beginPath()
+      for (const f of [0.36, 0.64]) { const x = yer.tupX + yer.tupG * f + kay; ctx.moveTo(x, ust); ctx.lineTo(x, tepe) }
+      ctx.stroke()
+    }
+  }
   ctx.drawImage(al('ref.kabin'), yer.tupX, alt - yer.KABIN_H, yer.tupG, yer.KABIN_H)
   // Hareket ederken ok parlar
   if (a.durum === 'iniyor' || a.durum === 'cikiyor') {
@@ -270,6 +385,7 @@ export const Sahne = {
       if (i > son) son = i
       if (i < n) {
         ctx.drawImage(doku('ref.kat.' + (i % 2), durum.aktifBolge), 0, sy, W, y.SATIR_H)
+        kuklalariCiz(durum, i, i % 2, sy, t)
         const kb = kaziBas[i]
         if (kb && simdiMs - kb < KAZI_MS) {
           const o = 1 - (simdiMs - kb) / KAZI_MS
@@ -286,7 +402,10 @@ export const Sahne = {
     }
     // Yükleme katı
     const yuklemeGorunur = y.yuklemeY < alt && y.yuklemeY + y.YUKLEME_H > ust
-    if (yuklemeGorunur) ctx.drawImage(doku('ref.yukleme', durum.aktifBolge), 0, y.yuklemeY, W, y.YUKLEME_H)
+    if (yuklemeGorunur) {
+      ctx.drawImage(doku('ref.yukleme', durum.aktifBolge), 0, y.yuklemeY, W, y.YUKLEME_H)
+      tasiyicilariCiz(durum, alfa || 0, t)
+    }
     // Kuyu (açık katların hizasında; boyalı etiket ve kabinleri örter)
     if (n > 0) {
       const kUst = Math.max(ust, y.satirY(n - 1))
@@ -329,6 +448,7 @@ export const Sahne = {
           const j = i * 2 + m
           if (evre !== sonVurus[j]) {
             sonVurus[j] = evre
+            if (KUKLA['ref.kat.' + v][m].tur !== 'kaz') continue
             const [px, py, yon] = KIVILCIM[v][m]
             dunyaP.patlat(px * k, sy + y.rd(py), 'kivilcim', 3, { yon: yon < 0 ? Math.PI : 0 })
             if (karma(evre + j) < 0.5) dunyaP.patlat(px * k, sy + y.rd(py) + 4, 'toz', 1)

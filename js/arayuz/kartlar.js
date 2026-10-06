@@ -105,12 +105,16 @@ export function kur(B) {
       const ust = y.satirY(i) + y.KART_UST
       c.k.style.cssText = `left:${y.kenar}px;top:${ust}px;width:${y.kartG}px;height:${y.KART_H}px`
       c.ok.style.cssText = `left:${y.okX - 5}px;top:${y.satirY(i) + y.okY - 5}px;width:${y.okG + 10}px;height:${y.okH + 10}px`
-      c.r.style.cssText = `left:${y.odaX + y.r(4)}px;top:${y.satirY(i) + y.r(4)}px`
+      // Rozet iki fenerin arasında, madencilerin başına binmez
+      c.r.style.cssText = `left:${y.r(168)}px;top:${y.satirY(i) + y.r(3)}px`
     }
     kilitli.style.left = y.kenar + 'px'
     kilitli.style.width = y.kartG + 'px'
     yk.style.cssText = `left:${y.yKart.x}px;top:${y.yuklemeY + y.yKart.y}px;width:${y.yKart.w}px;height:${y.yKart.h}px`
     rozetD.style.cssText = `left:${y.depo.x + y.r(6)}px;top:${y.yuklemeY + y.r(8)}px`
+    // Görünüme sabit etiketler kuyunun gerçek konumuna göre (genişlik değişince kaymasın)
+    asansorKap.style.left = Math.round(y.tupX + y.tupG / 2 - 29) + 'px'
+    darbogaz.style.left = Math.round(y.W - 109) + 'px'
     sonAcik = -1
     if (d) katlariGuncelle(d)
   }

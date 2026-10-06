@@ -89,8 +89,9 @@ export function kur(B) {
     if (s) setTimeout(() => modalAc(s.ad, s.veri), 180)
   }
 
+  // Öğretici pencere kapatmayı engellemez: yanlışlıkla açılan pencere her zaman kapanabilmeli
+  // (öğretici "kapat" diye gösterirken kapatma kilitli olursa oyun kilitleniyordu)
   perde.addEventListener('click', () => {
-    if (B.ogretici && B.ogretici.zorunlu()) return
     if (modal) { if (modal.kapatilabilir) modalKapat() }
     else if (sayfa) sayfaKapat()
   })
@@ -111,12 +112,12 @@ export function kur(B) {
     const dy = surukle.dy
     surukle = null
     sayfaEl.style.transform = ''
-    if (dy > 80 && !(B.ogretici && B.ogretici.zorunlu())) sayfaKapat()
+    if (dy > 80) sayfaKapat()
   }
   sayfaEl.addEventListener('pointerup', birak)
   sayfaEl.addEventListener('pointercancel', birak)
 
-  B.eylemler['pencere-kapat'] = () => { if (!(B.ogretici && B.ogretici.zorunlu())) sayfaKapat() }
+  B.eylemler['pencere-kapat'] = () => sayfaKapat()
   B.eylemler['modal-kapat'] = () => modalKapat()
   B.eylemler.ayarlar = () => sayfaAc('ayarlar', {})
 

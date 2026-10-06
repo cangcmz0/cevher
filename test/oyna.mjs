@@ -29,6 +29,8 @@ const SENARYO_SEC = arg('senaryo') ? arg('senaryo').split(',').map(Number) : [1,
 const PROFILLER = {
   telefon: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
   dar: { viewport: { width: 360, height: 780 }, deviceScaleFactor: 2 },
+  // Uygulama içi görüntüleyici gibi kısa ekran: üst katmanlar dokunulacak yerin üstüne binebilir
+  kisa: { viewport: { width: 390, height: 600 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
 }
 const EKRAN = join(KOK, 'test', 'ekran')
 const KAYITLAR = join(KOK, 'test', 'kayitlar')

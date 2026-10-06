@@ -132,6 +132,11 @@ export function kur(B) {
     if (!d.ogretici) return
     kosulKontrol(d)
     const a = adimNo()
+    // Sahne adımlarında (madenci, asansör, depo) üstteki etiket/rozet/kartlar dokunuşu yutmasın;
+    // zorunlu adımlarda Darboğaz kartı gizlenir (dokunulacak yerin üstüne binebiliyor)
+    const sahneAdimi = a >= 2 && a <= 4 && !B.pencere.acikMi()
+    if (B.kok.classList.contains('ogretici-sahne') !== sahneAdimi) B.kok.classList.toggle('ogretici-sahne', sahneAdimi)
+    if (B.kok.classList.contains('ogretici-zorunlu') !== zorunlu()) B.kok.classList.toggle('ogretici-zorunlu', zorunlu())
     if (a < 1 || a >= SON) {
       if (!kap.hidden) kap.hidden = true
       sonHedef = null

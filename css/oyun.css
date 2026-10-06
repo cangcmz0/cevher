@@ -364,15 +364,15 @@
   .ist-sutun:nth-child(2) .ist-metin { left: 38px; }
   .ist-metin small { font-size: 10.5px; }
   .ist-metin b { font-size: 14px; }
-  .asansor-kap { left: auto; right: 12px; }
-  .darbogaz-kart { left: auto; right: 2px; }
-  .cevrimdisi-panel { width: calc(50% - 20px); }
-  .topla2x { left: auto; right: 8px; width: calc(50% - 6px); }
 }
 
 /* ── Referansa uyum ince ayarları ── */
 .kart-sv { display: none; }
-.yonetici-rozet.dolu { display: none; }
+/* Alt bant genişliğe göre ikiye bölünür (390 px'te referanstaki 168 + 168 px) */
+.cevrimdisi-panel { width: calc((100% - 29px) / 2); }
+.topla2x { left: calc(18px + (100% - 29px) / 2); width: calc((100% - 29px) / 2); }
+/* Atanmış yöneticinin rozeti görünür: dokununca yetenek / yönetici penceresi */
+.asansor-kap .yonetici-rozet { left: -31px !important; top: 6px !important; }
 .hud-ikon { flex: none; width: 27px; height: 27px; margin-left: -3px; pointer-events: none; }
 .ust-elmas .hud-ikon { width: 28px; height: 25px; margin-left: 0; }
 .ist-metin small { font-size: 11px; letter-spacing: -.2px; }
@@ -384,3 +384,7 @@
 .sekme[aria-selected="true"] .ik { color: #2B1D12; filter: none; }
 .yukselt-ok.seffaf.alinir::after { box-shadow: 0 0 10px 2px rgba(80, 230, 170, .45); }
 .ist-metin small { font-size: 10.5px; letter-spacing: -.3px; }
+
+/* Öğretici: sahne adımlarında üst katmanlar dokunuşu geçirir; zorunlu adımlarda Darboğaz kartı gizli */
+#oyun.ogretici-sahne #maden-ust > *, #oyun.ogretici-sahne #dunya .yonetici-rozet, #oyun.ogretici-sahne #dunya .yukselt-ok { pointer-events: none !important; }
+#oyun.ogretici-zorunlu .darbogaz-kart { opacity: 0 !important; pointer-events: none !important; }
