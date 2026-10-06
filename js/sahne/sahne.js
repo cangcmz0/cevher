@@ -51,6 +51,54 @@ let efektCanli = false
 let kalite = 'yuksek'
 
 const al = (a) => Varliklar.al(a)
+
+// ── Bölge cevheri: kat görsellerindeki kömür yığınları bölgenin cevherine boyanır ──
+// Yığın elipsleri kesim pikselleriyle (cx, cy, rx, ry); tonlar bölge başına bir kez hazırlanır.
+const YIGIN = {
+  'ref.kat.0': [[172, 40, 25, 10], [221, 44, 22, 7.5]],
+  'ref.kat.1': [[187.5, 43, 26, 9.5], [225, 45.5, 10, 6]],
+  'ref.yukleme': [[195, 47.5, 24, 7.5]],
+}
+// [birleştirme, renk, saydamlık] adımları
+const CEVHER_TON = {
+  eregli: [['color', [168, 74, 44], 0.92], ['screen', [60, 22, 10], 0.9]],
+  karabuk: [['screen', [128, 122, 110], 1], ['color', [170, 162, 146], 0.55]],
+  kastamonu: [['color', [214, 116, 48], 0.95], ['screen', [80, 40, 12], 0.9]],
+}
+const tonlu = new Map()
+function doku(a, kod) {
+  const tonlar = CEVHER_TON[kod]
+  if (!tonlar || !YIGIN[a] || !Varliklar.ozelMi(a)) return al(a)
+  const anahtar = a + '|' + kod
+  const hazir = tonlu.get(anahtar)
+  if (hazir) return hazir
+  const kaynak = al(a)
+  const c = document.createElement('canvas')
+  c.width = kaynak.naturalWidth || kaynak.width
+  c.height = kaynak.naturalHeight || kaynak.height
+  const g = c.getContext('2d')
+  g.drawImage(kaynak, 0, 0)
+  for (const e of YIGIN[a]) {
+    for (const [op, [r, gg, bb], al_] of tonlar) {
+      g.save()
+      g.translate(e[0], e[1])
+      g.scale(e[2], e[3])
+      const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1)
+      gr.addColorStop(0, `rgba(${r},${gg},${bb},1)`)
+      gr.addColorStop(0.72, `rgba(${r},${gg},${bb},1)`)
+      gr.addColorStop(1, `rgba(${r},${gg},${bb},0)`)
+      g.globalCompositeOperation = op
+      g.globalAlpha = al_
+      g.fillStyle = gr
+      g.beginPath()
+      g.arc(0, 0, 1, 0, Math.PI * 2)
+      g.fill()
+      g.restore()
+    }
+  }
+  tonlu.set(anahtar, c)
+  return c
+}
 const dpTavan = () => DPR_TAVAN[kalite] || 2
 
 // ---- Kayıt ----
@@ -221,7 +269,7 @@ export const Sahne = {
       if (i < ilk) ilk = i
       if (i > son) son = i
       if (i < n) {
-        ctx.drawImage(al('ref.kat.' + (i % 2)), 0, sy, W, y.SATIR_H)
+        ctx.drawImage(doku('ref.kat.' + (i % 2), durum.aktifBolge), 0, sy, W, y.SATIR_H)
         const kb = kaziBas[i]
         if (kb && simdiMs - kb < KAZI_MS) {
           const o = 1 - (simdiMs - kb) / KAZI_MS
@@ -238,7 +286,7 @@ export const Sahne = {
     }
     // Yükleme katı
     const yuklemeGorunur = y.yuklemeY < alt && y.yuklemeY + y.YUKLEME_H > ust
-    if (yuklemeGorunur) ctx.drawImage(al('ref.yukleme'), 0, y.yuklemeY, W, y.YUKLEME_H)
+    if (yuklemeGorunur) ctx.drawImage(doku('ref.yukleme', durum.aktifBolge), 0, y.yuklemeY, W, y.YUKLEME_H)
     // Kuyu (açık katların hizasında; boyalı etiket ve kabinleri örter)
     if (n > 0) {
       const kUst = Math.max(ust, y.satirY(n - 1))

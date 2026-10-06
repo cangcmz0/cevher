@@ -43,7 +43,9 @@ export function kur(B) {
     depoCubuk: ist.querySelector('.ist-depo'),
     gelirKutu: ist.querySelector('.ist-gelir'),
     gelir: ist.querySelector('.gelir'),
+    cevherIkon: ist.querySelector('.ist-ikon.komur img'),
   }
+  const IST_IKON = { zonguldak: 'img/ref/ist-komur.png', eregli: 'img/ref/ikon-demir.png', karabuk: 'img/ref/ikon-tas.png', kastamonu: 'img/ref/ikon-bakir.png' }
 
   let gosterilenPara = null
   let sonLv = 0
@@ -72,6 +74,8 @@ export function kur(B) {
 
   function kare4(d) {
     const b = bolgeAl(d)
+    const ik = IST_IKON[d.aktifBolge] || IST_IKON.zonguldak
+    if (el.cevherIkon.getAttribute('src') !== ik) el.cevherIkon.setAttribute('src', ik)
     yaz(el.uretim, oranYazi(E.toplamUretim(d, b)))
     const a = uretimArtisi(d)
     const n = Math.round(a * 100)
