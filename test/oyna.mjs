@@ -76,8 +76,22 @@ async function sayfaAc(tarayici, profilAd, { kayit = null, kayitDuzelt = null } 
   sayfa.on('requestfailed', (r) => { if (!/fonts\./.test(r.url())) hatalar.push('istek: ' + r.url() + ' ' + r.failure()?.errorText) })
   await sayfa.goto(adres + '/')
   await sayfa.waitForFunction(() => window.__cevher && window.__cevher.hazir === true, null, { timeout: 20000 })
-  await bekle(500)          // açılış perdesi kaybolsun
+  await bekle(1300)         // açılış perdesi kaybolsun, bekleyen hikâye sahneleri açılsın
+  await hikayeKapat(sayfa)
   return { baglam, sayfa, hatalar, dokunmatik: Boolean(PROFILLER[profilAd].hasTouch) }
+}
+
+// Açık hikâye sahnelerini "Atla" ile geç (kuyruktakiler dahil)
+async function hikayeKapat(sayfa) {
+  for (let k = 0; k < 20; k++) {
+    const var_ = await sayfa.evaluate(() => {
+      const b = document.querySelector('.modal.acik [data-eylem="hikaye-atla"]')
+      if (b) b.click()
+      return !!b
+    })
+    if (!var_) return
+    await bekle(260)
+  }
 }
 
 async function dokun(s, x, y) {
@@ -190,6 +204,7 @@ async function senaryo1(tarayici, profil) {
   const goruldu = new Set()
   const notlar = []
   while (true) {
+    await hikayeKapat(sayfa)
     const d = await sayfa.evaluate(() => {
       const d = __cevher.durum, b = d.bolgeler[d.aktifBolge]
       const yon = new Set(b.yoneticiler.map((y) => y.atanan).filter(Boolean))
@@ -288,6 +303,13 @@ async function senaryo3(tarayici, profil) {
     { ad: 'modal-yonetici-m0', hazirla: (s) => s.sayfa.evaluate(() => { const d = __cevher.durum; d.bolgeler[d.aktifBolge].para = 1e9; d.oyuncu.elmas = 1000 }),
       ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('yonetici', { istasyon: 'm0' })) },
     { ad: 'modal-yonetici-asansor', ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('yonetici', { istasyon: 'asansor' })) },
+    // Genişletme: hikâye, harita/genişletme pencereleri
+    { ad: 'modal-hikaye', ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('hikaye', { id: 'zonguldak-8' })), tekSefer: true },
+    ...['bolgeler', 'gorevler', 'kontratlar', 'misyonlar', 'etkinlik', 'defter', 'ustalar', 'prestij'].map((ad) => ({
+      ad: 'pencere-' + ad, ac: (s) => s.sayfa.evaluate((ad) => __cevher.modalAc(ad, {}), ad),
+    })),
+    { ad: 'pencere-ortak', ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('ortak', { kod: 'ahmet' })) },
+    { ad: 'pencere-lojistik', ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('lojistik', { tur: 'liman' })) },
     { ad: 'modal-seviye', ac: async (s) => {
       await s.sayfa.evaluate(async () => {
         const E = await import('/js/ekonomi.js')
