@@ -4,7 +4,7 @@
 import {
   SURUM, BOLGE, BOLGELER, BASLANGIC_PARA, MADEN_SAYISI, MAKS_MADEN_SEVIYE, MAKS_ISTASYON_SEVIYE,
   MAKS_SEVIYE, YONETICI_TIPLERI, TIP_YETENEKLERI, NADIRLIKLER, ALIM_MODLARI, GECMIS_UZUNLUK, OGRETICI_SON_ADIM,
-  LIMAN, AMBAR, GOREVLER, ORTAKLAR, ORTAK_MAKS, BASARIMLAR,
+  LIMAN, AMBAR, GOREVLER, ORTAKLAR, ORTAK_MAKS, BASARIMLAR, PRESTIJ,
 } from './ayar.js'
 import { tasiyiciSayisi } from './ekonomi.js'
 
@@ -71,7 +71,9 @@ export function yeniDurum(simdiMs = Date.now(), tohum) {
     hikaye: { goruldu: [], bekleyen: ['giris'] },
     misyon: { gun: '', liste: [], bonus: false },
     etkinlik: { kod: '', bitis: 0 },
-    prestij: { sv: 0, hazirGoruldu: false },
+    // Prestij: sv = yapılan prestij sayısı, muhur = Miras Mührü (kalıcı satış bonusu), enIyi = bir turda en çok mühür,
+    // gorevRekor = bölge görevlerinin şimdiye dek alınan en ileri sırası (elmas ödülü yalnız ilk kez)
+    prestij: { sv: 0, muhur: 0, enIyi: 0, hazirGoruldu: false, gorevRekor: {} },
     ortak: { ahmet: 1, elif: 0, mehmet: 0, zeynep: 0 },
   }
   d.calisma = yeniCalisma(d)
@@ -187,6 +189,8 @@ function bolgeDogrula(kod, b) {
       aktifBitis: sayi(y.aktifBitis),
       hazirZaman: sayi(y.hazirZaman),
     }
+    // Prestijde kalan ustabaşı: elmasla/hediyeyle gelen. Bayraktan önceki kayıtlarda efsaneviler kalıcı sayılır.
+    yeni.kalici = typeof y.kalici === 'boolean' ? y.kalici : yeni.nadirlik === 2
     const a = y.atanan
     if (typeof a === 'string' && !atananlar.has(a) && istasyonGecerli(b, a) && istasyonTip(a) === y.tip) {
       yeni.atanan = a
@@ -217,6 +221,8 @@ export function dogrula(d) {
   const v = yeniDurum(0, 1)
   delete v.calisma
   const tohum = d.tohum
+  // Miras Mührü öncesi kayıt: eski prestijler (her biri ×0,5) mühüre çevrilir
+  const eskiPrestij = !duzObje(d.prestij) || !('muhur' in d.prestij)
   birlestir(d, v)
   d.surum = SURUM
   d.tohum = typeof tohum === 'number' && Number.isFinite(tohum) ? tohum >>> 0 : (Date.now() >>> 0)
@@ -248,6 +254,15 @@ export function dogrula(d) {
   d.misyon.liste = (Array.isArray(d.misyon.liste) ? d.misyon.liste : []).filter((m) => duzObje(m) && typeof m.kod === 'string')
     .slice(0, 3).map((m) => ({ kod: m.kod, n: Math.max(1, Math.floor(sayi(m.n, 1))), bas: sayi(m.bas), zor: sinirla(m.zor, 0, 2, 0), alindi: !!m.alindi }))
   d.prestij.sv = Math.floor(sayi(d.prestij.sv))
+  d.prestij.muhur = Math.floor(sayi(d.prestij.muhur))
+  if (eskiPrestij) d.prestij.muhur = d.prestij.sv * PRESTIJ.eskiSv
+  d.prestij.enIyi = Math.floor(sayi(d.prestij.enIyi))
+  const gr = {}
+  for (const kod of Object.keys(BOLGE)) {
+    const r = Math.max(sinirla(duzObje(d.prestij.gorevRekor) ? d.prestij.gorevRekor[kod] : 0, 0, GOREVLER.length, 0), bolgeler[kod] ? bolgeler[kod].gorev.sira : 0)
+    if (r > 0) gr[kod] = r
+  }
+  d.prestij.gorevRekor = gr
   // başarımlar: tanınan kodlar, kademe 0..esik sayısı, rekor sonlu ve negatif değil
   const al = {}, rekor = {}
   for (const t of BASARIMLAR) {

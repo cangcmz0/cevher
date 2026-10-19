@@ -19,12 +19,12 @@ const kademeListesi = (son) => {
 export const KADEME_MADEN = don(kademeListesi(400))       // 17 giriş
 export const KADEME_ISTASYON = don(kademeListesi(800))    // 33 giriş
 
-// Bölgeler (§2.3)
+// Bölgeler (§2.3). bedel: bölgeyi açmak için bir önceki bölgenin kasasından ödenen para (her prestij turunda yeniden)
 export const BOLGELER = don([
-  { kod: 'zonguldak', ad: 'Zonguldak', cevher: 'Kömür', acilisLv: 1, olcek: 1, zorluk: 1, asama: 1, alt: 'Maden Şehri', renk: '#2B2B33', vurgu: '#6E7480' },
-  { kod: 'eregli', ad: 'Ereğli', cevher: 'Demir', acilisLv: 15, olcek: 1e3, zorluk: 1.5, asama: 2, alt: 'Demir & Liman', renk: '#7A3E2A', vurgu: '#C0714E' },
-  { kod: 'karabuk', ad: 'Karabük', cevher: 'Taş', acilisLv: 30, olcek: 1e6, zorluk: 2.25, asama: 2, alt: 'Taş Ocakları', renk: '#8C877C', vurgu: '#D2CCBE' },
-  { kod: 'kastamonu', ad: 'Kastamonu', cevher: 'Bakır', acilisLv: 45, olcek: 1e9, zorluk: 3.4, asama: 2, alt: 'Bakır Madenleri', renk: '#A8552A', vurgu: '#E9935A' },
+  { kod: 'zonguldak', ad: 'Zonguldak', cevher: 'Kömür', acilisLv: 1, bedel: 0, olcek: 1, zorluk: 1, asama: 1, alt: 'Maden Şehri', renk: '#2B2B33', vurgu: '#6E7480' },
+  { kod: 'eregli', ad: 'Ereğli', cevher: 'Demir', acilisLv: 15, bedel: 2e11, olcek: 1e3, zorluk: 1.5, asama: 2, alt: 'Demir & Liman', renk: '#7A3E2A', vurgu: '#C0714E' },
+  { kod: 'karabuk', ad: 'Karabük', cevher: 'Taş', acilisLv: 30, bedel: 5e16, olcek: 1e6, zorluk: 2.25, asama: 2, alt: 'Taş Ocakları', renk: '#8C877C', vurgu: '#D2CCBE' },
+  { kod: 'kastamonu', ad: 'Kastamonu', cevher: 'Bakır', acilisLv: 45, bedel: 3e20, olcek: 1e9, zorluk: 3.4, asama: 2, alt: 'Bakır Madenleri', renk: '#A8552A', vurgu: '#E9935A' },
 ])
 export const BOLGE = don(Object.fromEntries(BOLGELER.map((b) => [b.kod, b])))
 export const BASLANGIC_PARA = 20                           // × olcek
@@ -128,7 +128,7 @@ export const SATIS_SEVIYE_ARTIS = 0.02
 export const ACILIMLAR = don({ 2: ['takviye'], 3: ['arastirma'], 5: ['teklif'], 15: ['eregli'], 30: ['karabuk'], 45: ['kastamonu'] })
 export const ACILIM_ADLARI = don({
   takviye: 'Kazanç x2 düğmesi', arastirma: 'Araştırma laboratuvarı', teklif: 'Mağazada Özel Teklif',
-  eregli: 'Yeni bölge: Ereğli (Demir)', karabuk: 'Yeni bölge: Karabük (Taş)', kastamonu: 'Yeni bölge: Kastamonu (Bakır)',
+  eregli: 'Ereğli (Demir) açılabilir', karabuk: 'Karabük (Taş) açılabilir', kastamonu: 'Kastamonu (Bakır) açılabilir',
 })
 
 // Takviye (§2.12)
@@ -176,6 +176,7 @@ export const ARASTIRMALAR = don([
   { kod: 'okul', dal: 'Yönetim', ad: 'Yönetici Okulu', tier: 2, sv: 3, sart: { lv: 6 } },
   { kod: 'dinlenme', dal: 'Yönetim', ad: 'Dinlenme Odası', tier: 2, sv: 3, sart: { okul: 1 } },
   { kod: 'ik', dal: 'Yönetim', ad: 'İnsan Kaynakları', tier: 2, sv: 3, sart: { lv: 8 } },
+  { kod: 'miras', dal: 'Yönetim', ad: 'Miras Bilgisi', tier: 2, sv: 4, sart: { lv: 15 } },
 ])
 
 // Görevler (§2.14, genişletilmiş): her bölgede aynı 15 koşul; başlık, açıklama ve hikâye js/hikaye.js'de.
@@ -273,8 +274,11 @@ export const ORTAKLAR = don([
 export const ORTAK_MAKS = 10
 export const ORTAK_MALIYET = don([0, 30, 60, 100, 160, 240, 350, 500, 700, 950])   // L → L+1 (elmas)
 
-// Prestij: bütün bölgeler sıfırlanır; seviye, elmas, araştırma ve hikâye kalır. Her prestij satışı +%50
-export const PRESTIJ = don({ lv: 35, usta: 2, satis: 0.5, elmas: 50 })
+// Prestij (Egg Inc / Idle Miner tarzı "baştan başla"): bütün bölgeler kapanır, Zonguldak tek katla yeniden başlar.
+// Bu turun kazancına göre kalıcı Miras Mührü verilir: mühür = ⌊(turKazanç / esik)^us⌋; her mühür bütün satışları
+// +%10 artırır (Miras Bilgisi araştırması +%1/sv). Oyuncu seviyesi, elmas, araştırma, ortaklar, hikâye, başarımlar ve
+// elmasla/hediyeyle gelen ustabaşılar kalır. eskiSv: eski sistemdeki her prestij (×0,5) = 5 mühür.
+export const PRESTIJ = don({ esik: 1e10, us: 0.15, etki: 0.10, eskiSv: 5 })
 
 // Günlük hediye (§2.16) [S2]
 export const GUNLUK_HEDIYE = don([

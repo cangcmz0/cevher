@@ -1423,7 +1423,7 @@ Each S2 package follows the same ownership, interfaces and acceptance rules as s
 | Research | `ARASTIRMALAR`, `arastirmaBaslat` | §2.15 tree is live: elmas + game time, one at a time, rewarded −15 min (2 per level) or an elmas finish. |
 | Daily | `gunlukAl`, `misyonKur/misyonAl`, `elmasReklam` | 7-day gift cycle; 3 date-seeded daily missions (+15 elmas bonus for all three); 3 rewarded-ad elmas per day. |
 | Events | `ETKINLIKLER`, `etkinlik` | A weekly rotating event set by the UI from the calendar (Monday start): region ×1.5 sales, hire −30%, floor opening −25%, contract rewards ×2. |
-| Prestige | `PRESTIJ`, `prestij` | Needs Lv.35 and 2 `Bölge Ustası`. Resets every region; keeps level, elmas, research, partners, story and opened regions. +50% sales per prestige, plus elmas. |
+| Prestige (Yeni Nesil) | `PRESTIJ`, `prestij`, `bekleyenMuhur`, `muhurKazanci`, `bolgeAcilis` | Egg Inc / Idle Miner style restart, see §10.3. |
 
 | Treasure vein | `HAZINE`, `hazineKontrol`, `hazineAl`; `js/arayuz/hazine.js` | After the tutorial, with at least 2 floors open, a glowing vein shows up on a random floor every 70–140 s for 24 s (seeded by `durum.tohum`). Gold gives 45 s of income (minimum 60); elmas (15%) gives 2–5 elmas. It lives in `calisma`, so it is never saved. When the vein is off-screen, a `Hazine!` ↑/↓ pill scrolls to it. Collecting it flies the reward to the HUD counter. There is a daily mission for it. |
 | Achievements | `BASARIMLAR`, `BASARIM_ODUL`, `basarimDeger/basarimIlerleme`, `basarimAl`; `js/arayuz/profil.js` | 13 tiered achievements (44 tiers), each tier paying elmas + XP. Progress is the best value seen (`basarim.rekor`), so prestige never takes it back. Lifetime earnings carry over through `istatistik.prestijKazanc`. Newly claimable tiers raise a toast (tiers already claimable at load are not re-announced). The avatar opens the profile sheet, which shows stats and the achievement list, and carries a red dot while something can be claimed. |
@@ -1474,6 +1474,20 @@ frames are baked lazily. Each frame only issues drawImage calls. Floors cycle th
   - Illustrations (`sahne/simge.js`): ore pile, mine cart, cabin, ship, warehouse, contract board, medal, gift, coins, gems, pickaxe, flask, helmet, hourglass, bolt. They are drawn with the scene helpers, cached per size, and placed with `<canvas data-simge>` (`ortak.simge` / `simgeleriCiz`).
   - Map (`sahne/harita.js`): a 360×440 drawn coast with sea, beach, fields, forests, hills, snowy mountains, the Filyos river, roads and a railway. Each region has its own scene: a headframe in Zonguldak, a pier and steel works in Ereğli, a stepped quarry in Karabük, a copper adit in Kastamonu. Region cards, a passing ship, drifting clouds, chimney smoke and the active-region pulse are DOM layers on top.
   - Yöneticiler, Araştırma and Mağaza are rebuilt with these parts; the sheets (upgrade, partner, logistics, prestige, regions, quests, contracts, missions, events, settings, profile) and the level-up modal share the theme.
+
+### 10.3 Prestige: Yeni Nesil and Miras Mührü
+
+Prestige is a full restart in the style of Egg Inc and Idle Miner Tycoon:
+
+- **When:** any time after the tutorial, as long as the run would earn at least one seal. The `Yeni Nesil` story scene plays the first time five seals are waiting.
+- **Reward:** `Miras Mührü` (legacy seals) from this run's earnings, `⌊(Σ toplamKazanc / 1e10)^0.15⌋`. Each seal adds +10% to all sales, and the `Miras Bilgisi` research adds +1% per level. Seals add up across runs; `prestijCarpani = 1 + etki × mühür`.
+- **Resets:** every region closes and Zonguldak starts again with one floor and 20 coins. Floors, stations, cash, managers hired with cash, quests and contracts are reset.
+- **Keeps:** player level and XP, elmas, research, partners, story, achievements and statistics. Managers who came from elmas, gifts or the shop (`kalici`) move to the new Zonguldak as well (at most 20, rarest first), and the first floor, elevator and depot get one each.
+- **Regions per run:** a region now needs both its level (a one-time gate, since the level is kept) and an opening cost paid from the previous region's cash: Ereğli 200 mr, Karabük 50 kn, Kastamonu 300 aa. Each cost is about 10–20 minutes of income at the point where the level allows it.
+- **No farming:** quest elmas and the `Bölge Ustası` elmas are paid only once per quest (`prestij.gorevRekor`). Level-up elmas cannot repeat because the level is kept.
+- **UI:** the Yöneticiler prestige card and the prestige sheet show the seals, the waiting seals, the multiplier before and after, progress to the next seal, and what resets and what stays. A red dot on the Yöneticiler tab marks the efficient moment, when the waiting seals reach half of the owned seals (at least 5). Region cards, the map and the regions sheet show the opening cost.
+- **Old saves:** each old prestige becomes 5 seals, so the multiplier stays the same. Quest records are filled from the current regions. Legendary managers count as `kalici`.
+- **Pacing:** this was measured with a bot playing the simulation and prestiging every 3 hours. The multiplier is ×80 after the first day of active play and ×900 after two days, after which it grows by roughly +1000 seals per run. The first run reaches Ereğli in about 70 minutes; Kastamonu (Lv.45) takes about 70 hours without prestige and opens in the 7th run with it.
 
 All new state is in the save whitelist (`kayit.js`) and repaired by `dogrula`. Older saves get the new fields with
 defaults, and their partners unlock from tutorial/quest progress. Tests: `npm test` (48) and

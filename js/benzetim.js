@@ -16,14 +16,14 @@ import {
   DARBOGAZ_TEMIZLE, DEPO_BOSTA_SURE, GELIR_EMA_SURE, GECMIS_ARALIK, GECMIS_UZUNLUK, ALIM_MODLARI, MAKS_SEVIYE,
   XP, ACILIMLAR, TAKVIYE_DAKIKA, TAKVIYE_SINIR_SAAT, OGRETICI_SON_ADIM, DARBOGAZ_ARALIK, GOREVLER, BOLGELER,
   BOLGE, BOLGE_USTASI_ELMAS, BOLGE_ACMA_XP, LIMAN, AMBAR, KONTRAT, KONTRAT_MUSTERI, MISYONLAR, MISYON_ODUL,
-  ETKINLIKLER, PRESTIJ, ARASTIRMALAR, ARASTIRMA_MALIYET, ARASTIRMA_SURELER, ARASTIRMA_T3_SURE, GUNLUK_HEDIYE,
+  ETKINLIKLER, ARASTIRMALAR, ARASTIRMA_MALIYET, ARASTIRMA_SURELER, ARASTIRMA_T3_SURE, GUNLUK_HEDIYE,
   ELMAS_HARCAMA, TAKVIYE_MAGAZA_SINIR_SAAT, ORTAKLAR, ORTAK_MAKS, ORTAK_MALIYET, HAZINE, BASARIMLAR, BASARIM_ODUL,
 } from './ayar.js'
 import {
   madenUretim, uretimCarpani, yiginKap, asansorKap, asansorHiz, tasiyiciSayisi, tasiyiciYuk, depoYol, depoKap,
   satisCarpani, kapasiteler, otoGelir, toplamUretim, xpGerek, harcamaXp, teklif, madenAcilis, kiralamaMaliyeti,
   yoneticiBul, yetenekDurum, yetenekSuresi, yetenekBekleme, gecilenKademeler, gelirRef, bolgeBilgi,
-  bolgeKodu, etkinlik, otoAkis, ar, limanMaliyet, ambarMaliyet, cevrimdisiSinir,
+  bolgeKodu, etkinlik, otoAkis, ar, limanMaliyet, ambarMaliyet, cevrimdisiSinir, turKazanc, muhurKazanci,
 } from './ekonomi.js'
 import { yeniCalisma, yeniTasiyici, yeniDurum, yeniBolge, rastgele, istasyonGecerli, istasyonTip } from './durum.js'
 import { SAHNELER, gorevYazi, gorevSahnesi } from './hikaye.js'
@@ -480,7 +480,9 @@ export function gorevOdulu(d, b, i) {
   const bb = bolgeBilgi(d, b)
   const r = Math.max(0, BOLGELER.indexOf(bb))
   const para = g.para ? Math.max(gelirRef(d, b) * g.para * 60, 50 * bb.olcek) : 0
-  return { xp: Math.round(g.xp * (1 + 0.5 * r)), elmas: g.elmas, para }
+  // Elmas yalnız ilk kez: önceki prestij turlarında alınmış görevler yalnız XP ve para verir
+  const rekor = (d.prestij && d.prestij.gorevRekor && d.prestij.gorevRekor[bb.kod]) || 0
+  return { xp: Math.round(g.xp * (1 + 0.5 * r)), elmas: i < rekor ? 0 : g.elmas, para }
 }
 
 // Şimdiki görevin durumu ya da null (hepsi bitti)
@@ -642,14 +644,34 @@ export function misyonIlerleme(d, m) {
 
 // ---- Prestij ----
 
-export function prestijUygun(d) {
-  let usta = 0
-  for (const k of Object.keys(d.bolgeler)) if (d.bolgeler[k].usta) usta++
-  return d.oyuncu.lv >= PRESTIJ.lv && usta >= PRESTIJ.usta
+// Bölge sırası: açılış bedeli bir öncekinin kasasından ödenir
+export function oncekiBolge(kod) {
+  const i = BOLGELER.findIndex((x) => x.kod === kod)
+  return i > 0 ? BOLGELER[i - 1] : null
+}
+// Bölge açılabilir mi: { durum: 'acik' | 'seviye' | 'sira' | 'para' | 'hazir', bedel, kasa }
+export function bolgeAcilis(d, kod) {
+  const bb = BOLGE[kod]
+  if (d.bolgeler[kod]) return { durum: 'acik', bedel: 0, kasa: null }
+  const ob = oncekiBolge(kod)
+  const kasa = ob ? d.bolgeler[ob.kod] : null
+  if (d.oyuncu.lv < bb.acilisLv) return { durum: 'seviye', bedel: bb.bedel, kasa: ob && ob.kod }
+  if (ob && !kasa) return { durum: 'sira', bedel: bb.bedel, kasa: ob.kod }
+  if (kasa && kasa.para < bb.bedel) return { durum: 'para', bedel: bb.bedel, kasa: ob.kod, oran: kasa.para / bb.bedel }
+  return { durum: 'hazir', bedel: bb.bedel, kasa: ob && ob.kod }
 }
 
+// Bu tur prestij yapılırsa kazanılacak Miras Mührü
+export const bekleyenMuhur = (d) => muhurKazanci(turKazanc(d))
+
+// Prestij her an yapılabilir; öğretici bitmiş ve en az bir mühür kazanılacak olmalı
+export function prestijUygun(d) {
+  return !!d.ogretici.bitti && bekleyenMuhur(d) >= 1
+}
+
+// Yeni Nesil sahnesi: ilk kez anlamlı bir mühür (5) birikince
 function prestijKontrol(d, olaylar) {
-  if (d.prestij.hazirGoruldu || !prestijUygun(d)) return
+  if (d.prestij.hazirGoruldu || !prestijUygun(d) || bekleyenMuhur(d) < 5) return
   d.prestij.hazirGoruldu = true
   hikayeEkle(d, 'prestij-hazir', olaylar)
 }
@@ -813,7 +835,8 @@ const EYLEMLER = {
     const tohum = Math.floor(rastgele(d) * 1e6)
     let no = 0
     for (const y of b.yoneticiler) no = Math.max(no, +String(y.id).replace(/^\D+/, '') || 0)
-    const y = { id: 'y' + (no + 1), tip, nadirlik, yetenek, ad: isim, tohum, atanan: null, aktifBitis: 0, hazirZaman: 0 }
+    // kalici: elmasla, hediyeyle ya da mağazadan gelen ustabaşı prestijde kaybolmaz
+    const y = { id: 'y' + (no + 1), tip, nadirlik, yetenek, ad: isim, tohum, atanan: null, aktifBitis: 0, hazirZaman: 0, kalici: odeme !== 'para' }
     b.yoneticiler.push(y)
     d.istatistik.yonetici = (d.istatistik.yonetici || 0) + 1
     // atama: istenen istasyon boşsa oraya, yoksa en üstteki boş istasyona
@@ -967,11 +990,14 @@ const EYLEMLER = {
     yay(olaylar, { tip: 'gorevTamam', sira, ...odul })
     xpVer(d, odul.xp, 'gorev', olaylar)
     const kod = bolgeKodu(d, b)
+    const rekor = d.prestij.gorevRekor[kod] || 0
+    d.prestij.gorevRekor[kod] = Math.max(rekor, gv.sira)
     const sahne = gorevSahnesi(kod, sira)
     if (gv.sira >= GOREVLER.length && !b.usta) {
       b.usta = true
-      d.oyuncu.elmas += BOLGE_USTASI_ELMAS
-      yay(olaylar, { tip: 'bolgeUstasi', bolge: kod, elmas: BOLGE_USTASI_ELMAS })
+      const elmas = rekor >= GOREVLER.length ? 0 : BOLGE_USTASI_ELMAS
+      d.oyuncu.elmas += elmas
+      yay(olaylar, { tip: 'bolgeUstasi', bolge: kod, elmas })
       enIyiGuncelle(d, b)
     }
     if (sahne) hikayeEkle(d, sahne, olaylar)
@@ -1026,6 +1052,14 @@ const EYLEMLER = {
     let yeni = false
     if (!d.bolgeler[kod]) {
       if (d.oyuncu.lv < bb.acilisLv) return RED('kilit')
+      // Açılış bedeli bir önceki bölgenin kasasından ödenir (her prestij turunda yeniden)
+      const ob = oncekiBolge(kod)
+      if (ob) {
+        const kasa = d.bolgeler[ob.kod]
+        if (!kasa) return RED('sira')
+        if (kasa.para < bb.bedel) return RED('para')
+        kasa.para -= bb.bedel
+      }
       d.bolgeler[kod] = yeniBolge(kod)
       yeni = true
     }
@@ -1309,27 +1343,45 @@ const EYLEMLER = {
     return TAMAM()
   },
 
-  // Prestij: bütün bölgeleri yeniden kur, kalıcı satış bonusu al
+  // Prestij: her şey baştan (yalnız Zonguldak, tek kat); tur kazancına göre kalıcı Miras Mührü.
+  // Elmasla/hediyeyle gelen ustabaşılar yeni Zonguldak'a boşta geçer (ilk kat, asansör ve depoya kendiliğinden atanır).
   prestij(d, b, v, olaylar) {
     if (!prestijUygun(d)) return RED('kilit')
+    const muhur = bekleyenMuhur(d)
+    const tasinan = []
     for (const kod of Object.keys(d.bolgeler)) {
       const eski = d.bolgeler[kod]
       d.istatistik.prestijKazanc = (d.istatistik.prestijKazanc || 0) + (eski.toplamKazanc || 0)
-      const yeni = yeniBolge(kod)
-      yeni.giris = eski.giris
-      d.bolgeler[kod] = yeni
+      for (const y of eski.yoneticiler) if (y.kalici) tasinan.push(y)
     }
+    const z = yeniBolge('zonguldak')
+    z.giris = true
+    tasinan.sort((a, c) => c.nadirlik - a.nadirlik)
+    tasinan.length = Math.min(tasinan.length, MAKS_YONETICI)
+    tasinan.forEach((y, i) => {
+      y.id = 'y' + (i + 1)
+      y.aktifBitis = 0
+      y.hazirZaman = 0
+      y.atanan = null
+    })
+    for (const ist of ['m0', 'asansor', 'depo']) {
+      const y = tasinan.find((x) => !x.atanan && x.tip === istasyonTip(ist))
+      if (y) y.atanan = ist
+    }
+    z.yoneticiler = tasinan
+    d.bolgeler = { zonguldak: z }
+    d.aktifBolge = 'zonguldak'
     d.prestij.sv++
-    d.prestij.hazirGoruldu = false
-    const elmas = PRESTIJ.elmas * d.prestij.sv
-    d.oyuncu.elmas += elmas
+    d.prestij.muhur += muhur
+    d.prestij.enIyi = Math.max(d.prestij.enIyi || 0, muhur)
     d.bekleyenCevrimdisi = null
     hazirla(d)
-    yay(olaylar, { tip: 'prestijYapildi', sv: d.prestij.sv, elmas })
+    yay(olaylar, { tip: 'prestijYapildi', sv: d.prestij.sv, muhur, toplam: d.prestij.muhur, tasinan: tasinan.length })
+    yay(olaylar, { tip: 'bolgeDegisti', bolge: 'zonguldak', yeni: false, kazanc: 0, sure: 0 })
     hikayeEkle(d, 'prestij', olaylar, true)
     yay(olaylar, { tip: 'paraDegisti' })
     isaretle(d, true)
-    return { ok: true, sv: d.prestij.sv, elmas }
+    return { ok: true, sv: d.prestij.sv, muhur, toplam: d.prestij.muhur }
   },
 
   // Hata ayıklama / test düzeneği: XP ver (seviye atlama modalı için)

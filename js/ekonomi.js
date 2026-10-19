@@ -296,7 +296,17 @@ export function cevrimdisiSinir(d, b) {
   return (CEVRIMDISI_SINIR_SAAT + ar(d, 'gece')) * 3600 + ((b && b.ambar) || 0) * AMBAR.dakika * 60
 }
 
-export const prestijCarpani = (d) => 1 + PRESTIJ.satis * ((d && d.prestij && d.prestij.sv) || 0)
+// Miras Mührü: her mühür bütün satışları +%10 (Miras Bilgisi araştırması seviye başına +%1) artırır
+export const muhurEtki = (d) => PRESTIJ.etki + 0.01 * ar(d, 'miras')
+export const prestijCarpani = (d) => 1 + muhurEtki(d) * ((d && d.prestij && d.prestij.muhur) || 0)
+// Bu turun kazancı (açık bölgelerin toplamı) ve prestij yapılırsa kazanılacak mühür
+export const turKazanc = (d) => Object.keys(d.bolgeler).reduce((s, k) => s + (d.bolgeler[k].toplamKazanc || 0), 0)
+export function muhurKazanci(kazanc) {
+  if (!(kazanc >= PRESTIJ.esik)) return 0
+  return Math.floor(Math.pow(kazanc / PRESTIJ.esik, PRESTIJ.us) + 1e-9)
+}
+// n mühür için gereken tur kazancı
+export const muhurEsigi = (n) => PRESTIJ.esik * Math.pow(Math.max(1, n), 1 / PRESTIJ.us)
 
 // Bölgeye özgü satış çarpanı: Liman × Bölge Ustası × bölge etkinliği
 export function bolgeSatis(d, b) {

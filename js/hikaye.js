@@ -314,10 +314,11 @@ export const SAHNELER = Object.freeze({
   // ── Yeni Nesil ──
   'prestij-hazir': S('Yeni Nesil',
     ['ahmet', 'Bir fikrim var: Yeni Nesil! Ocakları gençlere devredip her şeyi baştan, daha güçlü kuralım. Deneyimimiz bizimle kalır.'],
-    ['mehmet', 'Prestij yaparsan bölgeler sıfırlanır ama seviyen, elmasların ve araştırmaların kalır. Üstelik bütün satışlar kalıcı olarak artar.'],
+    ['mehmet', 'Prestij yaparsan bütün bölgeler kapanır, Zonguldak\'ta tek katla yeniden başlarız. Ama bu turda ne kadar kazandıysak o kadar Miras Mührü alırız; her mühür bütün satışları kalıcı olarak %10 artırır.'],
+    ['ahmet', 'Seviyen, elmasların, araştırmaların ve elmasla tuttuğun ustabaşıları seninle gelir. Ne kadar ileri gidersek mühür o kadar çok olur; her turda bir öncekinden hızlı büyürüz.'],
   ),
   prestij: S('Yeniden Başlangıç',
-    ['ahmet', 'Yeni nesil madenciler hazır! Ocakları ilk günkü gibi açıyoruz ama bu sefer her şey çok daha hızlı olacak.'],
+    ['ahmet', 'Yeni nesil madenciler hazır! Ocakları ilk günkü gibi açıyoruz ama Miras Mühürlerimiz sayesinde her şey çok daha hızlı olacak.'],
   ),
 })
 
