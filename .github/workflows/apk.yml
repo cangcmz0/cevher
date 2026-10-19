@@ -1,0 +1,90 @@
+# Android APK: oyunu Capacitor ile sarar, hata ayıklama imzalı APK üretir ve "apk" sürümüne ekler.
+# Telefona kurulum: sürüm sayfasından cevher-madenci.apk indirilir, "bilinmeyen kaynaklara izin ver" onaylanır.
+name: Android APK
+
+on:
+  push:
+    branches: [claude/friendly-ride-jxf1fp]
+    paths: ['index.html', 'js/**', 'css/**', 'img/**', 'araclar/**', '.github/workflows/apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Web dosyaları (dist/)
+        run: node araclar/paketle.mjs
+
+      - name: Capacitor Android projesi
+        run: |
+          npm install --no-save --no-audit --no-fund @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+          cat > capacitor.config.json <<'JSON'
+          {
+            "appId": "com.cangcmz0.cevher",
+            "appName": "Cevher Madenci",
+            "webDir": "dist",
+            "backgroundColor": "#062B42",
+            "android": { "adjustMarginsForEdgeToEdge": "auto" }
+          }
+          JSON
+          npx cap add android
+
+      - name: Simge, açılış görseli ve dikey ekran
+        run: |
+          command -v convert >/dev/null || (sudo apt-get update -q && sudo apt-get install -y -q imagemagick)
+          RES=android/app/src/main/res
+          rm -rf $RES/mipmap-anydpi-v26
+          for y in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+            d=${y%%:*}; n=${y##*:}
+            mkdir -p $RES/mipmap-$d
+            convert araclar/android/ikon-kare.png -resize ${n}x${n} $RES/mipmap-$d/ic_launcher.png
+            convert araclar/android/ikon-yuvarlak.png -resize ${n}x${n} $RES/mipmap-$d/ic_launcher_round.png
+          done
+          rm -f $RES/drawable-*/splash.png
+          cp araclar/android/acilis.png $RES/drawable/splash.png
+          sed -i 's#android:name=".MainActivity"#android:name=".MainActivity"\n            android:screenOrientation="portrait"#' android/app/src/main/AndroidManifest.xml
+          grep -q 'screenOrientation="portrait"' android/app/src/main/AndroidManifest.xml
+          npx cap sync android
+
+      - name: APK derle
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk ../cevher-madenci.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cevher-madenci-apk
+          path: cevher-madenci.apk
+
+      - name: Sürüme ekle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOT="Android için kurulum dosyası. Telefonda cevher-madenci.apk dosyasını indirip açın; sorulursa \"bu kaynaktan yüklemeye izin ver\"i onaylayın. (Derleme: ${GITHUB_SHA::7})"
+          if gh release view apk >/dev/null 2>&1; then
+            gh release upload apk cevher-madenci.apk --clobber
+            gh release edit apk --notes "$NOT"
+          else
+            gh release create apk cevher-madenci.apk --title "Cevher Madenci (Android)" --notes "$NOT" --target "$GITHUB_SHA"
+          fi
