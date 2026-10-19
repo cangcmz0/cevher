@@ -1428,10 +1428,16 @@ Each S2 package follows the same ownership, interfaces and acceptance rules as s
 | Treasure vein | `HAZINE`, `hazineKontrol`, `hazineAl`; `js/arayuz/hazine.js` | After the tutorial, with at least 2 floors open, a glowing vein shows up on a random floor every 70–140 s for 24 s (seeded by `durum.tohum`). Gold gives 45 s of income (minimum 60); elmas (15%) gives 2–5 elmas. It lives in `calisma`, so it is never saved. When the vein is off-screen, a `Hazine!` ↑/↓ pill scrolls to it. Collecting it flies the reward to the HUD counter. There is a daily mission for it. |
 | Achievements | `BASARIMLAR`, `BASARIM_ODUL`, `basarimDeger/basarimIlerleme`, `basarimAl`; `js/arayuz/profil.js` | 13 tiered achievements (44 tiers), each tier paying elmas + XP. Progress is the best value seen (`basarim.rekor`), so prestige never takes it back. Lifetime earnings carry over through `istatistik.prestijKazanc`. Newly claimable tiers raise a toast (tiers already claimable at load are not re-announced). The avatar opens the profile sheet, which shows stats and the achievement list, and carries a red dot while something can be claimed. |
 
-Scene v3 (`js/sahne/sahne.js`, `dekor.js`, `karakter.js`): the scene no longer uses textures cut from the reference.
-It is drawn in a simple, flat-shaded style: one light direction, a thin dark outline, few gradients. The layout is
-`yerlesim.js` unchanged, so the DOM cards, badges and transparent buttons line up as before. Strips and character
-frames are drawn once at screen resolution and cached; each frame only issues drawImage calls.
+Scene v4 (`js/sahne/sahne.js`, `dekor.js`, `karakter.js`): the scene no longer uses textures cut from the reference.
+It is drawn procedurally in a detailed, painterly style:
+- **Rock:** a noise-textured base, generated at half resolution and scaled up, with bevelled stones on top (rim light top-left, shadow bottom-right, cracks).
+- **Wood:** grain lines and knots, darkened ends.
+- **Metal:** gradients, rivets and flanges.
+- **Light:** warm soft-light pools under each lamp, and ambient occlusion in the tunnel corners.
+
+The layout is `yerlesim.js` unchanged, so the DOM cards, badges and transparent buttons line up as before. Strips are
+baked once per region and screen size, and the active region's strips are pre-baked behind the loading screen; character
+frames are baked lazily. Each frame only issues drawImage calls. Floors cycle through three layouts (`KAT_DUZEN`).
 - **Backdrop (`dekor.js`):** each region has its own rock palette. A floor strip has:
   - a timbered tunnel: two posts, a top beam, ceiling boards and hanging lamps,
   - the ore face on the left and a small pile of dug ore,
@@ -1443,6 +1449,7 @@ frames are drawn once at screen resolution and cached; each frame only issues dr
 
   The loading floor has the truck, a depot shed, the depot bunker with its sign, and a chute under the shaft.
 - **Characters (`karakter.js`):** a jointed rig with two-segment legs and arms (knees and elbows bend). The arms use IK to hold the pickaxe or a cart.
+  - Detail: a glossy helmet with a lit lamp, a brim shadow on the face, eye whites, overalls with cel shading, seams and knee patches, a reflective band, a tool belt, and boots with soles.
   - Animations: `yuru`, `tasi` (sack on the shoulder), `it` (push a cart), `kaz`, `bekle`, `dinlen` (sit on a crate), `sevin`, `egil`, `bosalt`.
   - There are four looks, and the cart is a separate sprite.
   - Frames are baked lazily per look, animation, frame and scale.

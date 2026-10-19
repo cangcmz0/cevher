@@ -42,6 +42,12 @@ const CELIK = '#AEB8C2', CELIK_K = '#6E7A86', CELIK_A = '#E2E8EE'
 const CUVAL = '#C9A46A', CUVAL_K = '#9C7A46'
 
 const R = Math.PI / 180
+// Basit açma: #rrggbb rengini beyaza doğru %30 karıştırır
+function acikR(h) {
+  const n = parseInt(h.slice(1), 16)
+  const k = (v) => Math.round(v + (255 - v) * 0.3).toString(16).padStart(2, '0')
+  return '#' + k((n >> 16) & 255) + k((n >> 8) & 255) + k(n & 255)
+}
 const sin = Math.sin, cos = Math.cos
 
 // ── Ters kinematik: omuzdan hedefe iki parçalı kol, dirsek 'yon' tarafına bükülür ──
@@ -132,7 +138,7 @@ function uzuv(c, pts, kal, renk) {
   // Dış çizgili kalın uzuv (önce koyu, sonra renk)
   c.lineCap = 'round'
   c.lineJoin = 'round'
-  for (const [r, k] of [[CIZGI, kal + 1.7], [renk, kal]]) {
+  for (const [r, k] of [[CIZGI, kal + 1.9], [renk, kal]]) {
     c.strokeStyle = r
     c.lineWidth = k
     c.beginPath()
@@ -163,24 +169,43 @@ function botCiz(c, x, y, aci) {
   c.save()
   c.translate(x, y)
   c.rotate(aci * 0.5)
+  // Gövde: koyu deri, kalın taban, parlak burun
   const p = new Path2D()
-  p.moveTo(-2.6, -3.2)
-  p.lineTo(2.2, -3.2)
-  p.quadraticCurveTo(5.4, -2.8, 5.2, 0)
-  p.lineTo(-2.8, 0)
+  p.moveTo(-2.8, -3.6)
+  p.lineTo(1.6, -3.6)
+  p.quadraticCurveTo(5.8, -3.2, 5.6, -0.6)
+  p.lineTo(-3, -0.6)
   p.closePath()
-  dolCiz(c, p, BOT, 0.8)
-  c.fillStyle = 'rgba(255,255,255,.18)'
-  c.fillRect(-1.8, -2.7, 3, 0.8)
+  const g = c.createLinearGradient(0, -3.6, 0, 0)
+  g.addColorStop(0, '#6B4A30'); g.addColorStop(1, BOT)
+  dolCiz(c, p, g, 0.8)
+  dolCiz(c, yuvarlak(-3.2, -0.9, 9.2, 1.6, 0.6), '#1E140C', 0.6)
+  c.fillStyle = 'rgba(255,230,190,.35)'
+  c.beginPath(); c.ellipse(3.4, -2.4, 1.3, 0.6, -0.2, 0, Math.PI * 2); c.fill()
+  c.strokeStyle = 'rgba(255,220,170,.4)'
+  c.lineWidth = 0.4
+  c.beginPath(); c.moveTo(-1.6, -3.3); c.lineTo(0.4, -2.2); c.moveTo(-1.6, -2.2); c.lineTo(0.4, -3.3); c.stroke()
   c.restore()
 }
 
-// Bacak: kalçadan dize, dizden ayağa (aci: dikeyden öne, diz: bükülme)
+// Bacak: kalçadan dize, dizden ayağa (aci: dikeyden öne, diz: bükülme). Diz yaması ve reflektör bant
 function bacakCiz(c, hx, hy, aci, diz, renk) {
   const kx = hx + sin(aci) * 6.6, ky = hy + cos(aci) * 6.6
   const sa = aci - diz
   const ax = kx + sin(sa) * 6.4, ay = ky + cos(sa) * 6.4
   uzuv(c, [hx, hy, kx, ky, ax, ay - 1.2], 5.4, renk)
+  // Gölgeli arka kenar (cel gölge)
+  c.strokeStyle = 'rgba(10,20,45,.35)'
+  c.lineWidth = 1.6
+  c.beginPath(); c.moveTo(hx - 1.5, hy + 0.5); c.lineTo(kx - 1.6, ky); c.lineTo(ax - 1.6, ay - 1.5); c.stroke()
+  // Diz yaması
+  c.fillStyle = 'rgba(0,0,0,.22)'
+  c.beginPath(); c.ellipse(kx + 0.4, ky, 2, 1.5, aci, 0, Math.PI * 2); c.fill()
+  // Reflektör bant (alt bacak)
+  const bx = kx + sin(sa) * 3.6, by = ky + cos(sa) * 3.6
+  c.strokeStyle = '#DDE6EE'
+  c.lineWidth = 1.1
+  c.beginPath(); c.moveTo(bx - cos(sa) * 2.5, by + sin(sa) * 2.5); c.lineTo(bx + cos(sa) * 2.5, by - sin(sa) * 2.5); c.stroke()
   botCiz(c, ax, ay, sa)
 }
 
@@ -189,6 +214,8 @@ function govdeCiz(c, sq, gor) {
   c.scale(1, sq)
   // Gömlek (yakada ve kollarda görünür)
   dolCiz(c, yuvarlak(-7.2, -14.8, 14.6, 8.4, 4), GOMLEK)
+  c.fillStyle = 'rgba(120,100,70,.35)'
+  c.fill(yuvarlak(-7.2, -10.8, 14.6, 4.4, 2))
   // Tulum: önlük + pantolon üstü
   const t = new Path2D()
   t.moveTo(-7.4, -8.6)
@@ -199,25 +226,43 @@ function govdeCiz(c, sq, gor) {
   t.lineTo(-7.2, 1.8)
   t.quadraticCurveTo(-8.6, -2, -7.4, -8.6)
   t.closePath()
-  const g = c.createLinearGradient(-6, 0, 7, 0)
-  g.addColorStop(0, TULUM[2]); g.addColorStop(0.45, TULUM[0]); g.addColorStop(1, TULUM[1])
-  dolCiz(c, t, g)
-  // Cep, kemer ve dikiş
-  c.fillStyle = 'rgba(0,0,0,.18)'
-  c.fillRect(-2.5, -10.4, 5, 3.2)
-  c.fillStyle = 'rgba(30,30,40,.45)'
-  c.fillRect(-7.6, -3.8, 15.6, 1.6)
-  c.fillStyle = '#E8C060'
-  c.fillRect(-1.2, -4, 2.4, 2)
+  const g = c.createLinearGradient(-7, 0, 8, 0)
+  g.addColorStop(0, TULUM[2]); g.addColorStop(0.3, TULUM[1]); g.addColorStop(0.55, TULUM[0]); g.addColorStop(1, TULUM[1])
+  dolCiz(c, t, g, 1)
+  c.save()
+  c.clip(t)
+  // Cel gölge (arka yan) ve kenar ışığı (ön yan)
+  c.fillStyle = 'rgba(8,18,40,.32)'
+  c.beginPath(); c.moveTo(-8.6, -12); c.quadraticCurveTo(-3.4, -4, -5.6, 2); c.lineTo(-9, 2); c.closePath(); c.fill()
+  c.fillStyle = 'rgba(190,220,255,.22)'
+  c.fillRect(5.4, -11.6, 1.2, 13)
+  // Dikişler
+  c.strokeStyle = 'rgba(200,225,255,.35)'
+  c.lineWidth = 0.45
+  c.setLineDash([0.9, 0.8])
+  c.beginPath(); c.moveTo(-5.4, -10.8); c.lineTo(-5.4, -5); c.moveTo(5.6, -10.8); c.lineTo(5.6, -5); c.stroke()
+  c.setLineDash([])
+  c.restore()
+  // Göğüs cebi (kapaklı)
+  dolCiz(c, yuvarlak(-2.7, -10.6, 5.4, 3.6, 0.8), TULUM[1], 0.5)
+  c.fillStyle = 'rgba(0,0,0,.25)'
+  c.fillRect(-2.7, -10.6, 5.4, 1.2)
+  // Alet kemeri: deri, toka, yan çanta
+  dolCiz(c, yuvarlak(-7.9, -4.1, 16.2, 2.4, 0.6), '#6B4425', 0.6)
+  dolCiz(c, yuvarlak(-1.6, -4.4, 3.2, 3, 0.6), '#E8C060', 0.5)
+  c.fillStyle = '#6B4425'
+  c.fillRect(-0.7, -3.6, 1.4, 1.4)
+  dolCiz(c, yuvarlak(-8.4, -3.2, 3.6, 4.2, 0.8), '#8A5A32', 0.6)
   // Askılar ve tokalar
   c.strokeStyle = ASKI
-  c.lineWidth = 1.5
+  c.lineWidth = 1.6
   c.lineCap = 'round'
   c.beginPath(); c.moveTo(-5, -14.8); c.lineTo(-4, -11.4); c.moveTo(5, -14.8); c.lineTo(4, -11.4); c.stroke()
   c.fillStyle = '#FFE08A'
   c.fillRect(-4.7, -12, 1.4, 1.4)
   c.fillRect(3.3, -12, 1.4, 1.4)
   c.restore()
+  void gor
 }
 
 function basCiz(c, gor, egim) {
@@ -228,37 +273,54 @@ function basCiz(c, gor, egim) {
   // Boyun
   c.fillStyle = gor.golge
   c.fillRect(-1.8, 3.4, 3.6, 3.6)
-  // Yüz
+  // Yüz: ten degradesi, kaskın düşürdüğü gölge
   const yuz = oval(0.4, 0, 6.4, 6.6)
-  const g = c.createRadialGradient(2.2, -1.6, 0.5, 0.4, 0, 8)
+  const g = c.createRadialGradient(2.6, 0.6, 0.5, 0.4, 0, 8)
   g.addColorStop(0, gor.ten); g.addColorStop(1, gor.golge)
   dolCiz(c, yuz, g)
+  c.save()
+  c.clip(yuz)
+  c.fillStyle = 'rgba(60,30,10,.35)'
+  c.fillRect(-7, -7, 15, 4.6)
+  // Çene gölgesi / sakal izi
+  c.fillStyle = 'rgba(70,40,20,.18)'
+  c.beginPath(); c.ellipse(3, 5.4, 5, 2.6, 0, 0, Math.PI * 2); c.fill()
+  c.restore()
   // Kulak
   dolCiz(c, oval(-2.6, 0.8, 1.5, 2), gor.golge, 0.7)
-  // Göz, kaş, burun, yanak
+  c.fillStyle = 'rgba(120,50,30,.35)'
+  c.fill(oval(-2.5, 0.9, 0.6, 1))
+  // Göz: ak + bebek + parıltı; kalın kaş
+  c.fillStyle = '#FFFFFF'
+  c.fill(oval(3.7, -0.5, 1.25, 1.35))
   c.fillStyle = '#1C120A'
-  c.fill(oval(3.6, -0.7, 0.85, 1.15))
-  c.fillStyle = 'rgba(255,255,255,.9)'
-  c.fill(oval(3.9, -1.1, 0.3, 0.35))
-  c.strokeStyle = 'rgba(40,24,12,.8)'
-  c.lineWidth = 0.75
+  c.fill(oval(4.1, -0.4, 0.75, 1.05))
+  c.fillStyle = 'rgba(255,255,255,.95)'
+  c.fill(oval(4.35, -0.85, 0.28, 0.32))
+  c.strokeStyle = '#3A2214'
+  c.lineWidth = 1
   c.lineCap = 'round'
-  c.beginPath(); c.moveTo(2.4, -2.9); c.lineTo(5, -2.5); c.stroke()
-  dolCiz(c, oval(6.4, 1.3, 1.7, 1.4), gor.golge, 0.6)
-  c.fillStyle = 'rgba(226,90,67,.25)'
-  c.fill(oval(3.4, 2.4, 1.5, 0.9))
+  c.beginPath(); c.moveTo(2.2, -2.7); c.quadraticCurveTo(3.8, -3.4, 5.4, -2.4); c.stroke()
+  // Burun (ışıklı), yanak
+  dolCiz(c, oval(6.4, 1.4, 1.75, 1.5), gor.ten, 0.6)
+  c.fillStyle = 'rgba(255,255,255,.45)'
+  c.fill(oval(6.6, 0.9, 0.6, 0.4))
+  c.fillStyle = 'rgba(226,90,67,.28)'
+  c.fill(oval(3.2, 2.5, 1.6, 0.95))
   if (gor.biyik) {
     const b = new Path2D()
-    b.moveTo(3.3, 3.2)
-    b.quadraticCurveTo(5.4, 2, 7.4, 3.2)
-    b.quadraticCurveTo(6.6, 4.8, 5.3, 4)
-    b.quadraticCurveTo(4.2, 4.8, 3.3, 3.2)
+    b.moveTo(3.2, 3.3)
+    b.quadraticCurveTo(5.4, 1.9, 7.6, 3.3)
+    b.quadraticCurveTo(6.8, 5, 5.3, 4.1)
+    b.quadraticCurveTo(4.2, 5, 3.2, 3.3)
     c.fillStyle = gor.biyik
     c.fill(b)
+    c.fillStyle = 'rgba(255,255,255,.2)'
+    c.fill(oval(5.6, 2.9, 1.2, 0.35))
   } else {
-    c.strokeStyle = 'rgba(60,30,15,.7)'
-    c.lineWidth = 0.6
-    c.beginPath(); c.moveTo(4.4, 3.9); c.quadraticCurveTo(5.3, 4.4, 6.2, 3.8); c.stroke()
+    c.strokeStyle = 'rgba(80,35,15,.8)'
+    c.lineWidth = 0.65
+    c.beginPath(); c.moveTo(4.3, 3.9); c.quadraticCurveTo(5.4, 4.6, 6.4, 3.8); c.stroke()
   }
   if (gor.baslik === 'kep') {
     const kep = new Path2D()
@@ -266,30 +328,47 @@ function basCiz(c, gor, egim) {
     kep.quadraticCurveTo(-6.2, -8.4, 0.4, -8.2)
     kep.quadraticCurveTo(6.6, -8.2, 6.8, -1.6)
     kep.closePath()
-    dolCiz(c, kep, gor.kask)
-    c.fillStyle = 'rgba(255,255,255,.25)'
+    const kg = c.createLinearGradient(0, -8.4, 0, -1.2)
+    kg.addColorStop(0, acikR(gor.kask)); kg.addColorStop(1, gor.kask)
+    dolCiz(c, kep, kg)
+    c.fillStyle = 'rgba(255,255,255,.3)'
     c.fill(oval(-1, -5.6, 3, 1.4, -0.3))
     dolCiz(c, yuvarlak(2.2, -2.8, 8.8, 2, 1), '#8E3424', 0.7)
   } else {
+    // Kask: parlak kubbe, sırt, siper, fener
     const kask = new Path2D()
-    kask.moveTo(-7.4, -1.4)
-    kask.quadraticCurveTo(-7.4, -9.8, 0.4, -9.6)
-    kask.quadraticCurveTo(7.8, -9.6, 7.8, -1.6)
+    kask.moveTo(-7.6, -1.4)
+    kask.quadraticCurveTo(-7.6, -10.2, 0.4, -10)
+    kask.quadraticCurveTo(8, -10, 8, -1.6)
     kask.closePath()
-    const kg = c.createLinearGradient(0, -9.8, 0, -1.4)
-    kg.addColorStop(0, '#FFE69A'); kg.addColorStop(0.5, gor.kask); kg.addColorStop(1, '#B9781A')
-    dolCiz(c, kask, kg)
+    const kg = c.createLinearGradient(-6, -10, 6, -1)
+    kg.addColorStop(0, '#FFF1B8'); kg.addColorStop(0.35, gor.kask); kg.addColorStop(1, '#A86A12')
+    dolCiz(c, kask, kg, 1)
     c.fillStyle = 'rgba(122,74,16,.35)'
-    c.fillRect(-0.2, -9.2, 1, 7.6)
-    c.fillStyle = 'rgba(255,255,255,.4)'
-    c.fill(oval(-2.6, -6.6, 2.6, 1.3, -0.4))
-    dolCiz(c, yuvarlak(-8.6, -2.8, 18.6, 2.3, 1.1), '#D99A2B', 0.7)
-    // Kask feneri
-    dolCiz(c, oval(5.8, -5.4, 2.2, 2), '#5A5F66', 0.6)
-    c.fillStyle = '#FFF6D0'
-    c.fill(oval(6.1, -5.5, 1.4, 1.3))
+    c.fillRect(-0.3, -9.6, 1.2, 8)
+    c.fillStyle = 'rgba(255,255,255,.65)'
+    c.fill(oval(-3, -7, 2.6, 1.2, -0.5))
+    c.fillStyle = 'rgba(255,255,255,.35)'
+    c.fill(oval(-4.6, -4.2, 0.8, 1.3, -0.3))
+    const sg = c.createLinearGradient(0, -3, 0, -0.4)
+    sg.addColorStop(0, '#F6C453'); sg.addColorStop(1, '#B07414')
+    dolCiz(c, yuvarlak(-8.8, -3, 19.2, 2.5, 1.2), sg, 0.8)
+    // Fener: metal gövde, parlayan cam
+    dolCiz(c, oval(5.9, -5.6, 2.5, 2.3), '#4A525A', 0.6)
+    const fg = c.createRadialGradient(6.4, -5.9, 0, 6.2, -5.6, 1.8)
+    fg.addColorStop(0, '#FFFFFF'); fg.addColorStop(0.6, '#FFF0A8'); fg.addColorStop(1, '#F6B43C')
+    c.fillStyle = fg
+    c.fill(oval(6.2, -5.6, 1.6, 1.5))
   }
   c.restore()
+}
+
+function eldivenCiz(c, x, y, r) {
+  const g = c.createRadialGradient(x - r * 0.3, y - r * 0.35, 0.2, x, y, r * 1.2)
+  g.addColorStop(0, '#D9A878'); g.addColorStop(1, '#8A5E38')
+  dolCiz(c, oval(x, y, r, r * 0.95), g, 0.7)
+  c.fillStyle = 'rgba(255,240,210,.35)'
+  c.fill(oval(x - r * 0.35, y - r * 0.4, r * 0.35, r * 0.25))
 }
 
 function kazmaCiz(c, x, y, aci) {
@@ -385,7 +464,7 @@ function figurCiz(c, p, gor, cevher) {
     cuvalCiz(c, -4.6, -17.6, cevher)
   }
   uzuv(c, [omA[0], omA[1], ea1, ea2, ha1, ha2], 4, GOMLEK_G)
-  dolCiz(c, oval(ha1, ha2, 2.3, 2.2), ELDIVEN, 0.7)
+  eldivenCiz(c, ha1, ha2, 2.3)
   govdeCiz(c, p.sq, gor)
   c.restore()
 
@@ -406,7 +485,10 @@ function figurCiz(c, p, gor, cevher) {
   const to = kolHedef(p.kol.on, omO, p.kolSalla[1])
   const [eo1, eo2, ho1, ho2] = ik(omO[0], omO[1], to[0], to[1], 5.8, 6, p.kol.on ? -1 : 1)
   uzuv(c, [omO[0], omO[1], eo1, eo2, ho1, ho2], 4.2, GOMLEK)
-  dolCiz(c, oval(ho1, ho2, 2.4, 2.3), ELDIVEN, 0.7)
+  // Kol katlaması (dirsekte gölge)
+  c.fillStyle = 'rgba(120,100,70,.4)'
+  c.fill(oval(eo1, eo2, 1.6, 1.4))
+  eldivenCiz(c, ho1, ho2, 2.4)
   c.restore()
 }
 

@@ -410,7 +410,7 @@ function prosedurelKaydet() {
 
 // ── Hazine damarı: kaya duvarında parlayan altın külçeleri ya da elmas kristalleri ──
 // Tünel duvarında, fenerlerin ve yönetici rozetinin dışında üç nokta (referans px)
-const HAZINE_YER = [[[226, 40], [250, 24], [198, 60]], [[226, 40], [250, 24], [198, 60]]]
+const HAZINE_YER = [[226, 40], [250, 24], [198, 60]]
 const HAZINE_R = 26
 const hazineSprite = new Map()
 function hazineGorsel(tur) {
@@ -478,7 +478,7 @@ function hazineGorsel(tur) {
   return c
 }
 function hazineNokta(h) {
-  const [hx, hy] = HAZINE_YER[h.kat % 2][h.yer % 3]
+  const [hx, hy] = HAZINE_YER[h.yer % 3]
   return { x: X(hx), y: yer.satirY(h.kat) + Yk(hy) + 4 }
 }
 let sonParilti = 0, sonHazineYer = 0
@@ -673,8 +673,18 @@ export const Sahne = {
     Varliklar.ayarla({ olcek: Math.min(dpr, 2), dunyaG: W })
     ctx = tuval.getContext('2d', { alpha: false })
     ectx = efektTuval ? efektTuval.getContext('2d') : null
-    await Varliklar.hazirla(prosedurelKaydet(), (o) => { try { ilerleme && ilerleme(0.2 + 0.8 * o) } catch {} })
+    await Varliklar.hazirla(prosedurelKaydet(), (o) => { try { ilerleme && ilerleme(0.2 + 0.5 * o) } catch {} })
     dunyaP.kalite = efektP.kalite = kalite
+    // Açılış perdesi sürerken etkin bölgenin şeritlerini önceden çiz (ilk karede takılma olmasın)
+    oran = Math.min(dpr, dpTavan())
+    const kod = (durum && durum.aktifBolge) || 'zonguldak'
+    const isler = [() => yuklemeSerit(kod), () => kayaSerit(kod, 2, yer.TEPE_H)]
+    for (let v = 0; v < D.KAT_DUZEN; v++) isler.push(() => katSerit(kod, v), () => kayaSerit(kod, v, yer.SATIR_H))
+    for (let i = 0; i < isler.length; i++) {
+      isler[i]()
+      try { ilerleme && ilerleme(0.7 + 0.3 * (i + 1) / isler.length) } catch {}
+      await new Promise((r) => setTimeout(r, 0))
+    }
     hazir = true
   },
 
@@ -732,15 +742,15 @@ export const Sahne = {
       if (i > son) son = i
       const syP = Math.round(sy * oran) / oran
       if (i < n) {
-        ctx.drawImage(katSerit(kod, i % 2), 0, syP, W, y.SATIR_H)
+        ctx.drawImage(katSerit(kod, i % D.KAT_DUZEN), 0, syP, W, y.SATIR_H)
         const kap = E.yiginKap(durum, b, i)
         const doluluk = kap > 0 ? Math.min(1, b.madenler[i].yigin / kap) : 0
         yiginCiz(yigin(kod, 'bunker', X(D.KAT.bunkerX1 - D.KAT.bunkerX0 - 2), Yk(20), doluluk, 17 + i % 3), X((D.KAT.bunkerX0 + D.KAT.bunkerX1) / 2), sy + Yk(D.KAT.bunkerUst) + 1)
       } else if (i === n) {
-        ctx.drawImage(kayaSerit(kod, i % 2, y.SATIR_H), 0, syP, W, y.SATIR_H)
+        ctx.drawImage(kayaSerit(kod, i % D.KAT_DUZEN, y.SATIR_H), 0, syP, W, y.SATIR_H)
         ctx.drawImage(al('kilit.ust'), 0, syP, W, y.SATIR_H)
       } else {
-        ctx.drawImage(kayaSerit(kod, i % 2, y.SATIR_H), 0, syP, W, y.SATIR_H)
+        ctx.drawImage(kayaSerit(kod, i % D.KAT_DUZEN, y.SATIR_H), 0, syP, W, y.SATIR_H)
         ctx.fillStyle = 'rgba(4,10,14,.35)'
         ctx.fillRect(0, syP, W, y.SATIR_H)
       }
@@ -754,7 +764,7 @@ export const Sahne = {
         // Yeni kat: kaya dağılırken işçiler henüz yok
         const o = 1 - (simdiMs - kb) / KAZI_MS
         ctx.globalAlpha = o
-        ctx.drawImage(kayaSerit(kod, i % 2, y.SATIR_H), 0, sy, W, y.SATIR_H)
+        ctx.drawImage(kayaSerit(kod, i % D.KAT_DUZEN, y.SATIR_H), 0, sy, W, y.SATIR_H)
         ctx.drawImage(al('kilit.ust'), 0, sy, W, y.SATIR_H)
         ctx.globalAlpha = 1
         if (karma(simdiMs * 0.01 + i) < 0.35) dunyaP.patlat(y.odaX + y.odaG * karma(simdiMs + i * 3), sy + y.ODA_UST + 10 + 50 * karma(simdiMs * 1.7), 'toz', 2)
