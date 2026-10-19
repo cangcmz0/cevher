@@ -70,6 +70,8 @@ html, body {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
+  -webkit-touch-callout: none;   /* uzun basışta "resmi kaydet" menüsü çıkmasın (uzun basma = hızlı yükseltme) */
+  touch-action: manipulation;    /* ard arda dokunuşta ekran yakınlaşmasın (madende #maden kendi kaydırır) */
 }
 *, *::before, *::after { box-sizing: border-box; }
 
