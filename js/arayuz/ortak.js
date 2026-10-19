@@ -11,6 +11,7 @@ import * as Ekonomi from '../ekonomi.js'
 import * as Ayar from '../ayar.js'
 import * as Olay from '../olay.js'
 import * as SesM from '../ses.js'
+import * as Benzetim from '../benzetim.js'
 
 export const E = Ekonomi
 export const A = Ayar
@@ -171,4 +172,15 @@ export function simgeleriCiz(kap, B) {
     try { B.sahne.simge(c.dataset.simge, c.dataset.kod, c, +c.dataset.boy || 56, c.dataset.ek) } catch {}
   }
 }
+
+// Kilitli bölgenin nedeni (seviye, sıra ya da açılış bedeli)
+export function bolgeKilitYazi(d, kod) {
+  const bb = Ayar.BOLGE[kod], a = Benzetim.bolgeAcilis(d, kod)
+  if (a.durum === 'seviye') return `${bb.ad} (${bb.cevher}) Seviye ${bb.acilisLv}'te açılır. Şu an Seviye ${d.oyuncu.lv}.`
+  if (a.durum === 'sira') return `${bb.ad} için önce ${Ayar.BOLGE[a.kasa].ad} bölgesini aç.`
+  if (a.durum === 'para') return `${bb.ad} bölgesini açmak için ${Ayar.BOLGE[a.kasa].ad} kasasında ${bicim(a.bedel)} gerekli (şu an ${bicim(d.bolgeler[a.kasa].para)}).`
+  return ''
+}
+// Çarpan yazısı: ×1,5 · ×12 · ×1,2 bin
+export const carpanYazi = (c) => (c < 10 ? c.toLocaleString('tr-TR', { maximumFractionDigits: 1 }) : c < 1000 ? Math.round(c).toLocaleString('tr-TR') : bicim(c))
 

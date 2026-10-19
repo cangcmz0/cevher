@@ -7,8 +7,8 @@
 //  • Alt pencereler: bolgeler, gorevler, misyonlar, kontratlar, etkinlik.
 // ════════════════════════════════════════════════════════════════
 import { ikon, cevherIkonu } from './ikonlar.js'
-import { A, yaz, sinif, gizle, cubuk, bicim, bolgeAl, canlandir, simge, simgeleriCiz } from './ortak.js'
-import { gorevDurumu, gorevKosulu, kontratDurumu, misyonIlerleme } from '../benzetim.js'
+import { A, yaz, sinif, gizle, cubuk, bicim, bolgeAl, canlandir, simge, simgeleriCiz, bolgeKilitYazi } from './ortak.js'
+import { gorevDurumu, gorevKosulu, kontratDurumu, misyonIlerleme, bolgeAcilis } from '../benzetim.js'
 import { BOLUMLER, SAHNELER, gorevYazi } from '../hikaye.js'
 import { HARITA, DUGUM, DUMAN, GEMI_SERIT } from '../sahne/harita.js'
 
@@ -154,16 +154,19 @@ export function kur(B, govde) {
     yaz(el.ilerleme, Object.keys(d.bolgeler).length + ' / ' + bolgeler.length)
     for (const bb of bolgeler) {
       const kb = d.bolgeler[bb.kod]
-      const acilabilir = !kb && d.oyuncu.lv >= bb.acilisLv
+      const a = bolgeAcilis(d, bb.kod)
+      const acilabilir = a.durum === 'hazir'
       const btn = el.bolgeBtn[bb.kod]
       if (!btn) continue
       const aktif = d.aktifBolge === bb.kod
       const y = el.durum[bb.kod]
-      if (kb) y.innerHTML = kb.usta ? `${ikon('tik')}Usta` : '%' + Math.round(Math.min(1, kb.gorev.sira / A.GOREVLER.length) * 100)
-      else y.innerHTML = acilabilir ? 'Aç!' : `${ikon('kilit')}Sv.${bb.acilisLv}`
+      const h = kb ? (kb.usta ? `${ikon('tik')}Usta` : '%' + Math.round(Math.min(1, kb.gorev.sira / A.GOREVLER.length) * 100))
+        : acilabilir ? `Aç · ${bicim(a.bedel)}` : a.durum === 'para' ? `${ikon('para')}${bicim(a.bedel)}` : `${ikon('kilit')}Sv.${bb.acilisLv}`
+      if (y.__h !== h) { y.__h = h; y.innerHTML = h }
       sinif(btn, 'aktif', aktif)
       sinif(btn, 'acilabilir', acilabilir)
-      sinif(btn, 'kilitli', !kb && !acilabilir)
+      sinif(btn, 'bedel', a.durum === 'para')
+      sinif(btn, 'kilitli', a.durum === 'seviye' || a.durum === 'sira')
       sinif(el.hale[bb.kod], 'aktif', aktif)
       sinif(el.hale[bb.kod], 'acilabilir', acilabilir)
     }
@@ -224,8 +227,9 @@ export function kur(B, govde) {
     const d = B.durumAl()
     const bb = A.BOLGE[kod]
     if (kod === d.aktifBolge) { B.sayfa.kapat(); return }
-    if (!d.bolgeler[kod] && d.oyuncu.lv < bb.acilisLv) {
-      B.bildir('bilgi', `${bb.ad} bölgesi Seviye ${bb.acilisLv}'te açılır. (Şu an Seviye ${d.oyuncu.lv})`)
+    const a = bolgeAcilis(d, kod)
+    if (a.durum !== 'acik' && a.durum !== 'hazir') {
+      B.bildir('bilgi', bolgeKilitYazi(d, kod))
       canlandir(btn, [{ transform: 'translate(-50%, -50%)' }, { transform: 'translate(calc(-50% - 4px), -50%)' }, { transform: 'translate(calc(-50% + 4px), -50%)' }, { transform: 'translate(-50%, -50%)' }], 240)
       return
     }
@@ -260,13 +264,14 @@ export function hazirla(B) {
     const liste = g.querySelector('.bl-liste')
     let imza = ''
     return (d) => {
-      const im = A.BOLGELER.map((bb) => { const kb = d.bolgeler[bb.kod]; return bb.kod + (kb ? kb.gorev.sira + (kb.usta ? 'u' : '') : '') + (d.aktifBolge === bb.kod) + (d.oyuncu.lv >= bb.acilisLv) }).join('|')
+      const im = A.BOLGELER.map((bb) => { const kb = d.bolgeler[bb.kod]; return bb.kod + (kb ? kb.gorev.sira + (kb.usta ? 'u' : '') : '') + (d.aktifBolge === bb.kod) + bolgeAcilis(d, bb.kod).durum }).join('|')
       if (im === imza) return
       imza = im
       liste.innerHTML = A.BOLGELER.map((bb) => {
         const kb = d.bolgeler[bb.kod]
-        const acilabilir = !kb && d.oyuncu.lv >= bb.acilisLv
-        const kilitli = !kb && !acilabilir
+        const a = bolgeAcilis(d, bb.kod)
+        const acilabilir = a.durum === 'hazir'
+        const kilitli = a.durum === 'seviye' || a.durum === 'sira' || a.durum === 'para'
         const aktif = d.aktifBolge === bb.kod
         const bolum = BOLUMLER.find((x) => x.bolge === bb.kod)
         const ilerleme = kb ? kb.gorev.sira / A.GOREVLER.length : 0
@@ -276,10 +281,11 @@ export function hazirla(B) {
             <small class="bl-bolum">Bölüm ${bolum.no}: ${bolum.ad}</small>
             <i class="cubuk-ince"><i style="transform:scaleX(${ilerleme})"></i></i></div>
           ${aktif ? '<span class="bl-durum">Buradasın</span>'
-            : kilitli ? `<span class="bl-durum kilit">${ikon('kilit')}Sv.${bb.acilisLv}</span>`
-            : `<button class="btn ${acilabilir ? 'btn-yesil' : 'btn-turuncu'}" data-eylem="bolge-git" data-kod="${bb.kod}">${acilabilir ? 'Aç' : 'Git'}</button>`}
+            : a.durum === 'para' ? `<span class="bl-durum kilit">${ikon('para')}${bicim(a.bedel)}</span>`
+            : kilitli ? `<span class="bl-durum kilit">${ikon('kilit')}${a.durum === 'sira' ? 'Önce ' + A.BOLGE[a.kasa].ad : 'Sv.' + bb.acilisLv}</span>`
+            : `<button class="btn ${acilabilir ? 'btn-yesil' : 'btn-turuncu'}" data-eylem="bolge-git" data-kod="${bb.kod}">${acilabilir ? 'Aç · ' + bicim(a.bedel) : 'Git'}</button>`}
         </div>`
-      }).join('') + `<p class="sayfa-not">Ayrıldığın bölgelerde yöneticili katlar çalışmaya devam eder; döndüğünde kazancı kasaya eklenir (Ambar ile süre uzar).</p>`
+      }).join('') + `<p class="sayfa-not">Yeni bölgenin açılış bedeli bir önceki bölgenin kasasından ödenir; prestijden sonra seviye şartı aranmaz. Ayrıldığın bölgelerde yöneticili katlar çalışmaya devam eder; döndüğünde kazancı kasaya eklenir (Ambar ile süre uzar).</p>`
     }
   })
   B.eylemler['bolge-git'] = (btn) => { P.kapatSayfa(); B.bolgeyeGit(btn.dataset.kod) }

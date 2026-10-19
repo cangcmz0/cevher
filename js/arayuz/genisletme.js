@@ -13,10 +13,10 @@
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
 import {
-  E, A, yaz, sinif, gizle, cubuk, bicim, sayac, sure, bolgeAl, nadirlik, yetenekEtki, yoneticiAdi, yetenekHali, canlandir,
-  simge, simgeleriCiz,
+  E, A, yaz, sinif, gizle, cubuk, bicim, tam, sayac, sure, bolgeAl, nadirlik, yetenekEtki, yoneticiAdi, yetenekHali, canlandir,
+  simge, simgeleriCiz, bolgeKilitYazi, carpanYazi,
 } from './ortak.js'
-import { kontratDurumu, prestijUygun } from '../benzetim.js'
+import { kontratDurumu, prestijUygun, bekleyenMuhur, bolgeAcilis } from '../benzetim.js'
 import { KISILER } from '../hikaye.js'
 import { kontratAl } from './harita.js'
 
@@ -30,6 +30,15 @@ const LOJ = [
 ]
 
 export const ortakEtkiYazi = (o, L) => o.metin.replace('{p}', Math.round((o.taban + o.artis * (Math.max(1, L) - 1)) * 100))
+
+// Mühür, sahip olunanın yarısını (en az 5) geçince prestij önerilir
+export const prestijOnerilir = (d) => prestijUygun(d) && bekleyenMuhur(d) >= Math.max(5, Math.ceil(d.prestij.muhur / 2))
+function prestijIpucu(d, p) {
+  if (!d.ogretici.bitti) return 'Öğretici bitince açılır.'
+  if (p < 1) return 'Bu turda daha çok kazan: ilk Miras Mührü için ilerleme çubuğunu doldur.'
+  if (prestijOnerilir(d)) return 'Şimdi başlamak verimli: kazanacağın mühür, sahip olduğunun yarısını geçti.'
+  return `Mührünün yarısını (${tam(Math.max(5, Math.ceil(d.prestij.muhur / 2)))}) geçince baştan başlamak daha verimli olur.`
+}
 
 export function kur(B, govde) {
   const d0 = B.durumAl()
@@ -87,10 +96,12 @@ export function kur(B, govde) {
       </section>
 
       <section class="pano pano-mor mg-prestij">
-        <h3 class="plaka plaka-mor">${ikon('prestij')}<span>Prestij</span><small class="mg-p-sv sayi"></small></h3>
-        <div class="mg-p-ust">${simge('madalya', '', 60)}<div><b>Yeni nesil maden</b><small>Bütün madenleri yeniden kur, kalıcı satış çarpanıyla daha güçlü başla.</small>
-          <span class="mg-p-sart"></span></div></div>
-        <button class="btn btn-turuncu mg-p-btn" data-eylem="mg-prestij"><span>Prestij Yap</span></button>
+        <h3 class="plaka plaka-mor">${ikon('prestij')}<span>Prestij · Yeni Nesil</span><small class="mg-p-sv sayi"></small></h3>
+        <div class="mg-p-ust">${simge('madalya', '', 60)}<div><small>Miras Mührün</small><b class="sayi mg-p-muhur"></b><small class="mg-p-carpan"></small></div>
+          <div class="mg-p-kazanc"><small>Bu tur</small><b class="sayi mg-p-bekleyen"></b><small>mühür</small></div></div>
+        <div class="kt-cubuk mg-p-cubuk"><i></i><span class="sayi"></span></div>
+        <p class="mg-p-ipucu"></p>
+        <button class="btn btn-turuncu mg-p-btn" data-eylem="mg-prestij"><span>Baştan Başla</span></button>
       </section>
     </div>`
   simgeleriCiz(govde, B)
@@ -109,7 +120,8 @@ export function kur(B, govde) {
     cubuk: Object.fromEntries(qa('[data-cubuk]').map((x) => [x.dataset.cubuk, x.firstElementChild])),
     musteri: q('.mg-musteri'), kBaslik: q('.mg-k-baslik'), kMetin: q('.mg-k-metin'), kPara: q('.mg-k-para'), kElmas: q('.mg-k-elmas'),
     kCubuk: q('.mg-k-cubuk i'), kCubukYazi: q('.mg-k-cubuk span'), kBtn: q('.mg-k-btn'), kBtnYazi: q('.mg-k-btn span'),
-    pSv: q('.mg-p-sv'), pSart: q('.mg-p-sart'), pBtn: q('.mg-p-btn'), pBtnYazi: q('.mg-p-btn span'),
+    pSv: q('.mg-p-sv'), pMuhur: q('.mg-p-muhur'), pCarpan: q('.mg-p-carpan'), pBekleyen: q('.mg-p-bekleyen'),
+    pCubuk: q('.mg-p-cubuk i'), pCubukYazi: q('.mg-p-cubuk span'), pIpucu: q('.mg-p-ipucu'), pBtn: q('.mg-p-btn'), pBtnYazi: q('.mg-p-btn span'),
   }
   let ustaImza = ''
 
@@ -117,12 +129,13 @@ export function kur(B, govde) {
     const b = bolgeAl(d)
     for (const k of el.kaynaklar) {
       const bb = A.BOLGE[k.kod]
-      const acik = !!d.bolgeler[k.kod] || d.oyuncu.lv >= bb.acilisLv
-      const yeni = !d.bolgeler[k.kod] && acik
+      const a = bolgeAcilis(d, k.kod)
       sinif(k.b, 'aktif', d.aktifBolge === k.kod)
-      sinif(k.b, 'kilitli', !acik)
-      sinif(k.b, 'yeni', yeni)
-      yaz(k.yazi, d.aktifBolge === k.kod ? 'Buradasın' : !acik ? 'Sv.' + bb.acilisLv : yeni ? 'Aç!' : 'Geç')
+      sinif(k.b, 'kilitli', a.durum === 'seviye' || a.durum === 'sira')
+      sinif(k.b, 'bedel', a.durum === 'para')
+      sinif(k.b, 'yeni', a.durum === 'hazir')
+      yaz(k.yazi, d.aktifBolge === k.kod ? 'Buradasın' : a.durum === 'acik' ? 'Geç'
+        : a.durum === 'seviye' ? 'Sv.' + bb.acilisLv : a.durum === 'sira' ? 'Önce ' + A.BOLGE[a.kasa].ad : bicim(a.bedel))
     }
     let tanisilan = 0
     for (const r of el.ortaklar) {
@@ -164,15 +177,20 @@ export function kur(B, govde) {
     sinif(el.kBtn, 'btn-yesil', k.hazir)
     sinif(el.kBtn, 'nabiz', k.hazir)
     yaz(el.kBtnYazi, k.hazir ? 'Teslim Al' : 'Detaylar')
-    // prestij
-    const uygun = prestijUygun(d)
-    yaz(el.pSv, 'Seviye ' + (d.prestij.sv + 1))
-    let usta = 0
-    for (const kod of Object.keys(d.bolgeler)) if (d.bolgeler[kod].usta) usta++
-    yaz(el.pSart, uygun ? 'Şartlar tamam!' : `Gerekli: Seviye ${A.PRESTIJ.lv} · ${A.PRESTIJ.usta} Bölge Ustası (${usta}/${A.PRESTIJ.usta})`)
-    sinif(el.pSart, 'tamam', uygun)
+    // prestij: Miras Mührü, bu turun mührü ve sonraki mühüre ilerleme
+    const m = d.prestij.muhur, p = bekleyenMuhur(d), uygun = prestijUygun(d)
+    const tk = E.turKazanc(d)
+    yaz(el.pSv, d.prestij.sv ? d.prestij.sv + '. nesil' : '')
+    yaz(el.pMuhur, tam(m))
+    yaz(el.pCarpan, 'Bütün satışlar ×' + carpanYazi(E.prestijCarpani(d)))
+    yaz(el.pBekleyen, '+' + tam(p))
+    const e0 = p ? E.muhurEsigi(p) : 0, e1 = E.muhurEsigi(p + 1)
+    cubuk(el.pCubuk, (tk - e0) / (e1 - e0))
+    yaz(el.pCubukYazi, `Sonraki mühür: ${bicim(tk)} / ${bicim(e1)}`)
+    yaz(el.pIpucu, prestijIpucu(d, p))
     sinif(el.pBtn, 'soluk', !uygun)
-    sinif(el.pBtn, 'nabiz', uygun)
+    sinif(el.pBtn, 'nabiz', prestijOnerilir(d))
+    yaz(el.pBtnYazi, uygun ? `Baştan Başla · +${tam(p)} mühür` : 'Henüz mühür yok')
   }
 
   B.eylemler['mg-kaynak'] = (btn) => {
@@ -180,8 +198,9 @@ export function kur(B, govde) {
     const d = B.durumAl()
     const bb = A.BOLGE[kod]
     if (kod === d.aktifBolge) { B.bildir('bilgi', `Şu an ${bb.ad} bölgesinde ${bb.cevher.toLocaleLowerCase('tr')} çıkarıyorsun.`); return }
-    if (!d.bolgeler[kod] && d.oyuncu.lv < bb.acilisLv) {
-      B.bildir('bilgi', `${bb.cevher}: ${bb.ad} bölgesi Seviye ${bb.acilisLv}'te açılır.`)
+    const a = bolgeAcilis(d, kod)
+    if (a.durum !== 'acik' && a.durum !== 'hazir') {
+      B.bildir('bilgi', bolgeKilitYazi(d, kod))
       canlandir(btn, SALLA, 240)
       return
     }
@@ -269,7 +288,7 @@ export function hazirla(B) {
             const n = nadirlik(y.nadirlik)
             return `<div class="yon-kart" style="--nr:${n.renk}"><canvas data-tohum="${y.tohum}" data-nadir="${y.nadirlik}" width="128" height="128"></canvas>
               <b>${yoneticiAdi(y)}</b><span class="nadir" style="color:${n.renk}">${n.ad}</span><span class="yetenek">${yetenekEtki(y)} · ${sure(n.sure)}</span>
-              <span class="atama${y.atanan ? '' : ' bosta'}">${yerAdi(y.atanan)}</span><span class="hal sayi"></span>
+              <span class="atama${y.atanan ? '' : ' bosta'}">${yerAdi(y.atanan)}</span><span class="hal sayi"></span>${y.kalici ? '<span class="kalici">Prestijde kalır</span>' : ''}
               <button class="btn ${y.atanan ? 'btn-krem' : 'btn-turuncu'} etiket-btn" data-eylem="sayfa-ata" data-id="${y.id}">${y.atanan ? 'Değiştir' : 'Ata'}</button></div>`
           }).join('')
           for (const c of izgara.querySelectorAll('canvas[data-tohum]')) { try { B.sahne.portre(+c.dataset.tohum, +c.dataset.nadir, c, 64) } catch {} }
@@ -328,29 +347,42 @@ export function hazirla(B) {
     else if (s && s.sebep === 'para') B.bildir('bilgi', 'Yetersiz para')
   }
 
-  // Prestij: şartlar ve iki adımlı onay
+  // Prestij (Yeni Nesil): bu turun mührü, yeni çarpan, neyin sıfırlanıp neyin kaldığı; iki adımlı onay
   P.kaydet('prestij', (g) => {
-    g.innerHTML = `<div class="ot-ust">${simge('madalya', '', 76)}<div><h2>Prestij: Yeni Nesil</h2><small>Bütün madenleri yeniden kur, kalıcı olarak daha güçlü başla.</small></div></div>
+    g.innerHTML = `<div class="ot-ust">${simge('madalya', '', 76)}<div><h2>Prestij: Yeni Nesil</h2><small>Her şey baştan başlar; bu turda kazandığın para kalıcı Miras Mührüne dönüşür.</small></div></div>
+      <div class="ps-kahraman"><small>Kazanacağın Miras Mührü</small><b class="sayi ps-bekleyen"></b><span class="ps-carpan sayi"></span></div>
+      <div class="kt-cubuk ps-cubuk"><i></i><span class="sayi"></span></div>
       <div class="ot-satirlar">
-        <div class="ot-satir"><span>Mevcut prestij</span><b class="sayi ps-sv"></b></div>
-        <div class="ot-satir"><span>Satış çarpanı</span><b class="sayi ps-carpan"></b></div>
-        <div class="ot-satir"><span>Gereken seviye</span><b class="sayi ps-lv"></b></div>
-        <div class="ot-satir"><span>Bölge Ustası</span><b class="sayi ps-usta"></b></div></div>
-      <p class="sayfa-not">Sıfırlanır: bölgelerin parası, katları, istasyonları, ustabaşıları, görevleri ve kontratları.<br>Kalır: oyuncu seviyesi, elmaslar, araştırmalar, ortaklar, hikâye ve açılmış bölgeler.</p>
+        <div class="ot-satir"><span>Miras Mührün</span><b class="sayi ps-muhur"></b></div>
+        <div class="ot-satir"><span>Mühür başına</span><b class="sayi ps-etki"></b></div>
+        <div class="ot-satir"><span>Bu turun kazancı</span><b class="sayi ps-tur"></b></div>
+        <div class="ot-satir"><span>Yapılan prestij</span><b class="sayi ps-sv"></b></div></div>
+      <p class="sayfa-not"><b>Sıfırlanır:</b> bütün bölgeler (Zonguldak tek katla yeniden başlar), para, katlar, istasyonlar, parayla tutulan ustabaşılar, görevler ve kontratlar.<br>
+      <b>Kalır:</b> oyuncu seviyesi, elmaslar, araştırmalar, ortaklar, hikâye, başarımlar ve elmasla ya da hediyeyle gelen ustabaşılar. Bölgeleri yeniden açarken seviye şartı aranmaz, yalnız açılış bedeli ödenir; görevlerin elması yalnız ilk seferde verilir.</p>
+      <p class="ps-ipucu"></p>
       <button class="btn btn-turuncu ot-al ps-al" data-eylem="prestij-yap"></button>`
     simgeleriCiz(g, B)
-    const e = { sv: g.querySelector('.ps-sv'), carpan: g.querySelector('.ps-carpan'), lv: g.querySelector('.ps-lv'), usta: g.querySelector('.ps-usta'), al: g.querySelector('.ps-al') }
+    const e = {
+      bekleyen: g.querySelector('.ps-bekleyen'), carpan: g.querySelector('.ps-carpan'), cubuk: g.querySelector('.ps-cubuk i'), cubukYazi: g.querySelector('.ps-cubuk span'),
+      muhur: g.querySelector('.ps-muhur'), etki: g.querySelector('.ps-etki'), tur: g.querySelector('.ps-tur'), sv: g.querySelector('.ps-sv'),
+      ipucu: g.querySelector('.ps-ipucu'), al: g.querySelector('.ps-al'),
+    }
     return (d) => {
-      let usta = 0
-      for (const k of Object.keys(d.bolgeler)) if (d.bolgeler[k].usta) usta++
-      const c = E.prestijCarpani(d)
-      yaz(e.sv, String(d.prestij.sv))
-      yaz(e.carpan, '×' + c.toLocaleString('tr-TR') + ' → ×' + (c + A.PRESTIJ.satis).toLocaleString('tr-TR'))
-      yaz(e.lv, `${d.oyuncu.lv} / ${A.PRESTIJ.lv}`)
-      yaz(e.usta, `${usta} / ${A.PRESTIJ.usta}`)
+      const m = d.prestij.muhur, p = bekleyenMuhur(d), tk = E.turKazanc(d)
+      const c0 = E.prestijCarpani(d), c1 = 1 + E.muhurEtki(d) * (m + p)
+      yaz(e.bekleyen, '+' + tam(p))
+      yaz(e.carpan, `Bütün satışlar ×${carpanYazi(c0)} → ×${carpanYazi(c1)}`)
+      const e0 = p ? E.muhurEsigi(p) : 0, e1 = E.muhurEsigi(p + 1)
+      cubuk(e.cubuk, (tk - e0) / (e1 - e0))
+      yaz(e.cubukYazi, `Sonraki mühür: ${bicim(tk)} / ${bicim(e1)}`)
+      yaz(e.muhur, `${tam(m)} · ×${carpanYazi(c0)}`)
+      yaz(e.etki, `+%${Math.round(E.muhurEtki(d) * 100)} satış`)
+      yaz(e.tur, bicim(tk))
+      yaz(e.sv, d.prestij.sv ? `${d.prestij.sv} (en çok +${tam(d.prestij.enIyi)} mühür)` : 'Henüz yok')
+      yaz(e.ipucu, prestijIpucu(d, p))
       const uygun = prestijUygun(d)
       e.al.disabled = !uygun
-      yaz(e.al, !uygun ? 'Şartlar henüz tamam değil' : e.al.dataset.onay ? 'Emin misin? Dokun ve başla' : `Prestij Yap · +${A.PRESTIJ.elmas * (d.prestij.sv + 1)} elmas`)
+      yaz(e.al, !uygun ? 'Henüz mühür kazanmadın' : e.al.dataset.onay ? 'Emin misin? Dokun ve baştan başla' : `Baştan Başla · +${tam(p)} mühür`)
     }
   })
   B.eylemler['prestij-yap'] = (btn) => {

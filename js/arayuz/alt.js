@@ -10,6 +10,7 @@
 import { ikon } from './ikonlar.js'
 import { E, A, yaz, sinif, gizle, bicim, sayac, sure, bolgeAl, canlandir } from './ortak.js'
 import { gunKodu } from './harita.js'
+import { prestijOnerilir } from './genisletme.js'
 
 const SEKMELER = [
   ['maden', 'Maden', 'kazma'],
@@ -62,6 +63,8 @@ export function kur(B) {
     }
     // Harita sekmesinde nokta: görev ya da kontrat hazır
     sinif(el.sekmeler[1], 'rozetli', !!(b.gorev.hazir || b.kontrat.hazir))
+    // Yöneticiler sekmesinde nokta: prestij verimli (kazanılacak mühür, sahip olunanın yarısını geçti)
+    sinif(el.sekmeler[2], 'rozetli', prestijOnerilir(d))
     sinif(el.sekmeler[3], 'rozetli', d.oyuncu.lv >= 3 && !d.arastirma.suren)
     sinif(el.sekmeler[4], 'rozetli', d.gunluk.son !== gunKodu())
     sinif(el.topla, 'aktif', !bc && kalan > 0)

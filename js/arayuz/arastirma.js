@@ -13,7 +13,7 @@ const ETKI = {
   kazma: 'Üretim +%10', damar: 'Kat açma −%8', usta: 'Kat yükseltme −%5', matkap: 'Üretim ×1,5',
   halat: 'Asansör kapasitesi +%15', motor: 'Asansör hızı +%10', ray: 'Vagon hızı +%10', depo: 'Depo kapasitesi +%25',
   pazar: 'Satış +%10', gece: 'Çevrimdışı +1 saat', ihracat: 'Satış ×1,5',
-  okul: 'Yetenek süresi +%20', dinlenme: 'Yetenek bekleme −%10', ik: 'Yönetici maliyeti −%15',
+  okul: 'Yetenek süresi +%20', dinlenme: 'Yetenek bekleme −%10', ik: 'Yönetici maliyeti −%15', miras: 'Mühür etkisi +%1',
 }
 const DAL_IKON = { Madencilik: 'kazma', Taşıma: 'asansor', Ticaret: 'para', Yönetim: 'yonetici' }
 const DAL_SIMGE = { Madencilik: 'kazma', Taşıma: 'kabin', Ticaret: 'sikke', Yönetim: 'kask' }

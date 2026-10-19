@@ -34,7 +34,7 @@ export function kur(B) {
     let imza = ''
     return (d) => {
       const o = d.oyuncu
-      yaz(alt, `Seviye ${o.lv} · ${Object.keys(d.bolgeler).length} bölge${d.prestij.sv ? ' · Prestij ' + d.prestij.sv : ''}`)
+      yaz(alt, `Seviye ${o.lv} · ${Object.keys(d.bolgeler).length} bölge${d.prestij.sv ? ' · ' + (d.prestij.sv + 1) + '. nesil' : ''}`)
       const s = d.istatistik
       const satirlar = [
         ['para', 'Toplam kazanç', bicim(basarimDeger(d, 'kazanc'))],
@@ -43,6 +43,9 @@ export function kur(B) {
         ['elmas', 'Hazine damarı', tamSayi(s.hazine || 0)],
         ['yonetici', 'Yönetici', tamSayi(basarimDeger(d, 'yonetici'))],
         ['yildirim', 'Yetenek', tamSayi(s.yetenek)],
+        ['prestij', 'Miras Mührü', tamSayi(d.prestij.muhur)],
+        ['madalya', 'Nesil', tamSayi(d.prestij.sv + 1)],
+        ['harita', 'Açık bölge', Object.keys(d.bolgeler).length + ' / ' + A.BOLGELER.length],
       ]
       const lst = A.BASARIMLAR.map((t) => ({ t, il: basarimIlerleme(d, t) }))
       const im = satirlar.map((x) => x[2]).join('|') + '#' + lst.map((x) => x.il.kademe + ':' + Math.floor(Math.min(x.il.deger, x.il.hedef))).join('|')

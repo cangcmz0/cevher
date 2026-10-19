@@ -7,9 +7,10 @@
 //  • Düğmeler data-eylem ile yönlendirilir: B.eylemler[ad](el, olay).
 // ════════════════════════════════════════════════════════════════
 import { DEFS, ikon } from './ikonlar.js'
-import { ogeYap, yayinla, Veriyolu, ses, bolgeAl, A, madenMi, bicim, sure } from './ortak.js'
+import { ogeYap, yayinla, Veriyolu, ses, bolgeAl, A, E, madenMi, bicim, sure, bolgeKilitYazi, carpanYazi } from './ortak.js'
 import { cevherIkonu } from './ikonlar.js'
 import { gunKodu, haftaEtkinligi } from './harita.js'
+import { bolgeAcilis } from '../benzetim.js'
 import * as Bildirim from './bildirim.js'
 import * as Ust from './ust.js'
 import * as Kartlar from './kartlar.js'
@@ -149,7 +150,10 @@ export const Arayuz = {
           const a = A.ARASTIRMALAR.find((x) => x.kod === o.kod)
           B.bildir('basari', `Araştırma bitti: ${a ? a.ad : o.kod} ${o.sv}. seviye`)
         } else if (o.tip === 'bolgeUstasi') B.bildir('basari', `Bölge Ustası! ${A.BOLGE[o.bolge].ad} satışları kalıcı +%10 · +${o.elmas} elmas`)
-        else if (o.tip === 'prestijYapildi') B.bildir('basari', `Prestij ${o.sv}! Bütün satışlar kalıcı ×${(1 + A.PRESTIJ.satis * o.sv).toLocaleString('tr-TR')} · +${o.elmas} elmas`)
+        else if (o.tip === 'prestijYapildi') {
+          B.bildir('basari', `${o.sv}. nesil başladı! +${o.muhur.toLocaleString('tr-TR')} Miras Mührü · bütün satışlar ×${carpanYazi(E.prestijCarpani(B.durumAl()))}`)
+          try { B.sahne.dokular('zonguldak') } catch {}
+        }
       },
     }
     moduller = [B.ust, B.kartlar, B.alt, B.pencere, B.sayfa, B.ogretici, B.hazine, B.profil, haberler]
@@ -160,6 +164,9 @@ export const Arayuz = {
       if (gecisVar) return
       const bb = A.BOLGE[kod]
       if (!bb) return
+      // Kilitli bölgeye perde inmeden neden açılmadığı söylenir
+      const a = bolgeAcilis(B.durumAl(), kod)
+      if (a.durum !== 'acik' && a.durum !== 'hazir') { B.bildir('bilgi', bolgeKilitYazi(B.durumAl(), kod)); return }
       gecisVar = true
       gecis.querySelector('.gecis-ikon').innerHTML = cevherIkonu(kod)
       gecis.querySelector('b').textContent = bb.ad
