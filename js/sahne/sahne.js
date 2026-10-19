@@ -37,6 +37,8 @@ const efektP = new Havuz(256)
 let efektCanli = false
 let kalite = 'yuksek'
 const yetAktif = new Set()
+// Dokunuş halkaları (dünya koordinatı): { x, y, bas, guclu }
+const halkalar = []
 
 const al = (a) => Varliklar.al(a)
 const dpTavan = () => DPR_TAVAN[kalite] || 2
@@ -975,8 +977,32 @@ export const Sahne = {
       satisToplam = 0
       satisSon = simdiMs
     }
+    // 7. Dokunuş halkaları: genişleyen altın halka + iç parıltı
+    for (let h = halkalar.length - 1; h >= 0; h--) {
+      const hl = halkalar[h]
+      const e = (simdiMs - hl.bas) / 450
+      if (e >= 1) { halkalar.splice(h, 1); continue }
+      const r = (hl.guclu ? 8 : 5) + e * (hl.guclu ? 26 : 14)
+      ctx.globalAlpha = (1 - e) * 0.9
+      ctx.strokeStyle = hl.guclu ? '#FFD36B' : '#E8F4FF'
+      ctx.lineWidth = 2.6 * (1 - e) + 0.6
+      ctx.beginPath(); ctx.arc(hl.x, hl.y, r, 0, Math.PI * 2); ctx.stroke()
+      if (hl.guclu) {
+        ctx.globalCompositeOperation = 'lighter'
+        ctx.globalAlpha = (1 - e) * 0.5
+        ctx.drawImage(al('isik.sicak'), hl.x - r, hl.y - r, r * 2, r * 2)
+        ctx.globalCompositeOperation = 'source-over'
+      }
+    }
+    ctx.globalAlpha = 1
     dunyaP.guncelle(dt)
     dunyaP.ciz(ctx)
+  },
+
+  // Sahneye dokunuldu (dünya koordinatı); guclu: dokunuş bir işi başlattı
+  dokunHalka(x, y, guclu) {
+    if (halkalar.length > 6) halkalar.shift()
+    halkalar.push({ x, y, bas: performance.now(), guclu: !!guclu })
   },
 
   olaylar(liste, durum) {
@@ -989,6 +1015,14 @@ export const Sahne = {
         case 'madenAcildi':
           kaziBas[o.i] = simdi
           break
+        case 'kaziBasladi': {
+          // Elle kazı: damarda kıvılcım ve toz, işçiler hemen işe koyulur
+          const sy = yer.satirY(o.i)
+          dunyaP.patlat(X(D.KAT.kaziciX - 28), sy + Yk(54), 'kivilcim', 6, { yon: Math.PI })
+          dunyaP.patlat(X(D.KAT.kaziciX - 24), sy + Yk(60), 'toz', 3)
+          bostaSure[o.i] = 0
+          break
+        }
         case 'yukseltildi': {
           // İşçiler sevinir; her yükseltmede küçük pırıltı, kademe geçişinde büyük patlama
           const ist = o.istasyon

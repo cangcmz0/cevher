@@ -209,6 +209,8 @@ function dokun(x, yDunya) {
   if (h && h.hazine) { eylem('hazineAl'); return }
   if (!h || !h.istasyon) return
   const s = eylem('dokun', { istasyon: h.istasyon })
+  // Dokunuş geri bildirimi: iş başladıysa altın halka, zaten çalışıyorsa küçük beyaz halka
+  if (s && s.ok) { try { Sahne.dokunHalka(x, yDunya, !s.etkisiz) } catch {} }
   if (s && !s.ok && s.sebep === 'otomatik') Arayuz.modalAc('yukseltme', { istasyon: h.istasyon })
 }
 function uiMi(el) {
