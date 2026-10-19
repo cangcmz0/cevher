@@ -192,6 +192,7 @@ function katIscileri(d, b, i, sy, dt, tempo, simdiMs) {
   const calisir = !!(c && c.calisiyor && !c.dolu)
   bostaSure[i] = calisir ? 0 : bostaSure[i] + dt
   const otur = !calisir && bostaSure[i] > 6
+  const yonetimli = b.yoneticiler.some((yo) => yo.atanan === 'm' + i)
   const sevin = simdiMs < sevinBitis[i]
   const sevKare = Math.floor(simdiMs / 125) % 6
   const zemin = sy + Yk(D.KAT.zemin)
@@ -244,7 +245,11 @@ function katIscileri(d, b, i, sy, dt, tempo, simdiMs) {
       const gor = j === 3 ? 3 : 1
       const y0 = zemin - Yk(2.5)
       if (sevin) { figur(gor, 'sevin', (sevKare + j) % 6, px, y0, p.yon); continue }
-      if (!calisir) { figur(gor, otur ? 'dinlen' : 'bekle', otur ? Math.floor(simdiMs / 800 + j) % 4 : Math.floor(simdiMs / 400 + j) % 6, px, y0, p.yon); continue }
+      if (!calisir) {
+        figur(gor, otur ? 'dinlen' : 'bekle', otur ? Math.floor(simdiMs / 800 + j) % 4 : Math.floor(simdiMs / 400 + j) % 6, px, y0, p.yon)
+        if (otur && j === 1 && !yonetimli) zzz(px, y0 - Yk(44), simdiMs / 1000, i)
+        continue
+      }
       figur(gor, p.anim, p.kare, px, y0, p.yon, cevher)
       // Bunkere varınca çuvaldaki cevher bunkere dökülür
       if (p.parca === 2 && sonParca[id] !== 2) cuvalDok(kod, px + X(6), y0 - Yk(24), bunkerX, bunkerY)
@@ -261,6 +266,56 @@ function katIscileri(d, b, i, sy, dt, tempo, simdiMs) {
     if (p.parca === 2 && sonParca[id] !== 2) cuvalDok(kod, X(p.ax + 6), ray - Yk(16), bunkerX, bunkerY, 6)
     sonParca[id] = p.parca
   }
+}
+
+// Kanarya: kafesteki tünekte zıplar, ara ara kanat çırpar (düzen 1 katları)
+function kanarya(sy, t, i) {
+  const s = yer.k
+  const x0 = X(D.KAT.kafes[0]), y0 = sy + Yk(D.KAT.kafes[1]) + 2 * s + 12 * s * 0.62
+  const evre = (t * 0.7 + i * 0.37) % 1
+  const zipla = evre > 0.8 ? Math.sin(((evre - 0.8) / 0.2) * Math.PI) * 2.2 * s : 0
+  const yon = Math.floor(t * 0.35 + i) % 2 ? -1 : 1
+  const x = x0 + (yon > 0 ? -1.2 : 1.2) * s, y = y0 - zipla
+  const kanat = evre > 0.8 ? Math.sin(t * 40) * 0.8 : 0
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(yon * s, s)
+  ctx.fillStyle = '#F6C93A'
+  ctx.beginPath(); ctx.ellipse(0, -2.2, 2.3, 1.7, -0.2, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.arc(1.8, -3.6, 1.2, 0, Math.PI * 2); ctx.fill()
+  ctx.fillStyle = '#E0A818'
+  ctx.beginPath(); ctx.ellipse(-0.6, -2.2 - kanat, 1.4, 0.8, -0.4 - kanat * 0.4, 0, Math.PI * 2); ctx.fill()
+  ctx.fillStyle = '#E8782C'
+  ctx.beginPath(); ctx.moveTo(2.8, -3.8); ctx.lineTo(3.9, -3.5); ctx.lineTo(2.8, -3.2); ctx.closePath(); ctx.fill()
+  ctx.fillStyle = '#1C120A'
+  ctx.fillRect(2, -4.1, 0.5, 0.5)
+  ctx.fillStyle = '#C89A20'
+  ctx.beginPath(); ctx.moveTo(-2, -2); ctx.lineTo(-3.6, -1.2); ctx.lineTo(-2, -1.4); ctx.closePath(); ctx.fill()
+  ctx.restore()
+}
+
+// Uyuklayan işçi: başının üstünden yükselen "z" harfleri (kat boşta: dokun ya da yönetici tut)
+function zzz(x, y, t, tohum) {
+  ctx.font = '800 9px "Baloo 2", "Trebuchet MS", system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.lineWidth = 2.4
+  ctx.lineJoin = 'round'
+  for (let q = 0; q < 3; q++) {
+    const e = (t * 0.45 + q / 3 + tohum * 0.13) % 1
+    ctx.globalAlpha = Math.sin(e * Math.PI) * 0.9
+    const zx = x + 4 + e * 9 + Math.sin(e * 6 + q) * 1.5, zy = y - e * 16
+    const boy = 0.7 + e * 0.6
+    ctx.save()
+    ctx.translate(zx, zy)
+    ctx.scale(boy, boy)
+    ctx.strokeStyle = 'rgba(20,12,6,.75)'
+    ctx.strokeText('z', 0, 0)
+    ctx.fillStyle = '#E8F4FF'
+    ctx.fillText('z', 0, 0)
+    ctx.restore()
+  }
+  ctx.globalAlpha = 1
 }
 
 // Çuval/araba boşaltma: taşlar bunkerin üstüne düşer
@@ -846,6 +901,7 @@ export const Sahne = {
         if (karma(simdiMs * 0.01 + i) < 0.35) dunyaP.patlat(y.odaX + y.odaG * karma(simdiMs + i * 3), sy + y.ODA_UST + 10 + 50 * karma(simdiMs * 1.7), 'toz', 2)
         continue
       }
+      if (i % D.KAT_DUZEN === 1) kanarya(sy, t, i)
       katIscileri(durum, b, i, sy, dt, katTempo(b, i, yetAktif.has('m' + i)), simdiMs)
       const c = durum.calisma.madenler[i]
       if (c && c.dolu) ctx.drawImage(al('dolu.etiket'), X(D.KAT.bunkerX0) - 2, sy + Yk(D.KAT.bunkerUst) - Yk(30), 30, 12)

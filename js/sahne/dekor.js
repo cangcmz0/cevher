@@ -30,6 +30,7 @@ export const KAT = Object.freeze({
   kaziYigini: 162,   // kazıcının ayak dibinde biriken cevher
   bunkerX0: 254, bunkerX1: 284, bunkerUst: 56,   // cevher bunkeri (asansör yanı)
   bosaltX: 246,      // taşıyıcının çuvalı boşalttığı yer
+  kafes: [268, 13],  // kanarya kafesi (düzen 1), asılma noktası
   zemin: 74,         // tünel zemini (karakter ayakları)
   ray: 75.5,
   fener: [[160, 13], [232, 13]],
@@ -534,6 +535,28 @@ function tasBloklari(c, x, z, s, kp) {
   }
 }
 
+// Kanarya kafesi (kuş karede çizilir): kubbeli tel kafes, tünek
+function kafesCiz(c, x, y, s) {
+  c.strokeStyle = '#2B2F33'
+  c.lineWidth = 0.6
+  c.beginPath(); c.moveTo(x, y - 7 * s); c.lineTo(x, y); c.stroke()
+  const w = 9 * s, h = 12 * s
+  c.fillStyle = 'rgba(255,220,150,.08)'
+  c.fillRect(x - w / 2, y + 2 * s, w, h)
+  c.strokeStyle = '#B08A3A'
+  c.lineWidth = 0.55
+  c.beginPath()
+  c.arc(x, y + 3 * s, w / 2, Math.PI, 0)
+  for (let i = 0; i <= 6; i++) { const xx = x - w / 2 + (i / 6) * w; c.moveTo(xx, y + 3 * s); c.lineTo(xx, y + 2 * s + h) }
+  c.stroke()
+  c.fillStyle = '#7A5A22'
+  c.fillRect(x - w / 2 - 0.6, y + 2 * s + h - 0.6, w + 1.2, 1.6)
+  c.fillStyle = '#8A5A32'
+  c.fillRect(x - w * 0.35, y + 2 * s + h * 0.62, w * 0.7, 0.8)
+  c.strokeStyle = '#2B2F33'
+  c.beginPath(); c.arc(x, y - 0.2 * s, 0.9 * s, 0, Math.PI * 2); c.stroke()
+}
+
 function esyalar(c, X, Y, v, kod) {
   const z = Y(73)
   // Üçüncü düzende bölgeye özgü eşyalar
@@ -569,6 +592,7 @@ function esyalar(c, X, Y, v, kod) {
     c.fill(kr)
     c.strokeStyle = CIZGI; c.lineWidth = 0.6; c.stroke(kr)
   } else if (v === 1) {
+    kafesCiz(c, X(KAT.kafes[0]), Y(KAT.kafes[1]), X(1))
     kazmaAski(c, X, Y, 196, 28)
     kova(c, X(232), z, X(8), kod)
     varil(c, X(213), z, X(9), Y(13), '#5E6A76')
