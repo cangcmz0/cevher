@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Paket A: olay listesi ve yalnızca arayüz içi (C ↔ D) veriyolu. DOM yok.
 
 // Benzetim olaylarının biriktiği dizi; çağıran her karede boşaltır (olaylar.length = 0)

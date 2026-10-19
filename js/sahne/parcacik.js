@@ -1,11 +1,12 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Parçacıklar ve uçan sayılar (§5.5). Sabit havuz: başlangıçtan sonra ayırma yok.
-// Türler: toz, kivilcim, parca, sikke, parilti, konfeti, sayi.
+// Türler: toz, kivilcim, parca, sikke, parilti, konfeti, sayi, tas (hedefe atılan cevher taşı; görseli parçacıkla gelir), duman.
 // Dünya havuzu sahne tuvalinde (dünya koordinatı), efekt havuzu efekt tuvalinde (arayüz koordinatı) çizilir.
 
 import { Varliklar } from './varliklar.js'
 import { radyal, elips, rgba, yuvarlakYol, dikey, kenarIsik } from './cizim.js'
 
-const TURLER = ['toz', 'kivilcim', 'parca', 'sikke', 'parilti', 'konfeti', 'sayi']
+const TURLER = ['toz', 'kivilcim', 'parca', 'sikke', 'parilti', 'konfeti', 'sayi', 'tas', 'duman']
 const KONFETI_RENK = ['#E67E3E', '#F6C453', '#2ECC71', '#4A90E2', '#F4E8D6', '#E25A43']
 const SAYI_YAZI = '800 14px "Baloo 2", "Trebuchet MS", system-ui, sans-serif'
 const MAKS_SAYI = 8
@@ -28,14 +29,15 @@ export function parcacikSpritelari() {
     c.fillStyle = 'rgba(255,255,255,.95)'
     c.beginPath(); c.moveTo(8, 0); c.lineTo(9, 7); c.lineTo(16, 8); c.lineTo(9, 9); c.lineTo(8, 16); c.lineTo(7, 9); c.lineTo(0, 8); c.lineTo(7, 7); c.closePath(); c.fill()
   } })
-  return ['p.toz', 'p.kivilcim', 'p.parca', 'p.sikke', 'p.parilti']
+  Varliklar.kaydet('p.duman', { w: 16, h: 16, ciz: (c, w, h) => { c.fillStyle = radyal(c, w / 2, h / 2, w / 2, ['rgba(196,190,182,.75)', 'rgba(150,144,138,.4)', 'rgba(120,114,108,0)']); c.fillRect(0, 0, w, h) } })
+  return ['p.toz', 'p.kivilcim', 'p.parca', 'p.sikke', 'p.parilti', 'p.duman']
 }
 
 export class Havuz {
   constructor(n = 256) {
     this.p = []
     for (let i = 0; i < n; i++) {
-      this.p.push({ aktif: false, tur: 0, x: 0, y: 0, vx: 0, vy: 0, g: 0, omur: 1, yas: 0, boy: 1, donus: 0, vr: 0, renk: '', metin: '', sekti: false, zemin: 0, katki: false })
+      this.p.push({ aktif: false, tur: 0, x: 0, y: 0, vx: 0, vy: 0, g: 0, omur: 1, yas: 0, boy: 1, donus: 0, vr: 0, renk: '', metin: '', sekti: false, zemin: 0, katki: false, img: null })
     }
     this.canli = 0
     this.sayiCanli = 0
@@ -66,6 +68,7 @@ export class Havuz {
       p.renk = sec && sec.renk ? sec.renk : ''
       p.metin = sec && sec.metin ? sec.metin : ''
       p.zemin = sec && sec.zemin !== undefined ? sec.zemin : 1e9
+      p.img = sec && sec.img ? sec.img : null
       p.sekti = false
       this.canli++
       if (ti === 6) this.sayiCanli++
@@ -76,7 +79,7 @@ export class Havuz {
 
   // Bir patlama: tür ve adede göre hız dağılımı (kaliteye göre adet azalır)
   patlat(x, y, tur, adet, sec) {
-    if (this.kalite === 'pil' && (tur === 'toz' || tur === 'kivilcim')) return
+    if (this.kalite === 'pil' && (tur === 'toz' || tur === 'kivilcim' || tur === 'duman')) return
     let n = adet || 1
     if (this.kalite === 'dengeli' && tur !== 'sayi') n = Math.max(1, Math.round(n / 2))
     for (let k = 0; k < n; k++) {
@@ -95,11 +98,23 @@ export class Havuz {
       } else if (tur === 'parilti') {
         const r = sec && sec.yaricap ? sec.yaricap : 18
         this.ekle('parilti', x + Math.cos(a) * r * rnd(), y + Math.sin(a) * r * rnd(), { vx: Math.cos(a) * 12, vy: Math.sin(a) * 12 - 8, omur: 0.6, boy: 0.7 + rnd() * 0.8, vr: (rnd() - 0.5) * 3 })
+      } else if (tur === 'duman') {
+        this.ekle('duman', x + (rnd() - 0.5) * 3, y, { vx: 3 + (rnd() - 0.5) * 6, vy: -12 - rnd() * 8, omur: 1.3 + rnd() * 0.7, boy: 0.8 + rnd() * 0.5 })
       } else if (tur === 'konfeti') {
         const gen = sec && sec.genislik ? sec.genislik : 300
         this.ekle('konfeti', x + (rnd() - 0.5) * gen, y - rnd() * 40, { vx: (rnd() - 0.5) * 60, vy: 40 + rnd() * 80, g: 40, omur: 2.2, boy: 0.8 + rnd() * 0.7, vr: (rnd() - 0.5) * 12, renk: KONFETI_RENK[k % KONFETI_RENK.length] })
       }
     }
+  }
+
+  // Taşı (x, y)'den (hx, hy)'ye 'sure' saniyede parabolle atar (g yerçekimi); varınca kısa sürede söner.
+  firlat(x, y, hx, hy, sure, img, sec) {
+    if (this.kalite === 'pil' && rnd() < 0.5) return null
+    const g = sec && sec.g !== undefined ? sec.g : 420
+    return this.ekle('tas', x, y, {
+      vx: (hx - x) / sure, vy: (hy - y) / sure - g * sure / 2, g, omur: sure + (sec && sec.kal !== undefined ? sec.kal : 0.06),
+      boy: sec && sec.boy ? sec.boy : 1, img, vr: (rnd() - 0.5) * 8, zemin: sec && sec.zemin !== undefined ? sec.zemin : 1e9,
+    })
   }
 
   sayi(x, y, metin) {
@@ -124,6 +139,7 @@ export class Havuz {
       p.y += p.vy * dt
       p.donus += p.vr * dt
       if (p.tur === 0) { p.vx *= 0.96; p.vy *= 0.96 }
+      if (p.tur === 8) { p.vx *= 0.985; p.vy *= 0.985 }
       if (p.tur === 5) { p.vx = Math.sin(p.yas * 5 + i) * 30 }
       if (p.y > p.zemin && !p.sekti && p.vy > 0) { p.y = p.zemin; p.vy *= -0.35; p.vx *= 0.6; p.sekti = true }
     }
@@ -133,7 +149,7 @@ export class Havuz {
     if (!this.canli) return
     const l = this.p
     if (!this.sprite) {
-      this.sprite = [Varliklar.al('p.toz'), Varliklar.al('p.kivilcim'), Varliklar.al('p.parca'), Varliklar.al('p.sikke'), Varliklar.al('p.parilti')]
+      this.sprite = [Varliklar.al('p.toz'), Varliklar.al('p.kivilcim'), Varliklar.al('p.parca'), Varliklar.al('p.sikke'), Varliklar.al('p.parilti'), Varliklar.al('p.duman')]
     }
     const sp = this.sprite
     const m = ctx.getTransform()
@@ -168,6 +184,21 @@ export class Havuz {
           ctx.fillStyle = p.renk
           const w = 7 * p.boy, h = 4 * p.boy * Math.abs(Math.cos(p.donus))
           ctx.fillRect(p.x - w / 2, p.y - h / 2, w, Math.max(0.8, h))
+          break
+        }
+        case 8: {
+          ctx.globalAlpha = (1 - t) * (t < 0.15 ? t / 0.15 : 1) * 0.5
+          const s = 9 * p.boy * (1 + t * 1.8)
+          ctx.drawImage(sp[5], p.x - s / 2, p.y - s / 2, s, s)
+          break
+        }
+        case 7: {
+          if (!p.img) break
+          const kal = p.omur - p.yas
+          ctx.globalAlpha = kal < 0.06 ? kal / 0.06 : 1
+          // boy: görsel pikselinden dünya pikseline ölçek (cihaz çözünürlüklü görseller için 1/oran)
+          const w = p.img.width * p.boy, h = p.img.height * p.boy
+          ctx.drawImage(p.img, p.x - w / 2, p.y - h / 2, w, h)
           break
         }
         case 1: case 4: toplamali = true; break

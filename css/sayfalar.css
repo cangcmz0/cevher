@@ -1,3 +1,4 @@
+/* Cevher Madenci · Geliştirici: İbrahim Can Göçmez */
 /* ════════════════════════════════════════════════════════════════
    SAYFALAR (Paket C, §4.8, görsel yön 2): sekme sayfalarının iskeleti,
    Harita (referans2 2. ekranı), alt pencereler (bölgeler, görevler,
@@ -331,3 +332,40 @@
 .dk-ikon { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; background: rgba(0, 0, 0, .3); }
 .dk-ikon .ik { width: 26px; height: 26px; }
 .dk-urun.teklif { margin: 0 -6px; padding: 8px 6px; border-radius: 12px; background: rgba(246, 196, 83, .12); border: 1px solid #F6C453; }
+
+/* ── Profil ve başarımlar ── */
+.pr-ust { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.pr-avatar { width: 58px; height: 58px; flex: none; border-radius: 14px; border: 2px solid #4FA1CE; object-fit: cover; box-shadow: 0 3px 8px rgba(0, 0, 0, .45); }
+.pr-ust h2 { margin: 0; font: 800 21px/24px var(--f-baslik); }
+.pr-ust small { font: 500 12.5px/16px var(--f-govde); color: var(--acik-soluk); }
+.pr-istatistik { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+.pr-kutu { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 12px; background: rgba(0, 0, 0, .28); border: 1px solid var(--cerceve); min-width: 0; }
+.pr-kutu .ik { width: 22px; height: 22px; }
+.pr-kutu b { font: 800 15px/18px var(--f-baslik); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pr-kutu small { font: 500 10.5px/13px var(--f-govde); color: var(--acik-soluk); text-align: center; }
+.pr-baslik { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 800 17px/20px var(--f-baslik); }
+.pr-baslik .ik { width: 24px; height: 24px; }
+.pr-baslik span { flex: 1; }
+.pr-baslik small { font: 700 12px/1 var(--f-govde); color: #F6C453; }
+.bs-liste { display: flex; flex-direction: column; gap: 8px; }
+.bs-kart {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 14px;
+  background: linear-gradient(180deg, #0B3B52, #032A3C);
+  border: 1px solid var(--cerceve);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 3px 8px rgba(0, 0, 0, .35);
+}
+.bs-kart.hazir { border-color: #6FE08E; box-shadow: 0 0 0 1px #6FE08E, 0 0 14px rgba(111, 224, 142, .35); }
+.bs-kart.bitti { opacity: .62; }
+.bs-kart .btn { flex: none; height: 38px; padding: 0 12px; font-size: 14px !important; }
+.bs-kart .ms-bilgi { gap: 4px; }
+.bs-kart .ms-bilgi small { font: 500 11.5px/14px var(--f-govde); color: var(--acik-soluk); }
+.bs-ikon { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: radial-gradient(70% 70% at 40% 35%, #2B6585, #0A2236 75%); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .15); }
+.bs-ikon .ik { width: 28px; height: 28px; }
+.bs-kart.hazir .bs-ikon { animation: bs-salla 1.6s ease-in-out infinite; }
+.bs-yildiz { display: inline-flex; gap: 1px; vertical-align: -2px; margin-left: 4px; }
+.bs-yildiz > i { display: block; width: 13px; height: 13px; opacity: .28; filter: grayscale(1); }
+.bs-yildiz > i.dolu { opacity: 1; filter: none; }
+.bs-yildiz .ik { display: block; width: 13px; height: 13px; }
+@keyframes bs-salla { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-10deg); } 86% { transform: rotate(9deg); } 93% { transform: rotate(-4deg); } }
+@media (prefers-reduced-motion: reduce) { .bs-kart.hazir .bs-ikon { animation: none; } }

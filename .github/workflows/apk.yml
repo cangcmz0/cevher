@@ -4,7 +4,6 @@ name: Android APK
 
 on:
   push:
-    branches: [claude/friendly-ride-jxf1fp]
     paths: ['index.html', 'js/**', 'css/**', 'img/**', 'araclar/**', '.github/workflows/apk.yml']
   workflow_dispatch:
 

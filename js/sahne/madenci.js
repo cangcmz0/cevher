@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Karakterler (§5.4): madenci, taşıyıcı ve yönetici portresi.
 // Her şey açılışta pozlardan fırınlanır (atlas). Kare başına yalnız drawImage.
 // Figürler sağa bakar; sola bakan kareler çizerken scale(-1, 1) ile aynalanır.

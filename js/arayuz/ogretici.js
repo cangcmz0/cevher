@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  ÖĞRETİCİ (Paket C, §2.13) — adım adım yönlendirme: hedefin etrafında
 //  delik açılmış karartma, nabız atan el ve balon. 1–4. adımlarda

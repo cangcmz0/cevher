@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Paket A: sabit adımlı benzetim ve eylemler (TASARIM §2, §6.4). DOM yok.
 //
 // Olay notları (§6.4 listesine ek alanlar, hiçbiri zorunlu değil):
@@ -16,7 +17,7 @@ import {
   XP, ACILIMLAR, TAKVIYE_DAKIKA, TAKVIYE_SINIR_SAAT, OGRETICI_SON_ADIM, DARBOGAZ_ARALIK, GOREVLER, BOLGELER,
   BOLGE, BOLGE_USTASI_ELMAS, BOLGE_ACMA_XP, LIMAN, AMBAR, KONTRAT, KONTRAT_MUSTERI, MISYONLAR, MISYON_ODUL,
   ETKINLIKLER, PRESTIJ, ARASTIRMALAR, ARASTIRMA_MALIYET, ARASTIRMA_SURELER, ARASTIRMA_T3_SURE, GUNLUK_HEDIYE,
-  ELMAS_HARCAMA, TAKVIYE_MAGAZA_SINIR_SAAT, ORTAKLAR, ORTAK_MAKS, ORTAK_MALIYET,
+  ELMAS_HARCAMA, TAKVIYE_MAGAZA_SINIR_SAAT, ORTAKLAR, ORTAK_MAKS, ORTAK_MALIYET, HAZINE, BASARIMLAR, BASARIM_ODUL,
 } from './ayar.js'
 import {
   madenUretim, uretimCarpani, yiginKap, asansorKap, asansorHiz, tasiyiciSayisi, tasiyiciYuk, depoYol, depoKap,
@@ -57,6 +58,9 @@ export function hazirla(durum) {
     c.madenler[i].calisiyor = !!yoneticiBul(b, MADEN_ADLARI[i]) || m.kalan > 0
   }
   c.dolular.depo = b.depo.stok >= depoKap(durum, b) * (1 - 1e-12)
+  // Başarım bildirimleri: yüklemede zaten alınabilir olanlar yeniden duyurulmaz
+  c.basarimHazir = {}
+  for (const t of BASARIMLAR) c.basarimHazir[t.kod] = basarimIlerleme(durum, t).alinabilir
   return durum
 }
 
@@ -81,6 +85,8 @@ export function adim(durum, dt, olaylar) {
     if (!(b.kontrat.hedef > 0)) kontratKur(durum, b)
     arastirmaKontrol(durum, olaylar)
     prestijKontrol(durum, olaylar)
+    hazineKontrol(durum, b, c, olaylar)
+    basarimKontrol(durum, c, olaylar)
   }
   c.sayac30 += dt
   if (c.sayac30 >= GECMIS_ARALIK - EPS) {
@@ -321,6 +327,69 @@ function tasiyicilarAdim(d, b, c, dt, olaylar) {
     c.dolular.depo = dolu
     yay(olaylar, { tip: dolu ? 'doldu' : 'bosaldi', istasyon: 'depo' })
   }
+}
+
+// ---- Başarımlar (§10) ----
+
+// Ölçütün şimdiki değeri (rekor ayrıca tutulur)
+export function basarimDeger(d, kod) {
+  const ist = d.istatistik, bl = Object.values(d.bolgeler)
+  switch (kod) {
+    case 'kazanc': return (ist.prestijKazanc || 0) + bl.reduce((s, b) => s + (b.toplamKazanc || 0), 0)
+    case 'seviye': return d.oyuncu.lv
+    case 'kat': return bl.reduce((m, b) => Math.max(m, b.madenler.length), 0)
+    case 'bolge': return bl.length
+    case 'prestij': return d.prestij.sv
+    case 'yonetici': return Math.max(ist.yonetici || 0, bl.reduce((s, b) => s + Object.values(b.kiralanan || {}).reduce((x, y) => x + (y || 0), 0), 0))
+    default: return ist[kod] || 0
+  }
+}
+
+// { deger, kademe (alınan), toplam, hedef, alinabilir, bitti }
+export function basarimIlerleme(d, t) {
+  const deger = Math.max(basarimDeger(d, t.kod), d.basarim.rekor[t.kod] || 0)
+  const kademe = Math.min(d.basarim.al[t.kod] || 0, t.esik.length)
+  const bitti = kademe >= t.esik.length
+  const hedef = bitti ? t.esik[t.esik.length - 1] : t.esik[kademe]
+  return { deger, kademe, toplam: t.esik.length, hedef, alinabilir: !bitti && deger >= hedef, bitti }
+}
+
+// Rekorları günceller; yeni alınabilir olan kademeyi duyurur
+function basarimKontrol(d, c, olaylar) {
+  if (!c.basarimHazir) c.basarimHazir = {}
+  for (const t of BASARIMLAR) {
+    const v = basarimDeger(d, t.kod)
+    if (v > (d.basarim.rekor[t.kod] || 0)) d.basarim.rekor[t.kod] = v
+    const il = basarimIlerleme(d, t)
+    if (il.alinabilir && !c.basarimHazir[t.kod]) yay(olaylar, { tip: 'basarimHazir', kod: t.kod, ad: t.ad, kademe: il.kademe + 1 })
+    c.basarimHazir[t.kod] = il.alinabilir
+  }
+}
+
+// Hazine damarı (§10): öğretici bittikten sonra, en az iki açık katta ara ara rastgele bir katta belirir.
+// Yer seçimi durumun tohumuyla (belirlenimci); süresi dolunca söner. Çalışma alanındadır, kayda girmez.
+function hazineKontrol(d, b, c, olaylar) {
+  const z = d.zaman
+  if (c.hazine && z >= c.hazine.bitis) {
+    yay(olaylar, { tip: 'hazineKayboldu', kat: c.hazine.kat })
+    c.hazine = null
+  }
+  if (c.hazine) return
+  if (!(c.hazineSonraki > 0)) { c.hazineSonraki = z + HAZINE.ilk; return }
+  if (z < c.hazineSonraki) return
+  if (!d.ogretici.bitti || b.madenler.length < HAZINE.minMaden) { c.hazineSonraki = z + 10; return }
+  const kat = Math.floor(rastgele(d) * b.madenler.length)
+  const tur = rastgele(d) < HAZINE.elmasOlasilik ? 'elmas' : 'altin'
+  c.hazine = { kat, tur, yer: Math.floor(rastgele(d) * 3), bas: z, bitis: z + HAZINE.omur }
+  c.hazineSonraki = z + HAZINE.omur + HAZINE.araMin + rastgele(d) * (HAZINE.araMaks - HAZINE.araMin)
+  yay(olaylar, { tip: 'hazineCikti', kat, tur })
+}
+
+// Altın damarının değeri: gelirin HAZINE.saniye kadarı (yöneticisiz oyunda son ölçülen satış hızı), en az taban
+export function hazineDegeri(d, b) {
+  const c = d.calisma
+  const gelir = Math.max(otoGelir(d, b), (c && c.gelirEma) || 0)
+  return Math.max(HAZINE.taban, Math.round(gelir * HAZINE.saniye))
 }
 
 function istatistikVeDarbogaz(d, b, c, h, olaylar) {
@@ -746,6 +815,7 @@ const EYLEMLER = {
     for (const y of b.yoneticiler) no = Math.max(no, +String(y.id).replace(/^\D+/, '') || 0)
     const y = { id: 'y' + (no + 1), tip, nadirlik, yetenek, ad: isim, tohum, atanan: null, aktifBitis: 0, hazirZaman: 0 }
     b.yoneticiler.push(y)
+    d.istatistik.yonetici = (d.istatistik.yonetici || 0) + 1
     // atama: istenen istasyon boşsa oraya, yoksa en üstteki boş istasyona
     let hedef = null
     const ist = v.istasyon
@@ -1139,6 +1209,48 @@ const EYLEMLER = {
     return TAMAM()
   },
 
+  // Başarım kademesinin ödülü {kod}
+  basarimAl(d, b, v, olaylar) {
+    const t = BASARIMLAR.find((x) => x.kod === v.kod)
+    if (!t) return RED('gecersiz')
+    const il = basarimIlerleme(d, t)
+    if (il.bitti) return RED('maks')
+    if (!il.alinabilir) return RED('kilit')
+    const n = il.kademe
+    d.basarim.al[t.kod] = n + 1
+    if (il.deger > (d.basarim.rekor[t.kod] || 0)) d.basarim.rekor[t.kod] = il.deger
+    const elmas = BASARIM_ODUL.elmas[n], xp = BASARIM_ODUL.xp[n]
+    d.oyuncu.elmas += elmas
+    if (d.calisma.basarimHazir) d.calisma.basarimHazir[t.kod] = basarimIlerleme(d, t).alinabilir
+    yay(olaylar, { tip: 'basarimAlindi', kod: t.kod, kademe: n + 1, elmas, xp })
+    xpVer(d, xp, 'basarim', olaylar)
+    isaretle(d, true)
+    return { ok: true, kademe: n + 1, elmas, xp }
+  },
+
+  // Hazine damarına dokunuldu: ödül verilir, damar söner
+  hazineAl(d, b, v, olaylar) {
+    const c = d.calisma
+    const h = c.hazine
+    if (!h) return RED('yok')
+    c.hazine = null
+    let para = 0, elmas = 0
+    if (h.tur === 'elmas') {
+      elmas = HAZINE.elmasMin + Math.floor(rastgele(d) * (HAZINE.elmasMaks - HAZINE.elmasMin + 1))
+      d.oyuncu.elmas += elmas
+    } else {
+      para = hazineDegeri(d, b)
+      b.para += para
+      b.toplamKazanc += para
+      yay(olaylar, { tip: 'paraDegisti' })
+    }
+    d.istatistik.hazine = (d.istatistik.hazine || 0) + 1
+    yay(olaylar, { tip: 'hazineAlindi', kat: h.kat, tur: h.tur, yer: h.yer, para, elmas })
+    xpVer(d, HAZINE.xp, 'hazine', olaylar)
+    isaretle(d, true)
+    return { ok: true, tur: h.tur, kat: h.kat, para, elmas }
+  },
+
   // Günün misyonlarını kurar (gün değiştiyse) {gun}
   misyonKur(d, b, v) {
     const gun = String(v.gun || '')
@@ -1202,6 +1314,7 @@ const EYLEMLER = {
     if (!prestijUygun(d)) return RED('kilit')
     for (const kod of Object.keys(d.bolgeler)) {
       const eski = d.bolgeler[kod]
+      d.istatistik.prestijKazanc = (d.istatistik.prestijKazanc || 0) + (eski.toplamKazanc || 0)
       const yeni = yeniBolge(kod)
       yeni.giris = eski.giris
       d.bolgeler[kod] = yeni

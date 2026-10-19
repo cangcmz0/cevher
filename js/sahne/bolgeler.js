@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Bölge sanat paletleri (§5.3). S1: yalnızca Zonguldak çizilir; diğerleri S2 için yer tutucu renklerle durur.
 
 export const BOLGE_SANAT = {

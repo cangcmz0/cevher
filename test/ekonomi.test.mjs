@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import * as E from '../js/ekonomi.js'

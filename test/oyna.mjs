@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  OYNA (Paket D, §8.2) — Playwright Chromium test düzeneği.
 //  Çalıştırma: NODE_PATH=$(npm root -g) node test/oyna.mjs

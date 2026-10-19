@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Paketleyici (Paket D): Capacitor için dist/ yazar.
 // dist/index.html = tam belge (index.html parçası sarılır) + css/, js/ ve varsa img/ kopyalanır.
 // Kullanım: node araclar/paketle.mjs

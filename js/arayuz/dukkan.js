@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  MAĞAZA (§2.16) — günlük hediye (7 günlük döngü), ücretsiz elmas
 //  (ödüllü reklam, günde 3), elmasla güçlendirmeler, özel teklif ve

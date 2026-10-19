@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  SAYFALAR (Paket C, §4.8, görsel yön 2) — sekme sayfalarının iskeleti.
 //  • Sayfa HUD'un altından gezintinin üstüne kadar uzanır (referans 2/3

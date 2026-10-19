@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  ARAŞTIRMA (§2.15) — Zeynep'in laboratuvarı. Dört dal, 14 araştırma.
 //  • Aynı anda bir araştırma sürer; elmas + oyun zamanı ister.

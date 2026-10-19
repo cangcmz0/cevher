@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  MADEN GENİŞLETME (görsel yön 2, referans2 3. ekran) — Yöneticiler sekmesi.
 //  • Dört bölüm referanstan birebir kesildi (img/ref/mg-*.png, 397 px

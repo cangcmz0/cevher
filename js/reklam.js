@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  REKLAM — yalnızca isteğe bağlı ödüllü reklam. Oyuncu "İzle"ye
 //  basmadıkça hiçbir reklam çıkmaz; zorunlu geçiş reklamı yok.

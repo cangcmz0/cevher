@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  PENCERELER (Paket C, §4.9–4.10) — alt sayfalar ve modallar.
 //  • Alt sayfalar: yukseltme, ayarlar, istasyonSec (aynı anda bir tane).
@@ -243,7 +244,7 @@ export function kur(B) {
         <button data-eylem="ayar-kalite" data-k="pil" aria-pressed="false">Pil Tasarrufu</button></div></div>
       <button class="ayar-dugme" data-eylem="ogretici-atla" hidden>Öğreticiyi atla</button>
       <button class="ayar-dugme tehlike" data-eylem="sifirla" data-tehlikeli>İlerlemeyi sıfırla</button>
-      <p class="ayar-alt">Cevher Madenci · Sürüm 1.0.0</p>`
+      <p class="ayar-alt">Cevher Madenci · Sürüm 1.1.0<br>Geliştirici: İbrahim Can Göçmez</p>`
     const anahtarlar = [...g.querySelectorAll('.anahtar')]
     const kaliteler = [...g.querySelectorAll('[data-eylem="ayar-kalite"]')]
     const atla = g.querySelector('[data-eylem="ogretici-atla"]')

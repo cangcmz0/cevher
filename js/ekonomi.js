@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Paket A: saf ekonomi formülleri (TASARIM §2, §6.4). DOM yok, durum değiştirmez.
 // b = bölge nesnesi (durum.bolgeler[kod]), d = durum. Seviye (L) verilmezse istasyonun şu anki seviyesi kullanılır.
 

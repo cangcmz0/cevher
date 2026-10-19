@@ -1,9 +1,10 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Paket A: durum şeması (TASARIM §3.2), doğrulama, göçler ve tohumlu PRNG. DOM yok.
 
 import {
   SURUM, BOLGE, BOLGELER, BASLANGIC_PARA, MADEN_SAYISI, MAKS_MADEN_SEVIYE, MAKS_ISTASYON_SEVIYE,
   MAKS_SEVIYE, YONETICI_TIPLERI, TIP_YETENEKLERI, NADIRLIKLER, ALIM_MODLARI, GECMIS_UZUNLUK, OGRETICI_SON_ADIM,
-  LIMAN, AMBAR, GOREVLER, ORTAKLAR, ORTAK_MAKS,
+  LIMAN, AMBAR, GOREVLER, ORTAKLAR, ORTAK_MAKS, BASARIMLAR,
 } from './ayar.js'
 import { tasiyiciSayisi } from './ekonomi.js'
 
@@ -63,7 +64,9 @@ export function yeniDurum(simdiMs = Date.now(), tohum) {
     ayarlar: { ses: true, titresim: true, kalite: 'yuksek' },
     ogretici: { adim: 0, bitti: false },
     alimModu: 1,
-    istatistik: { dokunus: 0, yukseltme: 0, yetenek: 0, reklam: 0, satis: 0, kademe: 0, kontrat: 0, takviye: 0 },
+    istatistik: { dokunus: 0, yukseltme: 0, yetenek: 0, reklam: 0, satis: 0, kademe: 0, kontrat: 0, takviye: 0, hazine: 0, yonetici: 0, prestijKazanc: 0 },
+    // Başarımlar: al = alınan kademe sayısı, rekor = görülen en iyi ilerleme (prestijde düşmez)
+    basarim: { al: {}, rekor: {} },
     aktarim: false,
     hikaye: { goruldu: [], bekleyen: ['giris'] },
     misyon: { gun: '', liste: [], bonus: false },
@@ -111,6 +114,9 @@ export function yeniCalisma(d) {
     sayac30: 0,
     pencereSatis: 0,
     sonCikis: -1e9,
+    // Hazine damarı: { kat, tur: 'altin'|'elmas', yer (kat içi nokta), bas, bitis } ya da null
+    hazine: null,
+    hazineSonraki: 0,
     uretilen: 0,
     satilan: 0,
     yetenekler: {},
@@ -242,6 +248,15 @@ export function dogrula(d) {
   d.misyon.liste = (Array.isArray(d.misyon.liste) ? d.misyon.liste : []).filter((m) => duzObje(m) && typeof m.kod === 'string')
     .slice(0, 3).map((m) => ({ kod: m.kod, n: Math.max(1, Math.floor(sayi(m.n, 1))), bas: sayi(m.bas), zor: sinirla(m.zor, 0, 2, 0), alindi: !!m.alindi }))
   d.prestij.sv = Math.floor(sayi(d.prestij.sv))
+  // başarımlar: tanınan kodlar, kademe 0..esik sayısı, rekor sonlu ve negatif değil
+  const al = {}, rekor = {}
+  for (const t of BASARIMLAR) {
+    const n = Math.floor(sayi(duzObje(d.basarim.al) ? d.basarim.al[t.kod] : 0))
+    if (n > 0) al[t.kod] = Math.min(n, t.esik.length)
+    const r = sayi(duzObje(d.basarim.rekor) ? d.basarim.rekor[t.kod] : 0)
+    if (r > 0) rekor[t.kod] = r
+  }
+  d.basarim = { al, rekor }
   // ortaklar: 0..maks; tanışma sahnesi görüldüyse (ya da sıradaysa) en az 1
   for (const o of ORTAKLAR) {
     d.ortak[o.kod] = sinirla(d.ortak[o.kod], 0, ORTAK_MAKS, 0)

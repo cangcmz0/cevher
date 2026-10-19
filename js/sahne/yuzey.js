@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Yüzey bandı (§5.3, dünya y 0–128): gök, uzak dağlar, deniz, gemiler, deniz feneri,
 // tepeler, zemin, kuyu kulesi (headframe) ve Satış evi. Hepsi açılışta fırınlanır.
 // Katmanlar: 'yuzey.arka' (gök + dağ + deniz, opak), 'yuzey.on' (fener, tepeler, zemin, kule, ev; saydam).

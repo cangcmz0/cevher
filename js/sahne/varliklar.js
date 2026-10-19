@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Değiştirilebilir varlık haritası (§5.8).
 // anahtar -> { w, h, ciz(ctx, w, h, secenek) }  ya da  { w, h, png: 'img/....png' }
 // w/h bir sayı, 'W' (dünya genişliği) ya da W'yi alan bir işlev olabilir; W'ye bağlı olanlar genişlik değişince yeniden fırınlanır.

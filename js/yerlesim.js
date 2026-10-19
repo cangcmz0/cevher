@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Dünya yerleşimi (§4.3, görsel yön 2 — referans2 ile birebir). Saf modül: DOM yok, yan etki yok.
 // Sahne ve arayüz aynı sayıları buradan okur; böylece kanvas ile DOM kartları birebir hizalanır.
 //

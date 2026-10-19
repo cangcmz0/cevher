@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  ALT (görsel yön 2) — alt bant ve sekmeler.
 //  • Solda "Çevrimdışı Kazanç" paneli: bekleyen kazanç varsa miktar ve

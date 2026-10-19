@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  MAĞAZA — uygulama içi satın alma: elmas paketleri, özel teklif
 //  ve kalıcı ürünler (reklamsız, altın kazma).

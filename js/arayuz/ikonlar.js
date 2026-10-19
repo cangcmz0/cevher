@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  İKONLAR (Paket C, §4.13) — satır içi SVG dizgeleri, viewBox 0 0 24 24.
 //  • Boyalı ikonlar: 2–3 duraklı gradyanlar + #2B1D12 1,2 px dış çizgi.
@@ -162,6 +163,9 @@ const GOVDE = {
 <circle cx="15.8" cy="15" r="4.6" fill="none" stroke="#A8690F" stroke-width=".8" opacity=".75"/>
 <path d="${yildiz(15.8, 15.2, 2.9, 1.25)}" fill="#FFE08A" stroke="#A8690F" stroke-width=".6" stroke-linejoin="round"/>
 <path d="M11.4 13.4a4.8 4.8 0 0 1 2.4-2.6" fill="none" stroke="#FFFFFF" stroke-opacity=".75" stroke-width="1" stroke-linecap="round"/>`,
+
+  yildiz: `<path d="${yildiz(12, 12.6, 9.6, 4.1)}" fill="url(#ci-para)" ${dis} stroke-linejoin="round"/>
+<path d="M9.2 9.6l1.6-.3" fill="none" stroke="#FFFFFF" stroke-opacity=".8" stroke-width="1.2" stroke-linecap="round"/>`,
 
   madalya: `<path d="M7 2.5h4l2.2 6.4-3.4 1.2Z" fill="url(#ci-elmas)" ${dis}/><path d="M17 2.5h-4l-2.2 6.4 3.4 1.2Z" fill="url(#ci-kirmizi)" ${dis}/>
 <circle cx="12" cy="15" r="6.8" fill="url(#ci-para)" ${dis}/>

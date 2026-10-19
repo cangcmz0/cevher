@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  BİLDİRİM (Paket C, §4.11) — üst bildirimler. Aynı anda bir tane,
 //  kuyruk en çok 3 (doluysa önce bilgi düşer). Giriş 220 ms, bekleme

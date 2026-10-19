@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  KARTLAR (görsel yön 2) — #dunya katmanı: kat kartları ("5. Kat /
 //  Kömür"), kartın yanındaki yeşil yükseltme okları, galeri yönetici

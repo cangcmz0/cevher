@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Çizim yardımcıları (§5.2): gürültü dokuları, gradyanlar, kenar ışığı, parıltı sprite'ı.
 // Buradaki her şey yalnızca fırınlama (bake) sırasında çalışır; kare başına çağrılmaz.
 

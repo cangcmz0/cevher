@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Paket A: kalıcı kayıt, yedek ve eski 3D kayıttan aktarım (TASARIM §3). DOM yok:
 // depo (localStorage benzeri { getItem, setItem, removeItem }) parametre olarak gelir.
 
@@ -13,7 +14,7 @@ export const ESKI = Object.freeze(['cevher-kayit-v3', 'cevher-kayit-v2'])
 const KOK_ALANLAR = Object.freeze([
   'surum', 'tohum', 'olusturma', 'son', 'enGec', 'zaman', 'oyuncu', 'aktifBolge', 'bolgeler', 'takviye',
   'bekleyenCevrimdisi', 'arastirma', 'gunluk', 'reklamElmas', 'satin', 'ayarlar', 'ogretici', 'alimModu',
-  'istatistik', 'aktarim', 'hikaye', 'misyon', 'etkinlik', 'prestij', 'ortak',
+  'istatistik', 'aktarim', 'hikaye', 'misyon', 'etkinlik', 'prestij', 'ortak', 'basarim',
 ])
 const BOLGE_ALANLAR = Object.freeze([
   'acik', 'para', 'toplamKazanc', 'enIyiGelir', 'madenler', 'asansor', 'depo', 'yoneticiler', 'kiralanan',

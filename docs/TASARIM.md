@@ -1039,8 +1039,6 @@ If baking throws, the renderer falls back to flat colour drawing (each `Varlikla
 
 `window.__cevher = { hazir: bool, durum, eylem(ad, veri), zamanAtla(sn), kareler: Float32Array(600) ring of frame intervals, isler: Float32Array(600) ring of per-frame work ms, sayac: { domYazim, ciz }, kaliteAyarla(k), bellek() }`. It exists in all builds (harmless). `zamanAtla` runs the offline path with a fake `son`.
 
-Optional, kept from the old game: `window.claude?.hot?.snapshot?.(() => ({ durum }))` and `window.claude?.hot?.ready`. These are guarded no-ops if absent.
-
 ### 6.4 State and simulation (A)
 
 `durum` = the saved schema (§3.2) + `durum.calisma` (runtime):
@@ -1427,7 +1425,16 @@ Each S2 package follows the same ownership, interfaces and acceptance rules as s
 | Events | `ETKINLIKLER`, `etkinlik` | A weekly rotating event set by the UI from the calendar (Monday start): region ×1.5 sales, hire −30%, floor opening −25%, contract rewards ×2. |
 | Prestige | `PRESTIJ`, `prestij` | Needs Lv.35 and 2 `Bölge Ustası`. Resets every region; keeps level, elmas, research, partners, story and opened regions. +50% sales per prestige, plus elmas. |
 
+| Treasure vein | `HAZINE`, `hazineKontrol`, `hazineAl`; `js/arayuz/hazine.js` | After the tutorial, with at least 2 floors open, a glowing vein shows up on a random floor every 70–140 s for 24 s (seeded by `durum.tohum`). Gold gives 45 s of income (minimum 60); elmas (15%) gives 2–5 elmas. It lives in `calisma`, so it is never saved. When the vein is off-screen, a `Hazine!` ↑/↓ pill scrolls to it. Collecting it flies the reward to the HUD counter. There is a daily mission for it. |
+| Achievements | `BASARIMLAR`, `BASARIM_ODUL`, `basarimDeger/basarimIlerleme`, `basarimAl`; `js/arayuz/profil.js` | 13 tiered achievements (44 tiers), each tier paying elmas + XP. Progress is the best value seen (`basarim.rekor`), so prestige never takes it back. Lifetime earnings carry over through `istatistik.prestijKazanc`. Newly claimable tiers raise a toast (tiers already claimable at load are not re-announced). The avatar opens the profile sheet, which shows stats and the achievement list, and carries a red dot while something can be claimed. |
+
+Scene animation (`js/sahne/sahne.js`: sprites are pre-rendered once and cached, and each frame only issues drawImage calls):
+- **Elevator:** the cabin follows the simulation through a lightly damped spring (soft start, small settle). A pulley at the top of the shaft turns with the cable, and the cables sway while moving. Ore chunks arc from the floor belt into the cabin while it loads, and drop from the cabin onto the depot pile while it unloads.
+- **Miners:** pick tempo grows with floor level (`katTempo`) and jumps ×1.55 while the floor manager's ability is active (warm pulse plus sparkles). Miners rest with a breathing pose when the floor is idle or its pile is full. The belt stops when the pile is full and keeps its ore.
+- **Carriers:** ore drops from the depot into the cart while it loads. At the sale point the cart tips forward and its ore flies onto the truck. The truck puffs exhaust while carriers run.
+- **Ambient and feedback:** dust motes drift in the lamp light (off on `pil`), and every upgrade adds a small sparkle (milestones a large burst). Consecutive sale numbers are staggered.
+
 All new state is in the save whitelist (`kayit.js`) and repaired by `dogrula`. Older saves get the new fields with
-defaults, and their partners unlock from tutorial/quest progress. Tests: `npm test` (44) and
+defaults, and their partners unlock from tutorial/quest progress. Tests: `npm test` (48) and
 `node test/oyna.mjs` (scenarios 1–6, two profiles; story scenes are skipped with `Atla`).
 

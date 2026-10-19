@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Tek dosyalık sürüm: oyunu, internet ve sunucu gerektirmeden çift tıklayınca açılan TEK bir HTML'e paketler.
 // • JS modülleri esbuild ile tek betiğe (IIFE) toplanır (file:// altında modül içe aktarma çalışmadığı için).
 // • Görseller (img/ref/*.png) ve yazı tipleri (css/yazitipi/*.woff2) data: URI olarak gömülür.

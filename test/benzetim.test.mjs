@@ -1,10 +1,11 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import * as B from '../js/benzetim.js'
 import * as E from '../js/ekonomi.js'
 import { yeniDurum } from '../js/durum.js'
 import { serilestir } from '../js/kayit.js'
-import { KAZI_SURESI } from '../js/ayar.js'
+import { KAZI_SURESI, HAZINE, BASARIMLAR, BASARIM_ODUL } from '../js/ayar.js'
 
 const ADIM = B.ADIM
 function kos(d, sn, olaylar = null) {
@@ -347,4 +348,125 @@ test('ortaklar: Ahmet baştan, Mehmet öğretici sonunda katılır; elmasla sevi
   assert.equal(d.oyuncu.elmas, 70)
   assert.ok(Math.abs(E.ortakEtki(d, 'uretim') - 0.30) < 1e-12)
   assert.equal(B.eylem(d, 'ortakYukselt', { kod: 'elif' }).sebep, 'kilit')
+})
+
+test('hazine damarı: öğretici bitince belirir, dokununca ödül verir, süresi dolunca söner', () => {
+  const d = zenginDurum(5)
+  const b = d.bolgeler.zonguldak
+  const olaylar = []
+  // Öğretici bitmeden çıkmaz
+  kos(d, HAZINE.ilk + 15, olaylar)
+  assert.equal(d.calisma.hazine, null)
+  B.eylem(d, 'ogretici', { bitti: true })
+  kos(d, 12, olaylar)
+  const h = d.calisma.hazine
+  assert.ok(h, 'damar belirmeli')
+  assert.ok(h.kat >= 0 && h.kat < b.madenler.length)
+  assert.ok(['altin', 'elmas'].includes(h.tur))
+  assert.ok(olaylar.some((o) => o.tip === 'hazineCikti' && o.kat === h.kat))
+  // Altın damarı: gelirin HAZINE.saniye katı
+  h.tur = 'altin'
+  const deger = B.hazineDegeri(d, b)
+  assert.ok(deger >= HAZINE.taban)
+  assert.ok(Math.abs(deger - Math.max(HAZINE.taban, Math.round(Math.max(E.otoGelir(d, b), d.calisma.gelirEma) * HAZINE.saniye))) < 1e-9)
+  const para0 = b.para
+  const r = B.eylem(d, 'hazineAl', {}, olaylar)
+  assert.ok(r.ok)
+  assert.equal(r.para, deger)
+  assert.equal(b.para, para0 + deger)
+  assert.equal(d.istatistik.hazine, 1)
+  assert.equal(d.calisma.hazine, null)
+  assert.equal(B.eylem(d, 'hazineAl', {}).sebep, 'yok')
+  // Sonraki damar ara kadar sonra; elmas damarı elmas verir
+  kos(d, HAZINE.omur + HAZINE.araMaks + 2, olaylar)
+  const h2 = d.calisma.hazine
+  assert.ok(h2, 'ikinci damar belirmeli')
+  h2.tur = 'elmas'
+  const e0 = d.oyuncu.elmas
+  const r2 = B.eylem(d, 'hazineAl', {})
+  assert.ok(r2.elmas >= HAZINE.elmasMin && r2.elmas <= HAZINE.elmasMaks)
+  assert.equal(d.oyuncu.elmas, e0 + r2.elmas)
+  // Dokunulmayan damar söner
+  kos(d, HAZINE.omur + HAZINE.araMaks + 2)
+  assert.ok(d.calisma.hazine)
+  const ol2 = []
+  kos(d, HAZINE.omur + 1, ol2)
+  assert.ok(ol2.some((o) => o.tip === 'hazineKayboldu'))
+})
+
+test('hazine damarı: tek açık katta çıkmaz, kayda girmez', () => {
+  const d = yeniDurum(0, 9)
+  B.hazirla(d)
+  B.eylem(d, 'ogretici', { bitti: true })
+  kos(d, HAZINE.ilk + 60)
+  assert.equal(d.calisma.hazine, null)
+  const z = zenginDurum(11)
+  B.eylem(z, 'ogretici', { bitti: true })
+  kos(z, HAZINE.ilk + 12)
+  assert.ok(z.calisma.hazine)
+  assert.ok(!serilestir(z).includes('hazineSonraki'))
+})
+
+test('başarımlar: eşik geçilince duyurulur, ödül kademe kademe alınır', () => {
+  const d = zenginDurum(13)
+  // Oyun içinde geçilen eşik duyurulur
+  const ilk = []
+  kos(d, 1, ilk)
+  assert.ok(ilk.some((o) => o.tip === 'basarimHazir' && o.kod === 'yonetici' && o.kademe === 1))
+  // Kayıt yeniden yüklenince (hazirla) zaten alınabilir olan tekrar duyurulmaz
+  B.hazirla(d)
+  const olaylar = []
+  kos(d, 1, olaylar)
+  const yon = BASARIMLAR.find((t) => t.kod === 'yonetici')
+  // zenginDurum 6 yönetici tuttu (elmasla): ilk kademe (3) alınabilir
+  assert.ok(d.istatistik.yonetici >= 6)
+  const il = B.basarimIlerleme(d, yon)
+  assert.equal(il.kademe, 0)
+  assert.ok(il.alinabilir)
+  assert.ok(!olaylar.some((o) => o.tip === 'basarimHazir' && o.kod === 'yonetici'))
+  assert.equal(B.eylem(d, 'basarimAl', { kod: 'dokunus' }).sebep, 'kilit')
+  for (let i = 0; i < 100; i++) B.eylem(d, 'dokun', { istasyon: 'm0' }) // yöneticili: sayılmaz
+  d.istatistik.dokunus = 99
+  kos(d, 1, olaylar)
+  assert.ok(!olaylar.some((o) => o.tip === 'basarimHazir' && o.kod === 'dokunus'))
+  d.istatistik.dokunus = 100
+  kos(d, 1, olaylar)
+  assert.ok(olaylar.some((o) => o.tip === 'basarimHazir' && o.kod === 'dokunus' && o.kademe === 1))
+  // Ödül: elmas + XP, kademe artar
+  const e0 = d.oyuncu.elmas
+  const r = B.eylem(d, 'basarimAl', { kod: 'yonetici' })
+  assert.ok(r.ok)
+  assert.equal(r.kademe, 1)
+  assert.equal(d.oyuncu.elmas, e0 + BASARIM_ODUL.elmas[0])
+  assert.equal(d.basarim.al.yonetici, 1)
+  // İkinci kademe (10) henüz yok
+  assert.equal(B.eylem(d, 'basarimAl', { kod: 'yonetici' }).sebep, 'kilit')
+  assert.equal(B.eylem(d, 'basarimAl', { kod: 'yok-boyle' }).sebep, 'gecersiz')
+})
+
+test('başarımlar: prestij ilerlemeyi geri almaz, kayıtta korunur ve onarılır', async () => {
+  const { coz } = await import('../js/kayit.js')
+  const d = zenginDurum(17)
+  kos(d, 1)
+  const kat = BASARIMLAR.find((t) => t.kod === 'kat')
+  assert.equal(B.basarimDeger(d, 'kat'), 4)
+  // rekor kaydedilir; kat sayısı düşse de ilerleme kalır
+  d.bolgeler.zonguldak.madenler.length = 1
+  assert.equal(B.basarimIlerleme(d, kat).deger, 4)
+  // kazanç: prestijde biriken toplam korunur
+  d.istatistik.prestijKazanc = 5e5
+  assert.ok(B.basarimDeger(d, 'kazanc') >= 5e5)
+  d.basarim.al.kazanc = 1
+  const k = coz(serilestir(d))
+  assert.equal(k.basarim.al.kazanc, 1)
+  assert.equal(k.basarim.rekor.kat, 4)
+  // bozuk kayıt onarılır
+  const bozuk = JSON.parse(serilestir(d))
+  bozuk.basarim = { al: { kazanc: 99, yabanci: 3, seviye: -2 }, rekor: { kat: 'x', satis: 12 } }
+  const o = coz(JSON.stringify(bozuk))
+  assert.equal(o.basarim.al.kazanc, BASARIMLAR.find((t) => t.kod === 'kazanc').esik.length)
+  assert.equal(o.basarim.al.yabanci, undefined)
+  assert.equal(o.basarim.al.seviye, undefined)
+  assert.equal(o.basarim.rekor.kat, undefined)
+  assert.equal(o.basarim.rekor.satis, 12)
 })

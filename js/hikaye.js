@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Hikâye: karakterler, sahneler ve bölge görevlerinin başlık/açıklamaları. Saf veri, DOM yok.
 //
 // Sahne kimlikleri:

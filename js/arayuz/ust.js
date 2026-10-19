@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  ÜST (görsel yön 2) — HUD (madenci portresi, "Seviye 12", XP çubuğu,
 //  para ve elmas hapları, dişli) ve üç sütunlu istatistik şeridi
@@ -36,6 +37,8 @@ export function kur(B) {
     paraIkon: ust.querySelector('.ust-para > .hud-ikon'),
     para: ust.querySelector('.ust-para b'),
     elmas: ust.querySelector('.ust-elmas b'),
+    elmasHap: ust.querySelector('.ust-elmas'),
+    elmasIkon: ust.querySelector('.ust-elmas > .hud-ikon'),
     uretim: ist.querySelector('.uretim'),
     artis: ist.querySelector('.ist-artis'),
     artisYazi: ist.querySelector('.ist-artis span'),
@@ -53,7 +56,6 @@ export function kur(B) {
   const BILGI = ['Bütün katların saniyelik üretimi.', 'Depodaki cevherin doluluk oranı.', 'Satıştan gelen saniyelik kazanç.']
   B.eylemler.istatistik = (b) => B.bildir('bilgi', BILGI[+b.dataset.k] || BILGI[0])
   B.eylemler['magaza-yakinda'] = () => B.bildir('bilgi', 'Mağaza yakında açılıyor.')
-  B.eylemler.avatar = (b) => { b.animate([{ transform: 'scale(1)' }, { transform: 'scale(.92)' }, { transform: 'scale(1)' }], { duration: 220 }) }
 
   function kare10(d, dt) {
     const b = bolgeAl(d)
@@ -107,5 +109,10 @@ export function kur(B) {
       return { x: r.left - k.left + r.width / 2, y: r.top - k.top + r.height / 2 }
     },
     paraVurgu() { canlandir(el.paraHap, [{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }], 160) },
+    elmasKonumu() {
+      const r = el.elmasIkon.getBoundingClientRect(), k = B.kok.getBoundingClientRect()
+      return { x: r.left - k.left + r.width / 2, y: r.top - k.top + r.height / 2 }
+    },
+    elmasVurgu() { canlandir(el.elmasHap, [{ transform: 'scale(1)' }, { transform: 'scale(1.1)' }, { transform: 'scale(1)' }], 180) },
   }
 }

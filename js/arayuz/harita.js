@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  HARİTA (görsel yön 2, referans2 2. ekran) — Zonguldak bölge haritası,
 //  Aktif Görevler (görev + kontrat) ve alt kısayollar.

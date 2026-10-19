@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  ARAYÜZ (Paket C, §6.6) — kök: DOM'u bir kez kurar, alt modülleri
 //  bağlar, tek bir yetki devri (delegated) tıklama dinleyicisi tutar,
@@ -16,6 +17,8 @@ import * as Alt from './alt.js'
 import * as Pencereler from './pencereler.js'
 import * as Sayfalar from './sayfalar.js'
 import * as Ogretici from './ogretici.js'
+import * as Hazine from './hazine.js'
+import * as Profil from './profil.js'
 
 const SIKKE_HAVUZ = 24
 
@@ -47,33 +50,37 @@ function kokKur(kok) {
   maden.after(parca)
 }
 
-// ── Uçan sikkeler (§5.6) ──
+// ── Uçan sikkeler (§5.6) ve elmaslar: ödül kaynağından üst çubuktaki sayaca ──
 function sikkeHavuzu(kok) {
   const l = []
   for (let i = 0; i < SIKKE_HAVUZ; i++) {
     const el = ogeYap(`<i class="ucan-sikke">${ikon('para')}</i>`)
+    el.dataset.tur = 'para'
     kok.appendChild(el)
     l.push(el)
   }
   let sira = 0
-  return function ucur(x0, y0, adet = 8) {
-    const hedef = B.ust.paraKonumu()
+  return function ucur(x0, y0, adet = 8, tur = 'para') {
+    const elmas = tur === 'elmas'
+    const hedef = elmas ? B.ust.elmasKonumu() : B.ust.paraKonumu()
     if (!hedef) return
     let ilk = true
     for (let k = 0; k < adet; k++) {
       const el = l[sira++ % l.length]
+      if (el.dataset.tur !== tur) { el.innerHTML = ikon(elmas ? 'elmas' : 'para'); el.dataset.tur = tur }
       el.style.display = 'block'
       const dx = (Math.random() - 0.5) * 50, dy = -30 - Math.random() * 40
       const sure = 650 + Math.random() * 250
       const a = el.animate([
-        { transform: `translate(${x0}px, ${y0}px) scale(.6)`, opacity: 0 },
-        { transform: `translate(${x0 + dx}px, ${y0 + dy}px) scale(1)`, opacity: 1, offset: 0.25 },
-        { transform: `translate(${hedef.x}px, ${hedef.y}px) scale(.8)`, opacity: 1 },
+        { transform: `translate(${x0}px, ${y0}px) scale(.6) rotate(0deg)`, opacity: 0 },
+        { transform: `translate(${x0 + dx}px, ${y0 + dy}px) scale(1.1) rotate(${elmas ? 0 : 120}deg)`, opacity: 1, offset: 0.25 },
+        { transform: `translate(${hedef.x}px, ${hedef.y}px) scale(.8) rotate(${elmas ? 0 : 360}deg)`, opacity: 1 },
       ], { duration: sure, delay: k * 40, easing: 'cubic-bezier(.5,0,.6,1)', fill: 'both' })
       a.onfinish = () => {
         el.style.display = 'none'
         a.cancel()
-        B.ust.paraVurgu()
+        if (elmas) B.ust.elmasVurgu()
+        else B.ust.paraVurgu()
         if (ilk) { ilk = false; ses('para') }
       }
     }
@@ -131,6 +138,8 @@ export const Arayuz = {
     B.pencere = Pencereler.kur(B)
     B.sayfa = Sayfalar.kur(B)
     B.ogretici = Ogretici.kur(B)
+    B.hazine = Hazine.kur(B)
+    B.profil = Profil.kur(B)
     // Yeni sistemlerin bildirimleri (görev, kontrat, araştırma, bölge ustası, prestij)
     const haberler = {
       olay(o) {
@@ -143,7 +152,7 @@ export const Arayuz = {
         else if (o.tip === 'prestijYapildi') B.bildir('basari', `Prestij ${o.sv}! Bütün satışlar kalıcı ×${(1 + A.PRESTIJ.satis * o.sv).toLocaleString('tr-TR')} · +${o.elmas} elmas`)
       },
     }
-    moduller = [B.ust, B.kartlar, B.alt, B.pencere, B.sayfa, B.ogretici, haberler]
+    moduller = [B.ust, B.kartlar, B.alt, B.pencere, B.sayfa, B.ogretici, B.hazine, B.profil, haberler]
 
     // Bölge geçişi: perde iner, bölge değişir, katlar yeniden kurulur, perde kalkar
     const gecis = kok.querySelector('#gecis')

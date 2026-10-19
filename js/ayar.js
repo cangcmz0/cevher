@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Paket A: tüm sabitler ve veri tabloları (TASARIM §2). Saf veri, DOM yok.
 // S2 tabloları burada durur ama S1'de kullanılmaz.
 
@@ -214,6 +215,29 @@ export const KONTRAT_MUSTERI = don({
 })
 
 // Günlük misyonlar: her gün 3 tane (tarihe göre seçilir). n: [kolay, orta, zor] (oyuncu seviyesine göre)
+// Başarımlar: kademeli; her kademe elmas ve XP verir. İlerleme benzetim.basarimDeger'den, en iyi değer (rekor) saklanır
+// ki prestij sıfırlaması kazanılmış ilerlemeyi geri almasın. buyuk: hedef sayısı kısa biçimle yazılır (1 mn).
+export const BASARIMLAR = don([
+  { kod: 'kazanc', ad: 'Servet', metin: 'Toplam {n} kazan', esik: [1e4, 1e6, 1e8, 1e10, 1e12], buyuk: true },
+  { kod: 'seviye', ad: 'Tecrübe', metin: 'Seviye {n} ol', esik: [10, 25, 50, 75, 100] },
+  { kod: 'kat', ad: 'Derinlere', metin: 'Bir bölgede {n} maden katı aç', esik: [5, 10, 15] },
+  { kod: 'yukseltme', ad: 'Mühendis', metin: '{n} yükseltme yap', esik: [50, 250, 1000, 5000] },
+  { kod: 'kademe', ad: 'Kademe Ustası', metin: '{n} kademe geç', esik: [10, 50, 200] },
+  { kod: 'yonetici', ad: 'Ekip Lideri', metin: '{n} yönetici işe al', esik: [3, 10, 25] },
+  { kod: 'yetenek', ad: 'Takım Ruhu', metin: '{n} yönetici yeteneği kullan', esik: [10, 50, 250] },
+  { kod: 'satis', ad: 'Tüccar', metin: '{n} vagon cevher sat', esik: [500, 5000, 50000] },
+  { kod: 'hazine', ad: 'Hazine Avcısı', metin: '{n} hazine damarı topla', esik: [5, 25, 100] },
+  { kod: 'kontrat', ad: 'Sözünün Eri', metin: '{n} kontrat teslim et', esik: [3, 15, 50] },
+  { kod: 'bolge', ad: 'Kâşif', metin: '{n} bölge aç', esik: [2, 3, 4] },
+  { kod: 'dokunus', ad: 'Çalışkan Eller', metin: 'Madene {n} kez dokun', esik: [100, 1000, 10000] },
+  { kod: 'prestij', ad: 'Efsane', metin: '{n} kez prestij yap', esik: [1, 3, 5] },
+])
+export const BASARIM_ODUL = don({ elmas: [5, 10, 20, 35, 50], xp: [20, 40, 80, 150, 250] })
+
+// Hazine damarı: ara ara rastgele bir katta parlayan damar belirir; dokununca ödül verir, süresi dolunca söner.
+// Altın damarı gelirin 'saniye' kadarını (en az 'taban') verir; elmas damarı elmasMin..elmasMaks elmas.
+export const HAZINE = don({ ilk: 40, araMin: 70, araMaks: 140, omur: 24, saniye: 45, taban: 60, elmasOlasilik: 0.15, elmasMin: 2, elmasMaks: 5, xp: 6, minMaden: 2 })
+
 export const MISYONLAR = don([
   { kod: 'dokun', metin: 'Madencilere {n} kez dokun', sayac: 'dokunus', n: [20, 40, 60] },
   { kod: 'yukselt', metin: '{n} yükseltme yap', sayac: 'yukseltme', n: [10, 25, 50] },
@@ -222,6 +246,7 @@ export const MISYONLAR = don([
   { kod: 'kademe', metin: '{n} kademe geç', sayac: 'kademe', n: [1, 2, 4] },
   { kod: 'kontrat', metin: '{n} kontrat teslim et', sayac: 'kontrat', n: [1, 1, 2] },
   { kod: 'takviye', metin: "Kazanç x2'yi {n} kez başlat", sayac: 'takviye', n: [1, 1, 2] },
+  { kod: 'hazine', metin: '{n} hazine damarı topla', sayac: 'hazine', n: [2, 4, 6] },
 ])
 export const MISYON_ODUL = don({ elmas: [5, 8, 12], xp: [30, 50, 80], bonusElmas: 15 })
 

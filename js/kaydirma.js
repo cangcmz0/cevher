@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  KAYDIRMA (Paket D, §6.7) — maden görünümünün özel kaydırması,
 //  dokunma ve uzun basma algılama. Yerel kaydırma kullanılmaz.

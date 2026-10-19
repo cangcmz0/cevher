@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  ANA (Paket D) — açılış, ana döngü, bağlantılar, görünürlük,
 //  otomatik kayıt ve hata ayıklama kancası (§6.2, §6.3, §6.8).
@@ -110,7 +111,7 @@ function otoKayit(simdiMs) {
 const ERTELI = new Set(['yukselt', 'madenAc', 'yoneticiTut', 'yoneticiAta', 'yoneticiCikar', 'yetenek', 'ogretici',
   'alimModu', 'ayar', 'bolgeAc', 'bolgeGit', 'arastirmaBaslat', 'arastirmaHizlandir', 'arastirmaBitir', 'gorevAl',
   'hediyeAl', 'elmasHarca', 'zamanAtla', 'urunVer', 'hikayeGoruldu', 'lojistik', 'kontratAl', 'misyonAl',
-  'ortakYukselt', 'elmasReklam'])
+  'ortakYukselt', 'elmasReklam', 'hazineAl'])
 const HEMEN = new Set(['takviye', 'cevrimdisiTopla', 'sifirla', 'prestij', 'gunlukAl', 'magazaAl'])
 
 function eylem(ad, veri = {}) {
@@ -181,6 +182,10 @@ function sesler(liste) {
         Ses.cal('gorev'); break
       case 'bolgeAcildi':
         Ses.cal('kervan'); break
+      case 'hazineCikti':
+        Ses.cal('hazine'); break
+      case 'hazineAlindi':
+        Ses.cal('odul'); Ses.titret([15, 30, 15]); break
     }
   }
 }
@@ -201,6 +206,7 @@ const dunyaYuk = () => (yer ? yer.dunyaH(bolge().madenler.length) : 0)
 function dokun(x, yDunya) {
   let h = null
   try { h = Sahne.isabet(x, yDunya, durum) } catch (e) { console.error(e) }
+  if (h && h.hazine) { eylem('hazineAl'); return }
   if (!h || !h.istasyon) return
   const s = eylem('dokun', { istasyon: h.istasyon })
   if (s && !s.ok && s.sebep === 'otomatik') Arayuz.modalAc('yukseltme', { istasyon: h.istasyon })
@@ -374,12 +380,10 @@ function ilerleme(oran) {
 }
 function bekle(ms) { return new Promise((r) => setTimeout(r, ms)) }
 
-async function basla(hot = {}) {
+async function basla() {
   ilerleme(0.08)
   // 2. Kayıt
-  let yuklenen
-  if (hot && hot.durum) yuklenen = { durum: hot.durum, kaynak: 'kayit' }
-  else yuklenen = Kayit.yukle(depo, Date.now())
+  const yuklenen = Kayit.yukle(depo, Date.now())
   durum = yuklenen.durum
   Benzetim.hazirla(durum)
   sonKayitZaman = durum.zaman
@@ -450,7 +454,6 @@ async function basla(hot = {}) {
     acilis.style.pointerEvents = 'none'
     setTimeout(() => acilis.remove(), 450)
   }
-  window.claude?.hot?.snapshot?.(() => ({ durum }))
 }
 
 // ── Kanca işlevleri ──
@@ -492,10 +495,7 @@ Object.assign(K, {
   },
 })
 
-function calistir(hot) {
-  basla(hot || {}).catch((e) => {
-    console.error('Açılış hatası', e)
-    sorunGoster()
-  })
-}
-window.claude?.hot?.ready ? window.claude.hot.ready(calistir) : calistir(window.claude?.hot?.data ?? {})
+basla().catch((e) => {
+  console.error('Açılış hatası', e)
+  sorunGoster()
+})

@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Paket A: sayı ve süre biçimleri (TASARIM §4.12). Saf; ondalık ayırıcı virgül, binlik nokta.
 
 export const EKLER = Object.freeze(['', 'bin', 'mn', 'mr', 'tn', 'kt', 'kn'])

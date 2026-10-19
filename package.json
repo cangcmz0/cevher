@@ -1,6 +1,8 @@
 {
   "name": "cevher-madenci-2d",
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "description": "Cevher Madenci: 2D boşta madencilik oyunu",
+  "author": "İbrahim Can Göçmez",
   "private": true,
   "type": "module",
   "scripts": {

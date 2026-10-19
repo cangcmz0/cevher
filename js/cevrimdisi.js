@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Paket A: çevrimdışı kazanç ve saat bekçisi (TASARIM §3.4). Saf; DOM yok.
 
 import { CEVRIMDISI_EN_AZ, SAAT_TOLERANS_MS } from './ayar.js'

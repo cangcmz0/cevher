@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  ORTAK (Paket C) — arayüz modüllerinin paylaştığı yardımcılar.
 //  • A modülleri ad alanı olarak alınır: eksik bir dışa aktarım bağlamayı

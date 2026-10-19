@@ -1,3 +1,4 @@
+// Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // Test sunucusu (Paket D, §8.2): depo kökünü doğru MIME türleriyle sunar.
 // "/" yayın ortamı gibi index.html parçasını tam belgeye sarar.
 // Kullanım: node test/sunucu.mjs [port]   ya da   import { sunucuBaslat } from './sunucu.mjs'
