@@ -498,6 +498,19 @@ Object.assign(K, {
   },
 })
 
+// Android geri tuşu (Capacitor uygulaması): önce açık pencere/sayfa kapanır, ana ekranda oyun arka plana alınır
+const UygulamaEklentisi = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App
+if (UygulamaEklentisi && UygulamaEklentisi.addListener) {
+  UygulamaEklentisi.addListener('backButton', () => {
+    let kapandi = false
+    try { kapandi = Arayuz.geri() } catch {}
+    if (kapandi) return
+    try { kaydet() } catch {}
+    if (UygulamaEklentisi.minimizeApp) UygulamaEklentisi.minimizeApp()
+    else UygulamaEklentisi.exitApp()
+  })
+}
+
 basla().catch((e) => {
   console.error('Açılış hatası', e)
   sorunGoster()

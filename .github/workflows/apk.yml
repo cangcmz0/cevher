@@ -35,7 +35,7 @@ jobs:
 
       - name: Capacitor Android projesi
         run: |
-          npm install --no-save --no-audit --no-fund @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+          npm install --no-save --no-audit --no-fund @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/app@7
           cat > capacitor.config.json <<'JSON'
           {
             "appId": "com.cangcmz0.cevher",

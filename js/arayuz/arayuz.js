@@ -245,4 +245,19 @@ export const Arayuz = {
   },
 
   ogreticiHedef() { return B ? B.ogretici.hedef() : null },
+
+  // Android geri tuşu: en üstteki pencere/sayfa kapanır; kapatılacak bir şey varsa true
+  geri() {
+    if (!B) return false
+    const P = B.pencere
+    if (P.acikModal()) {
+      const atla = P.modalEl.querySelector('[data-eylem="hikaye-atla"]')
+      if (atla) atla.click()
+      else B.kok.querySelector('#perde').click()
+      return true
+    }
+    if (P.acikSayfa()) { P.kapatSayfa(); return true }
+    if (B.sayfa.acik()) { B.sayfa.kapat(); return true }
+    return false
+  },
 }
