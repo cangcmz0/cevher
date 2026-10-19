@@ -8,7 +8,7 @@
 //  • Uzun basma (≥ 350 ms): seçili modla hızlı alım, 150 ms'de bir
 //    (1,5 sn sonra 80 ms), para yettikçe.
 // ════════════════════════════════════════════════════════════════
-import { ikon, cevherIkonu } from './ikonlar.js'
+import { ikon } from './ikonlar.js'
 import {
   E, A, yaz, sinif, gizle, ozellik, cubuk, bicim, oranYazi, bolgeAl, nadirlik, yetenekHali,
   kartHizi, ogeYap, yoneticiAdi, yetenekEtki, canlandir, NABIZ, SALLA, PARLA, YUVARLA,

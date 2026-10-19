@@ -8,7 +8,6 @@
 // ════════════════════════════════════════════════════════════════
 import { DEFS, ikon } from './ikonlar.js'
 import { ogeYap, yayinla, Veriyolu, ses, bolgeAl, A, E, madenMi, bicim, sure, bolgeKilitYazi, carpanYazi } from './ortak.js'
-import { cevherIkonu } from './ikonlar.js'
 import { gunKodu, haftaEtkinligi } from './harita.js'
 import { bolgeAcilis } from '../benzetim.js'
 import * as Bildirim from './bildirim.js'
@@ -168,7 +167,7 @@ export const Arayuz = {
       const a = bolgeAcilis(B.durumAl(), kod)
       if (a.durum !== 'acik' && a.durum !== 'hazir') { B.bildir('bilgi', bolgeKilitYazi(B.durumAl(), kod)); return }
       gecisVar = true
-      gecis.querySelector('.gecis-ikon').innerHTML = cevherIkonu(kod)
+      gecis.querySelector('.gecis-ikon').innerHTML = `<img class="cevher-img" src="${B.sahne.simgeAdres('cevher', kod, 64)}" alt="">`
       gecis.querySelector('b').textContent = bb.ad
       gecis.querySelector('small').textContent = bb.cevher + ' · ' + bb.alt
       gecis.style.setProperty('--gr', bb.vurgu)

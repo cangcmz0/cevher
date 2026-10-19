@@ -563,3 +563,9 @@
 /* Tam genişlikteki düğmelerde nabız ölçek yerine parıltıyla (panelden taşmasın) */
 .mg-p-btn.nabiz, .mg-k-btn.nabiz, .ot-al.nabiz { animation: genis-nabiz 1.2s ease-in-out infinite; }
 @keyframes genis-nabiz { 50% { filter: brightness(1.18); box-shadow: 0 0 0 3px rgba(255, 211, 107, .55), 0 0 18px rgba(255, 211, 107, .55); } }
+/* Çizim cevher simgesi (<img>) yuvarlak rozetlerde */
+.cevher-img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.bl-ikon .cevher-img { width: 40px; height: 40px; }
+.kt-ust .bl-ikon .cevher-img { width: 32px; height: 32px; }
+#gecis .gecis-ikon .cevher-img { width: 64px; height: 64px; }
+.yk-ikon .cevher-img { width: 38px; height: 38px; }

@@ -6,7 +6,7 @@
 //  • Konumlar 360×440 birimlik tasarım alanından yüzdeye çevrilir.
 //  • Alt pencereler: bolgeler, gorevler, misyonlar, kontratlar, etkinlik.
 // ════════════════════════════════════════════════════════════════
-import { ikon, cevherIkonu } from './ikonlar.js'
+import { ikon } from './ikonlar.js'
 import { A, yaz, sinif, gizle, cubuk, bicim, bolgeAl, canlandir, simge, simgeleriCiz, bolgeKilitYazi } from './ortak.js'
 import { gorevDurumu, gorevKosulu, kontratDurumu, misyonIlerleme, bolgeAcilis } from '../benzetim.js'
 import { BOLUMLER, SAHNELER, gorevYazi } from '../hikaye.js'
@@ -276,7 +276,7 @@ export function hazirla(B) {
         const bolum = BOLUMLER.find((x) => x.bolge === bb.kod)
         const ilerleme = kb ? kb.gorev.sira / A.GOREVLER.length : 0
         return `<div class="bl-kart${aktif ? ' aktif' : ''}${kilitli ? ' kilitli' : ''}" style="--br:${bb.vurgu}">
-          <i class="bl-ikon">${cevherIkonu(bb.kod)}</i>
+          <i class="bl-ikon"><img class="cevher-img" src="${B.sahne.simgeAdres('cevher', bb.kod, 40)}" alt=""></i>
           <div class="bl-bilgi"><b>${bb.ad}${kb && kb.usta ? ' <em>Usta</em>' : ''}</b><small>${bb.cevher} · ${bb.alt}</small>
             <small class="bl-bolum">Bölüm ${bolum.no}: ${bolum.ad}</small>
             <i class="cubuk-ince"><i style="transform:scaleX(${ilerleme})"></i></i></div>
@@ -326,7 +326,7 @@ export function hazirla(B) {
         const bb = A.BOLGE[kod]
         const oran = k.hedef > 0 ? k.ilerleme / k.hedef : 0
         return `<div class="kt-kart${k.hazir ? ' hazir' : ''}">
-          <div class="kt-ust"><i class="bl-ikon">${cevherIkonu(kod)}</i><div><b>${k.cevher} Kontratı #${k.no + 1}</b><small>${bb.ad} · ${k.musteri}</small></div></div>
+          <div class="kt-ust"><i class="bl-ikon"><img class="cevher-img" src="${B.sahne.simgeAdres('cevher', kod, 40)}" alt=""></i><div><b>${k.cevher} Kontratı #${k.no + 1}</b><small>${bb.ad} · ${k.musteri}</small></div></div>
           <p>${bicim(k.hedef)} ton ${k.cevher.toLocaleLowerCase('tr')} sevk et.${kod !== d.aktifBolge ? ' (Yalnız o bölgedeyken yapılan satışlar sayılır.)' : ''}</p>
           <div class="kt-cubuk"><i style="transform:scaleX(${oran})"></i><span class="sayi">${bicim(k.ilerleme)} / ${bicim(k.hedef)}</span></div>
           <div class="kt-alt"><span class="kt-odul">${ikon('para')}<b class="sayi">+${bicim(k.odul.para)}</b>${ikon('elmas')}<b class="sayi">+${k.odul.elmas}</b><em class="sayi">+${k.odul.xp} XP</em></span>

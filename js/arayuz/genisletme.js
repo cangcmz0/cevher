@@ -21,7 +21,7 @@ import { KISILER } from '../hikaye.js'
 import { kontratAl } from './harita.js'
 
 const SALLA = [{ transform: 'translateX(0)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'none' }]
-const KAYNAKLAR = ['zonguldak', 'eregli', 'karabuk', 'kastamonu']
+const KAYNAKLAR = A.BOLGELER.map((b) => b.kod)
 const LOJ = [
   { tur: 'depo', ad: 'Depo', simge: 'vagon' },
   { tur: 'asansor', ad: 'Asansör', simge: 'kabin' },

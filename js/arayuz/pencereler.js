@@ -7,7 +7,7 @@
 //  • İçerik açılışta bir kez kurulur; değerler 4 Hz yerinde güncellenir.
 //    Yönetici modalı yalnız yapısı değişince (imza) yeniden kurulur.
 // ════════════════════════════════════════════════════════════════
-import { ikon, cevherIkonu } from './ikonlar.js'
+import { ikon } from './ikonlar.js'
 import {
   E, A, yaz, sinif, gizle, cubuk, bicim, oranYazi, tam, sayac, sure, ogeYap, bolgeAl, istasyonAdi, nadirlik,
   yetenekHali, yetenekEtki, yoneticiAdi, kartHizi, madenMi, istasyonTipi, simge, simgeleriCiz,
@@ -19,7 +19,9 @@ const SAYFALAR = new Set(['yukseltme', 'ayarlar', 'istasyonSec', 'defter'])
 const ONCELIK = { seviye: 2, hikaye: 1 }
 const MODLAR = [[1, 'x1'], [10, 'x10'], [50, 'x50'], ['max', 'Max']]
 const katAdi = (ist) => (ist === 'asansor' ? 'Asansör' : ist === 'depo' ? '1. Kat · Depo' : (+ist.slice(1) + 2) + '. Kat')
-const istIkon = (ist) => (ist === 'asansor' ? ikon('asansor') : ist === 'depo' ? ikon('sepet') : cevherIkonu('zonguldak'))
+// İstasyon simgesi; katlarda etkin bölgenin cevheri (sahnedeki yığınla aynı çizim)
+const istIkon = (B, ist) => (ist === 'asansor' ? ikon('asansor') : ist === 'depo' ? ikon('sepet')
+  : `<img class="cevher-img" src="${B.sahne.simgeAdres('cevher', B.durumAl().aktifBolge, 40)}" alt="">`)
 
 export function kur(B) {
   const kok = B.kok.querySelector('#pencere-kok')
@@ -127,7 +129,7 @@ export function kur(B) {
     const ist = veri.istasyon
     const madenMi_ = madenMi(ist)
     g.innerHTML = `
-      <div class="yk-bas"><span class="yk-ikon">${istIkon(ist)}</span><div><h2>${katAdi(ist)}</h2><p class="sayi"></p></div></div>
+      <div class="yk-bas"><span class="yk-ikon">${istIkon(B, ist)}</span><div><h2>${katAdi(ist)}</h2><p class="sayi"></p></div></div>
       <div class="bolumlu" role="group" aria-label="Alım miktarı">${MODLAR.map(([m, ad]) => `<button data-eylem="alim-modu" data-mod="${m}" aria-pressed="false">${ad}</button>`).join('')}</div>
       <div class="yk-satirlar"></div>
       <div class="yk-kademe"><span class="sayi"></span><span class="cubuk"><i></i></span></div>

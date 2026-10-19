@@ -17,6 +17,25 @@ export const KAYA = {
   eregli: { koyu: '#170D09', orta: '#3A2219', acik: '#5E3A2B', duvar: ['#8C5E44', '#5E3A2A', '#30201A'], tas: ['#6E4434', '#80533E', '#5A382B', '#4A2E23'] },
   karabuk: { koyu: '#141311', orta: '#35312C', acik: '#58524A', duvar: ['#8E8576', '#5F5850', '#302C28'], tas: ['#6E675D', '#827A6E', '#5A544C', '#4A4540'] },
   kastamonu: { koyu: '#160F09', orta: '#37271A', acik: '#5A4129', duvar: ['#8C6646', '#5E4430', '#30221A'], tas: ['#6A4D35', '#7C5C40', '#56402D', '#463424'] },
+  balya: { koyu: '#121417', orta: '#2A3036', acik: '#46505A', duvar: ['#7A8590', '#4F5862', '#272C32'], tas: ['#5A646E', '#6C7782', '#4A535C', '#3C434A'] },
+  afyon: { koyu: '#2A2622', orta: '#5E5850', acik: '#8C857A', duvar: ['#C9C1B2', '#968E80', '#5A544C'], tas: ['#B8B0A2', '#CFC8BA', '#A39A8C', '#8C8476'] },
+  keciborlu: { koyu: '#1C170C', orta: '#4A3F1E', acik: '#76663A', duvar: ['#A89058', '#7A6638', '#3E3420'], tas: ['#8C7840', '#A08A4C', '#7A6836', '#625430'] },
+  bergama: { koyu: '#1A0E0A', orta: '#3E2418', acik: '#6A4430', duvar: ['#9A6A4A', '#6E4632', '#38241A'], tas: ['#7A5038', '#8E6044', '#68442E', '#523626'] },
+  gumushane: { koyu: '#101318', orta: '#262C36', acik: '#424C5A', duvar: ['#6E7888', '#485262', '#232A34'], tas: ['#4E5868', '#606C7C', '#3E4756', '#323A46'] },
+  elazig: { koyu: '#0E1412', orta: '#22302A', acik: '#3C5048', duvar: ['#62786C', '#40544A', '#1E2A24'], tas: ['#4A6056', '#5A7266', '#3C4E46', '#2E3E36'] },
+  kirka: { koyu: '#241E22', orta: '#4E4448', acik: '#7E7276', duvar: ['#B8AAAE', '#8A7E82', '#4E4448'], tas: ['#A0949A', '#B4A8AE', '#8C8086', '#766C72'] },
+  beylikova: { koyu: '#140E1A', orta: '#2E2238', acik: '#4E3E5E', duvar: ['#7E6A92', '#56466A', '#2C2238'], tas: ['#5E4C72', '#706088', '#4C3E5E', '#3E324E'] },
+}
+// Üçüncü kat düzeninde bölgeye özgü eşyalar: külçe rengi ve sandık etiketi (element simgesi)
+const BOLGE_ESYA = {
+  kastamonu: { kulce: '#C8743A', metin: 'Cu', renk: '#7FD0B0' },
+  balya: { kulce: '#6E7A86', metin: 'Pb', renk: '#B8C4D0' },
+  keciborlu: { kulce: '#D9B020', metin: 'S', renk: '#FFE45A' },
+  bergama: { kulce: '#E8B830', metin: 'Au', renk: '#FFD84A' },
+  gumushane: { kulce: '#C8D0D8', metin: 'Ag', renk: '#E8EEF4' },
+  elazig: { kulce: '#5A6E64', metin: 'Cr', renk: '#9FD0B8' },
+  kirka: { kulce: '#D8CCE0', metin: 'B', renk: '#F6EEFC' },
+  beylikova: { kulce: '#8A6AB0', metin: 'Nd', renk: '#C49AF0' },
 }
 export const kaya = (kod) => KAYA[kod] || KAYA.zonguldak
 export const cevherRenk = (kod) => (BOLGE[kod] || BOLGE.zonguldak).renk
@@ -564,7 +583,7 @@ function esyalar(c, X, Y, v, kod) {
     if (kod === 'eregli') {
       kulceler(c, X(206), z, X(6.5), Y(3.2), '#8A5A4A')
       ors(c, X(232), z, X(5.5))
-    } else if (kod === 'karabuk') {
+    } else if (kod === 'karabuk' || kod === 'afyon') {
       tasBloklari(c, X(198), z, X(9), kaya(kod))
       c.lineCap = 'round'
       c.strokeStyle = '#3A2414'; c.lineWidth = X(1.6)
@@ -573,8 +592,9 @@ function esyalar(c, X, Y, v, kod) {
       c.fillRect(X(236), z - Y(18), X(8), Y(5))
       c.strokeStyle = CIZGI; c.lineWidth = 0.6; c.strokeRect(X(236), z - Y(18), X(8), Y(5))
     } else {
-      kulceler(c, X(206), z, X(6.5), Y(3.2), '#C8743A')
-      sandik(c, X(226), z, X(13), Y(11), 77, { metin: 'Cu', renk: '#7FD0B0' })
+      const e = BOLGE_ESYA[kod] || BOLGE_ESYA.kastamonu
+      kulceler(c, X(206), z, X(6.5), Y(3.2), e.kulce)
+      sandik(c, X(226), z, X(13), Y(11), 77, { metin: e.metin, renk: e.renk })
     }
     return
   }

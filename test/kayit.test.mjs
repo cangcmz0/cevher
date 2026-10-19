@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 import * as K from '../js/kayit.js'
 import * as B from '../js/benzetim.js'
 import { yeniDurum, dogrula } from '../js/durum.js'
+import { MADEN_SAYISI, MAKS_SEVIYE } from '../js/ayar.js'
 
 function bellekDepo(ilk = {}) {
   const m = new Map(Object.entries(ilk))
@@ -57,18 +58,18 @@ test('gelecek sürüm cevher2d-gelecek anahtarına gider', () => {
 test('dogrula NaN ve aralık dışı değerleri düzeltir', () => {
   const d = JSON.parse(K.serilestir(yeniDurum(0, 1)))
   d.bolgeler.zonguldak.para = NaN
-  d.bolgeler.zonguldak.madenler = Array.from({ length: 20 }, () => ({ L: 9999, yigin: -5, kalan: 0 }))
+  d.bolgeler.zonguldak.madenler = Array.from({ length: MADEN_SAYISI + 5 }, () => ({ L: 9999, yigin: -5, kalan: 0 }))
   d.bolgeler.zonguldak.asansor.L = -3
   d.oyuncu.lv = 500
   d.bolgeler.zonguldak.yoneticiler = [{ id: 'y1', tip: 'uzayli' }]
   const s = dogrula(d)
   const b = s.bolgeler.zonguldak
   assert.equal(b.para, 20)
-  assert.equal(b.madenler.length, 15)
+  assert.equal(b.madenler.length, MADEN_SAYISI)
   assert.equal(b.madenler[0].L, 400)
   assert.equal(b.madenler[0].yigin, 0)
   assert.equal(b.asansor.L, 1)
-  assert.equal(s.oyuncu.lv, 100)
+  assert.equal(s.oyuncu.lv, MAKS_SEVIYE)
   assert.equal(b.yoneticiler.length, 0)
 })
 

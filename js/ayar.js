@@ -25,13 +25,23 @@ export const BOLGELER = don([
   { kod: 'eregli', ad: 'Ereğli', cevher: 'Demir', acilisLv: 15, bedel: 2e11, olcek: 1e3, zorluk: 1.5, asama: 2, alt: 'Demir & Liman', renk: '#7A3E2A', vurgu: '#C0714E' },
   { kod: 'karabuk', ad: 'Karabük', cevher: 'Taş', acilisLv: 30, bedel: 5e16, olcek: 1e6, zorluk: 2.25, asama: 2, alt: 'Taş Ocakları', renk: '#8C877C', vurgu: '#D2CCBE' },
   { kod: 'kastamonu', ad: 'Kastamonu', cevher: 'Bakır', acilisLv: 45, bedel: 3e20, olcek: 1e9, zorluk: 3.4, asama: 2, alt: 'Bakır Madenleri', renk: '#A8552A', vurgu: '#E9935A' },
+  { kod: 'balya', ad: 'Balya', cevher: 'Kurşun', acilisLv: 60, bedel: 2e24, olcek: 1e12, zorluk: 5.1, asama: 2, alt: 'Kurşun & Çinko', renk: '#4A5560', vurgu: '#9AAAB8' },
+  { kod: 'afyon', ad: 'Afyon', cevher: 'Mermer', acilisLv: 75, bedel: 2e28, olcek: 1e15, zorluk: 7.6, asama: 2, alt: 'Mermer Ocakları', renk: '#CFC8BC', vurgu: '#FFFFFF' },
+  { kod: 'keciborlu', ad: 'Keçiborlu', cevher: 'Kükürt', acilisLv: 90, bedel: 2e32, olcek: 1e18, zorluk: 11.4, asama: 2, alt: 'Kükürt Madeni', renk: '#C9A21B', vurgu: '#FFE45A' },
+  { kod: 'bergama', ad: 'Bergama', cevher: 'Altın', acilisLv: 105, bedel: 2e36, olcek: 1e21, zorluk: 17, asama: 2, alt: 'Altın Damarları', renk: '#B8860B', vurgu: '#FFD84A' },
+  { kod: 'gumushane', ad: 'Gümüşhane', cevher: 'Gümüş', acilisLv: 120, bedel: 2e40, olcek: 1e24, zorluk: 25.6, asama: 2, alt: 'Gümüş Galerileri', renk: '#8A949E', vurgu: '#E8EEF4' },
+  { kod: 'elazig', ad: 'Elazığ', cevher: 'Krom', acilisLv: 135, bedel: 2e44, olcek: 1e27, zorluk: 38, asama: 2, alt: 'Krom Ocakları', renk: '#3E4A44', vurgu: '#8FB0A0' },
+  { kod: 'kirka', ad: 'Kırka', cevher: 'Bor', acilisLv: 150, bedel: 2e48, olcek: 1e30, zorluk: 57, asama: 2, alt: 'Bor Yatakları', renk: '#CFC4D8', vurgu: '#F6EEFC' },
+  { kod: 'beylikova', ad: 'Beylikova', cevher: 'Neodim', acilisLv: 170, bedel: 2e52, olcek: 1e33, zorluk: 86, asama: 2, alt: 'Nadir Toprak Elementleri', renk: '#5A3A7A', vurgu: '#C49AF0' },
 ])
 export const BOLGE = don(Object.fromEntries(BOLGELER.map((b) => [b.kod, b])))
 export const BASLANGIC_PARA = 20                           // × olcek
 
 // Madenler (§2.4)
-export const MADEN_SAYISI = 15
-export const ACILIS = don([0, 40, 500, 2e4, 1e6, 6e7, 3e9, 1.2e11, 4e12, 1.2e14, 3e15, 6e16, 1.2e18, 2.4e19, 4.8e20])
+// 30 kat (Idle Miner gibi); 15. kattan sonra her yeni kat bir öncekinin 20 katı
+export const MADEN_SAYISI = 30
+export const ACILIS = don([0, 40, 500, 2e4, 1e6, 6e7, 3e9, 1.2e11, 4e12, 1.2e14, 3e15, 6e16, 1.2e18, 2.4e19, 4.8e20,
+  ...Array.from({ length: 15 }, (_, k) => 4.8e20 * Math.pow(20, k + 1))])
 export const MADEN_URETIM_TABAN = 1
 export const MADEN_URETIM_ARTIS = 5
 export const MADEN_MALIYET_TABAN = 4
@@ -112,7 +122,7 @@ export const GECMIS_UZUNLUK = 10
 export const ALIM_MODLARI = don([1, 10, 50, 'max'])
 
 // Oyuncu seviyesi ve XP (§2.11)
-export const MAKS_SEVIYE = 100
+export const MAKS_SEVIYE = 200
 export const XP = don({
   harcamaKatsayi: 12,      // max(1, round(12 * harcama / (60 * gelirRef)))
   harcamaSaniye: 60,
@@ -125,10 +135,16 @@ export const XP = don({
 })
 export const SATIS_SEVIYE_ARTIS = 0.02
 // Seviye açılımları. S1'de yalnızca etkin olanlar olayda bildirilir.
-export const ACILIMLAR = don({ 2: ['takviye'], 3: ['arastirma'], 5: ['teklif'], 15: ['eregli'], 30: ['karabuk'], 45: ['kastamonu'] })
+export const ACILIMLAR = don({
+  2: ['takviye'], 3: ['arastirma'], 5: ['teklif'], 15: ['eregli'], 30: ['karabuk'], 45: ['kastamonu'], 60: ['balya'],
+  75: ['afyon'], 90: ['keciborlu'], 105: ['bergama'], 120: ['gumushane'], 135: ['elazig'], 150: ['kirka'], 170: ['beylikova'],
+})
 export const ACILIM_ADLARI = don({
   takviye: 'Kazanç x2 düğmesi', arastirma: 'Araştırma laboratuvarı', teklif: 'Mağazada Özel Teklif',
   eregli: 'Ereğli (Demir) açılabilir', karabuk: 'Karabük (Taş) açılabilir', kastamonu: 'Kastamonu (Bakır) açılabilir',
+  balya: 'Balya (Kurşun) açılabilir', afyon: 'Afyon (Mermer) açılabilir', keciborlu: 'Keçiborlu (Kükürt) açılabilir',
+  bergama: 'Bergama (Altın) açılabilir', gumushane: 'Gümüşhane (Gümüş) açılabilir', elazig: 'Elazığ (Krom) açılabilir',
+  kirka: 'Kırka (Bor) açılabilir', beylikova: 'Beylikova (Neodim) açılabilir',
 })
 
 // Takviye (§2.12)
@@ -213,6 +229,14 @@ export const KONTRAT_MUSTERI = don({
   eregli: ['Ereğli Çelik Fabrikası', 'İstanbul Tersanesi', 'Samsun Makine Sanayi', 'Karadeniz Gemi İnşa'],
   karabuk: ['Demiryolu İdaresi', 'Safranbolu Belediyesi', 'Karabük Köprü Şantiyesi', 'Bartın Liman İnşaatı'],
   kastamonu: ['Anadolu Kablo Fabrikası', 'Elektrik Dağıtım', 'Kastamonu Bakır Atölyeleri', 'İnebolu Rüzgâr Santrali'],
+  balya: ['Akü Fabrikası', 'Galvaniz Atölyesi', 'Radyoloji Kalkanı Üreticisi', 'Bandırma Limanı'],
+  afyon: ['Afyon Mermer Atölyeleri', 'Şehir Hastanesi Şantiyesi', 'Müze Restorasyonu', 'İtalyan Heykel Atölyesi'],
+  keciborlu: ['Gübre Fabrikası', 'Lastik Sanayi', 'İlaç Laboratuvarı', 'Isparta Gül Kooperatifi'],
+  bergama: ['Kuyumcular Çarşısı', 'Merkez Bankası', 'Elektronik Fabrikası', 'İzmir Limanı'],
+  gumushane: ['Darphane', 'Gümüş İşlemecileri', 'Güneş Paneli Fabrikası', 'Trabzon Limanı'],
+  elazig: ['Ereğli Çelik Fabrikası', 'Paslanmaz Çelik Atölyesi', 'Havacılık Sanayi', 'Hazar Gölü Barajı'],
+  kirka: ['Cam Elyafı Fabrikası', 'Batarya Araştırma Merkezi', 'Seramik Fabrikası', 'Uzay Ajansı'],
+  beylikova: ['Mıknatıs Fabrikası', 'Rüzgâr Türbini Üreticisi', 'Elektrikli Araç Fabrikası', 'Teknopark'],
 })
 
 // Günlük misyonlar: her gün 3 tane (tarihe göre seçilir). n: [kolay, orta, zor] (oyuncu seviyesine göre)
@@ -261,6 +285,9 @@ export const ETKINLIKLER = don([
   { kod: 'tas', ad: 'Taş Ustaları Haftası', metin: 'Karabük satışları ×1,5', bolge: 'karabuk', satis: 1.5 },
   { kod: 'kontrat', ad: 'Kontrat Fuarı', metin: 'Kontrat ödülleri ×2', kontrat: 2 },
   { kod: 'bakir', ad: 'Bakır Haftası', metin: 'Kastamonu satışları ×1,5', bolge: 'kastamonu', satis: 1.5 },
+  { kod: 'altin', ad: 'Altın Haftası', metin: 'Bergama satışları ×1,5', bolge: 'bergama', satis: 1.5 },
+  { kod: 'mermer', ad: 'Mermer Haftası', metin: 'Afyon satışları ×1,5', bolge: 'afyon', satis: 1.5 },
+  { kod: 'bor', ad: 'Bor Haftası', metin: 'Kırka satışları ×1,5', bolge: 'kirka', satis: 1.5 },
 ])
 
 // Ortaklar: hikâyenin dört karakteri (referans 3. ekranın yönetici kartları). Sahnede tanışınca katılır,
