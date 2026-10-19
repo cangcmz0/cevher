@@ -22,11 +22,11 @@ export function kur(B) {
     <button class="ust-ayar" data-eylem="ayarlar" aria-label="Ayarlar">${ikon('ayar')}</button>`
   const ist = B.kok.querySelector('#istatistik')
   ist.innerHTML = `
-    <button class="ist-sutun" data-eylem="istatistik" data-k="0"><span class="ist-ikon komur"><img src="img/ref/ist-komur.png" alt="" draggable="false"></span>
+    <button class="ist-sutun" data-eylem="istatistik" data-k="0"><span class="ist-ikon komur"><img src="${B.sahne.simgeAdres('cevher', B.durumAl().aktifBolge, 50) || 'img/ref/ist-komur.png'}" alt="" draggable="false"></span>
       <span class="ist-metin"><small>Günlük Üretim</small><b class="sayi uretim">0/sn</b><em class="ist-artis notr"><i class="ok"></i><span>%0</span></em></span></button>
-    <button class="ist-sutun" data-eylem="istatistik" data-k="1"><span class="ist-ikon araba"><img src="img/ref/ist-araba.png" alt="" draggable="false"></span>
+    <button class="ist-sutun" data-eylem="istatistik" data-k="1"><span class="ist-ikon araba"><img src="${B.sahne.simgeAdres('vagon', B.durumAl().aktifBolge, 40) || 'img/ref/ist-araba.png'}" alt="" draggable="false"></span>
       <span class="ist-metin"><small>Depo Doluluğu</small><b class="sayi depo">%0</b><span class="cubuk ist-depo"><i></i></span></span></button>
-    <button class="ist-sutun" data-eylem="istatistik" data-k="2"><span class="ist-ikon kilit"><img src="img/ref/ist-kilit.png" alt="" draggable="false"></span>
+    <button class="ist-sutun" data-eylem="istatistik" data-k="2"><span class="ist-ikon kilit"><img src="${B.sahne.simgeAdres('sikke', '', 38) || 'img/ref/ist-kilit.png'}" alt="" draggable="false"></span>
       <span class="ist-metin"><small>Gelir</small><span class="ist-gelir">${ikon('para')}<b class="sayi gelir">+0/sn</b><i class="x2-rozet">x2</i></span></span></button>`
 
   const el = {
@@ -47,8 +47,9 @@ export function kur(B) {
     gelirKutu: ist.querySelector('.ist-gelir'),
     gelir: ist.querySelector('.gelir'),
     cevherIkon: ist.querySelector('.ist-ikon.komur img'),
+    vagonIkon: ist.querySelector('.ist-ikon.araba img'),
   }
-  const IST_IKON = { zonguldak: 'img/ref/ist-komur.png', eregli: 'img/ref/ikon-demir.png', karabuk: 'img/ref/ikon-tas.png', kastamonu: 'img/ref/ikon-bakir.png' }
+  let istBolge = B.durumAl().aktifBolge
 
   let gosterilenPara = null
   let sonLv = 0
@@ -76,8 +77,13 @@ export function kur(B) {
 
   function kare4(d) {
     const b = bolgeAl(d)
-    const ik = IST_IKON[d.aktifBolge] || IST_IKON.zonguldak
-    if (el.cevherIkon.getAttribute('src') !== ik) el.cevherIkon.setAttribute('src', ik)
+    // Bölge değişince cevher ve vagon simgeleri o bölgenin cevheriyle yeniden çizilir
+    if (istBolge !== d.aktifBolge) {
+      istBolge = d.aktifBolge
+      const c = B.sahne.simgeAdres('cevher', istBolge, 50), v = B.sahne.simgeAdres('vagon', istBolge, 40)
+      if (c) el.cevherIkon.setAttribute('src', c)
+      if (v) el.vagonIkon.setAttribute('src', v)
+    }
     const um = oranYazi(E.toplamUretim(d, b))
     yaz(el.uretim, um)
     // Dar sütun (~70 px): uzun değerlerde yazı küçülür

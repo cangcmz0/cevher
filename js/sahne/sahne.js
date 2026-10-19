@@ -16,7 +16,7 @@ import * as E from '../ekonomi.js'
 import { bicim } from '../bicim.js'
 import * as D from './dekor.js'
 import * as K from './karakter.js'
-import { simgeCiz, arayuzDokulari } from './simge.js'
+import { simgeCiz, simgeAdresi, arayuzDokulari } from './simge.js'
 import { haritaCiz } from './harita.js'
 
 const DPR_TAVAN = { yuksek: 2, dengeli: 1.5, pil: 1.25 }
@@ -1166,6 +1166,7 @@ export const Sahne = {
 
   // Sayfalardaki çizim simgeleri (cevher, vagon, kabin, gemi...) ve arayüz dokuları
   simge(ad, kod, canvas, boyut, ek) { simgeCiz(canvas, ad, kod, boyut, ek) },
+  simgeAdres(ad, kod, boyut, ek) { try { return simgeAdresi(ad, kod, boyut, ek) } catch { return '' } },
   harita(canvas, gen) { haritaCiz(canvas, gen) },
   dokular(kod) { try { arayuzDokulari(kod || 'zonguldak') } catch (h) { console.warn('Doku üretilemedi', h) } },
 

@@ -106,9 +106,9 @@
 .ist-sutun + .ist-sutun::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 1px; background: #CDB48C; }
 .ist-ikon { position: absolute; display: block; }
 .ist-ikon img { display: block; width: 100%; height: 100%; pointer-events: none; }
-.ist-ikon.komur { left: 7px; top: 8px; width: 47px; height: 41px; }
-.ist-ikon.araba { left: 5px; top: 9px; width: 34px; height: 33px; }
-.ist-ikon.kilit { left: 3px; top: 8px; width: 32px; height: 38px; }
+.ist-ikon.komur { left: 7px; top: 4px; width: 50px; height: 50px; }
+.ist-ikon.araba { left: 3px; top: 7px; width: 40px; height: 40px; }
+.ist-ikon.kilit { left: 1px; top: 8px; width: 38px; height: 38px; }
 .ist-metin { position: absolute; top: 9px; display: flex; flex-direction: column; min-width: 0; }
 .ist-sutun:nth-child(1) .ist-metin { left: 64px; }
 .ist-sutun:nth-child(2) .ist-metin { left: 44px; }
@@ -149,7 +149,7 @@
 .kart::after { content: ""; position: absolute; left: 7px; right: 7px; top: 44px; height: 1px; background: rgba(120, 200, 225, .22); }
 .kart-ad { position: absolute; left: 9px; top: 7px; font: 500 16px/19px var(--f-govde); white-space: nowrap; color: var(--acik); }
 .kart-cevher { position: absolute; left: 9px; top: 26px; font: 400 14px/17px var(--f-govde); color: #BFE6F0; white-space: nowrap; }
-.kart-ikon { position: absolute; left: 71px; top: 3px; width: 41px; height: 43px; border-radius: 50%; overflow: hidden; display: block; }
+.kart-ikon { position: absolute; left: 71px; top: 3px; width: 41px; height: 43px; border-radius: 50%; overflow: hidden; display: block; background: radial-gradient(circle at 45% 32%, #2C5D74, #0B2A3B 72%); box-shadow: inset 0 0 0 1.5px rgba(120, 200, 225, .35); }
 .kart-ikon img { display: block; width: 100%; height: 100%; pointer-events: none; }
 .kart-ikon .ik { width: 26px; height: 26px; margin: 8px; }
 .kart-sv { position: absolute; left: 73px; top: 36px; padding: 0 3px; border-radius: 5px; background: rgba(3, 26, 43, .85); color: #FBD14B; font: 600 8px/11px var(--f-govde); white-space: nowrap; }
@@ -360,7 +360,7 @@
 @media (max-width: 379px) {
   .ist-sutun:nth-child(1), .ist-sutun:nth-child(2) { width: auto; flex: 1.25; }
   .ist-sutun:nth-child(3) { flex: 1; }
-  .ist-ikon.komur { width: 38px; height: 33px; left: 4px; }
+  .ist-ikon.komur { width: 40px; height: 40px; left: 4px; top: 8px; }
   .ist-sutun:nth-child(1) .ist-metin { left: 46px; }
   .ist-sutun:nth-child(2) .ist-metin { left: 38px; }
   .ist-metin small { font-size: 10.5px; }

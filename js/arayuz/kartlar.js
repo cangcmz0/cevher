@@ -18,8 +18,9 @@ const MAKS = A.MADEN_SAYISI
 const katNo = (i) => i + 2            // Maden i → "(i+2). Kat" (1. Kat yükleme katıdır)
 const cevherAdi = (d) => (A.BOLGE[d.aktifBolge] || A.BOLGELER[0]).cevher
 // Kat kartındaki cevher görseli (referans 3. ekranın kaynak kutularından)
-export const KART_IKON = { zonguldak: 'img/ref/kart-komur.png', eregli: 'img/ref/ikon-demir.png', karabuk: 'img/ref/ikon-tas.png', kastamonu: 'img/ref/ikon-bakir.png' }
-const kartIkonu = (d) => KART_IKON[d.aktifBolge] || KART_IKON.zonguldak
+// Kat kartındaki cevher: sahnedeki yığınla aynı çizim (bölgenin renginde)
+const KART_YEDEK = 'img/ref/kart-komur.png'
+const kartIkonu = (B, d) => B.sahne.simgeAdres('cevher', d.aktifBolge, 44) || KART_YEDEK
 
 export function kur(B) {
   const D = B.dunya
@@ -32,7 +33,7 @@ export function kur(B) {
     const k = ogeYap(`<div class="kart" data-eylem="yukselt-ac" data-istasyon="m${i}" hidden>
       <b class="kart-ad">${katNo(i)}. Kat</b>
       <span class="kart-cevher">${cevherAdi(d0)}</span>
-      <span class="kart-ikon"><img src="${kartIkonu(d0)}" alt="" draggable="false"></span>
+      <span class="kart-ikon"><img src="${kartIkonu(B, d0)}" alt="" draggable="false"></span>
       <span class="kart-hiz">${ikon('para')}<span class="sayi">0/sn</span></span>
       <span class="cubuk kart-bar"><i></i></span>
       <span class="kart-yuzde sayi">%0</span>
@@ -330,7 +331,8 @@ export function kur(B) {
       // Yeni bölge: cevher adı/ikonu, katlar ve rozetler baştan bağlanır
       for (const c of kartlar) {
         yaz(c.cevher, cevherAdi(d))
-        if (c.ikon.getAttribute('src') !== kartIkonu(d)) c.ikon.src = kartIkonu(d)
+        const ik = kartIkonu(B, d)
+        if (c.ikon.getAttribute('src') !== ik) c.ikon.src = ik
         c.yonId = null
         c.sonL = 0
       }

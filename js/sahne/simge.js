@@ -549,6 +549,20 @@ export function simgeCiz(canvas, ad, kod, boyut, ek) {
   c.drawImage(kaynak, 0, 0)
 }
 
+// Simgenin PNG adresi (<img> kullanan yerler için: kat kartı, istatistik şeridi)
+const adresler = new Map()
+export function simgeAdresi(ad, kod, boyut, ek) {
+  const anahtar = ad + '|' + (kod || '') + '|' + (ek || '') + '|' + boyut
+  let a = adresler.get(anahtar)
+  if (a) return a
+  const c = document.createElement('canvas')
+  simgeCiz(c, ad, kod, boyut, ek)
+  a = c.toDataURL('image/png')
+  if (adresler.size > 40) adresler.clear()
+  adresler.set(anahtar, a)
+  return a
+}
+
 // ── Arayüz dokuları: sayfa ve pencere arka planı madenin kayası, başlık plakaları kalas ──
 // Döşeme bir kez çizilir, blob adresi CSS değişkenine yazılır (--doku-kaya, --doku-tahta).
 const dokuAdres = {}
