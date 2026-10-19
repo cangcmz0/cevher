@@ -311,6 +311,75 @@ const devrildi = new Uint8Array(64)
 const yuklemeSon = new Float64Array(64)
 let kamyonYuk = 0.3
 let sonDuman = 0
+// Kamyon: kasa dolunca korna çalıp çıkar, boşaltıp geri gelir (görsel; satışlar benzetimde)
+const kamyon = { durum: 'bekle', t: 0, x: 0 }
+const KAMYON_YOL = 280, KAMYON_GIT = 1.9, KAMYON_YOK = 1.4
+let kamyonSprite = null, kamyonAnahtar = '', tekerSprite = null
+function kamyonGorsel() {
+  const anahtar = W + '|' + oran
+  if (kamyonSprite && kamyonAnahtar === anahtar) return kamyonSprite
+  const K2 = D.KAMYON, ky = yer.YUKLEME_H / 107
+  const w = (K2.x1 - K2.x0) * yer.k, h = (K2.y1 - K2.y0) * ky
+  const c = document.createElement('canvas')
+  c.width = Math.ceil(w * oran)
+  c.height = Math.ceil(h * oran)
+  const g = c.getContext('2d')
+  g.scale(oran, oran)
+  g.translate(-K2.x0 * yer.k, -K2.y0 * ky)
+  D.kamyonGovde(g, (r) => r * yer.k, (r) => r * ky)
+  const r = K2.tekerR * ky
+  const t = document.createElement('canvas')
+  t.width = t.height = Math.ceil((r * 2 + 2) * oran)
+  const tg = t.getContext('2d')
+  tg.scale(oran, oran)
+  D.lastikCiz(tg, r + 1, r + 1, r)
+  kamyonSprite = c
+  tekerSprite = t
+  kamyonAnahtar = anahtar
+  return c
+}
+function kamyonGuncelle(dt) {
+  kamyon.t += dt
+  if (kamyon.durum === 'bekle') {
+    kamyon.x = 0
+    if (kamyonYuk >= 1) { kamyon.durum = 'gidiyor'; kamyon.t = 0; if (Sahne.sesCal) Sahne.sesCal('korna') }
+  } else if (kamyon.durum === 'gidiyor') {
+    const q = Math.min(1, kamyon.t / KAMYON_GIT)
+    kamyon.x = -KAMYON_YOL * q * q
+    if (q >= 1) { kamyon.durum = 'yok'; kamyon.t = 0; kamyonYuk = 0 }
+  } else if (kamyon.durum === 'yok') {
+    kamyon.x = -KAMYON_YOL
+    if (kamyon.t >= KAMYON_YOK) { kamyon.durum = 'geliyor'; kamyon.t = 0 }
+  } else {
+    const q = Math.min(1, kamyon.t / KAMYON_GIT)
+    kamyon.x = -KAMYON_YOL * (1 - q) * (1 - q)
+    if (q >= 1) { kamyon.durum = 'bekle'; kamyon.t = 0; kamyon.x = 0; kamyonYuk = Math.max(kamyonYuk, 0.12) }
+  }
+}
+function kamyonCiz(kod) {
+  const K2 = D.KAMYON, ky = yer.YUKLEME_H / 107, yy = yer.yuklemeY
+  const sp = kamyonGorsel()
+  const dx = kamyon.x * yer.k
+  const x0 = K2.x0 * yer.k + dx
+  if (x0 + sp.width / oran < -4) return
+  // Gölge, gövde, yük, dönen tekerlekler
+  ctx.fillStyle = 'rgba(0,0,0,.4)'
+  ctx.beginPath(); ctx.ellipse(166 * yer.k + dx, yy + 97 * ky, 60 * yer.k, 3.2 * ky, 0, 0, Math.PI * 2); ctx.fill()
+  ctx.drawImage(sp, Math.round(x0 * oran) / oran, Math.round((yy + K2.y0 * ky) * oran) / oran, sp.width / oran, sp.height / oran)
+  ctx.save()
+  ctx.translate(dx, yy)
+  D.kamyonYuku(ctx, yer, ky, kamyonYuk, kod)
+  ctx.restore()
+  const r = K2.tekerR * ky, tw = tekerSprite.width / oran
+  const aci = dx / r
+  for (const tx of K2.teker) {
+    ctx.save()
+    ctx.translate(tx * yer.k + dx, yy + K2.tekerY * ky)
+    ctx.rotate(aci)
+    ctx.drawImage(tekerSprite, -tw / 2, -tw / 2, tw, tw)
+    ctx.restore()
+  }
+}
 function yuklemeIscileri(d, alfa, simdiMs, dt) {
   const tl = d.calisma.tasiyicilar
   const kod = d.aktifBolge
@@ -320,7 +389,7 @@ function yuklemeIscileri(d, alfa, simdiMs, dt) {
   const s = yer.k * KARAKTER
   const ara = 17 * s
   let bosta = false
-  kamyonYuk = Math.max(0.15, kamyonYuk - dt * 0.012)
+  kamyonGuncelle(dt)
   for (let j = tl.length - 1; j >= 0; j--) {
     const ta = tl[j]
     if (ta.durum === 'bekle') { if (bosta) continue; bosta = true }
@@ -337,12 +406,14 @@ function yuklemeIscileri(d, alfa, simdiMs, dt) {
       figur(gor, 'bekle', 0, ax + ara, ry, -1)
       if (evre >= DEVIR && !devrildi[j]) {
         devrildi[j] = 1
+        const kasada = kamyon.durum === 'bekle'
         for (let q = 0; q < 6; q++) {
-          dunyaP.firlat(ax - X(8), ry - Yy(16), X(170 + q * 7 + karma(simdiMs + q) * 6), yy + Yy(50), 0.3 + q * 0.025, cevherTasi(kod, q % 3),
-            { boy: (1 + karma(q * 7 + simdiMs) * 0.4) / oran, g: 400 })
+          const hy = kasada ? yy + Yy(50) : zemin - Yy(1)
+          dunyaP.firlat(ax - X(8), ry - Yy(16), X(170 + q * 7 + karma(simdiMs + q) * 6), hy, 0.3 + q * 0.025, cevherTasi(kod, q % 3),
+            { boy: (1 + karma(q * 7 + simdiMs) * 0.4) / oran, g: 400, kal: kasada ? 0.06 : 0.4, zemin: hy })
         }
         dunyaP.patlat(ax - X(6), ry - Yy(14), 'toz', 2)
-        kamyonYuk = Math.min(1, kamyonYuk + 0.09)
+        if (kasada) kamyonYuk = Math.min(1, kamyonYuk + 0.09)
       }
       continue
     }
@@ -364,9 +435,10 @@ function yuklemeIscileri(d, alfa, simdiMs, dt) {
   // Kamyon egzozu
   let isler = false
   for (let j = 0; j < tl.length; j++) if (tl[j].durum !== 'bekle') { isler = true; break }
-  if (simdiMs - sonDuman > (isler ? 520 : 1700)) {
+  const yolda = kamyon.durum === 'gidiyor' || kamyon.durum === 'geliyor'
+  if (kamyon.durum !== 'yok' && simdiMs - sonDuman > (yolda ? 110 : isler ? 520 : 1700)) {
     sonDuman = simdiMs
-    dunyaP.patlat(X(D.YUKLEME.egzoz[0]), yy + Yy(D.YUKLEME.egzoz[1]), 'duman', isler ? 2 : 1)
+    dunyaP.patlat(X(D.YUKLEME.egzoz[0] + kamyon.x), yy + Yy(D.YUKLEME.egzoz[1]), 'duman', yolda ? 2 : isler ? 2 : 1)
   }
 }
 
@@ -779,10 +851,7 @@ export const Sahne = {
     if (yuklemeGorunur) {
       const yy = Math.round(y.yuklemeY * oran) / oran
       ctx.drawImage(yuklemeSerit(kod), 0, yy, W, y.YUKLEME_H)
-      ctx.save()
-      ctx.translate(0, yy)
-      D.kamyonYuku(ctx, y, y.YUKLEME_H / 107, kamyonYuk, kod)
-      ctx.restore()
+      kamyonCiz(kod)
       const dk = E.depoKap(durum, b)
       yiginCiz(yigin(kod, 'depo', X(D.YUKLEME.bunkerX1 - D.YUKLEME.bunkerX0 - 4), Yy(26), dk > 0 ? Math.min(1, b.depo.stok / dk) : 0, 29),
         X((D.YUKLEME.bunkerX0 + D.YUKLEME.bunkerX1) / 2), y.yuklemeY + Yy(D.YUKLEME.bunkerUst) + 1)
@@ -1009,6 +1078,9 @@ export const Sahne = {
       }
     },
   },
+
+  // Sahne içi olayların sesi (ana.js bağlar): ör. kamyon kornası
+  sesCal: null,
 
   bellek() { return Varliklar.bellek() + K.figurBellek() },
   get hazir() { return hazir },

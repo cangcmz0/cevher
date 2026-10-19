@@ -426,6 +426,7 @@ async function basla() {
 
   // 5. Sahne (fırınlama; ilerleme açılış çubuğunda)
   try {
+    Sahne.sesCal = (ad) => Ses.cal(ad)
     await Sahne.kur({ tuval, efektTuval, durum, ilerleme: (o) => ilerleme(0.25 + 0.7 * o) })
   } catch (e) {
     console.warn('Sahne kurulamadı', e)

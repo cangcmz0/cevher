@@ -477,8 +477,68 @@ function halat(c, x, y0, s) {
   }
 }
 
+// Külçe yığını (demir, bakır): yamuk külçeler, üstte ışık
+function kulceler(c, x, z, w, h, ton) {
+  const kat = [[0, 3], [1, 2], [2, 1]]
+  for (const [sira, adet] of kat) {
+    for (let i = 0; i < adet; i++) {
+      const kx = x + (i - (adet - 1) / 2) * w * 1.02, ky = z - sira * h * 0.92
+      const p = yolCiz([[kx - w / 2, ky], [kx + w / 2, ky], [kx + w * 0.38, ky - h], [kx - w * 0.38, ky - h]])
+      c.fillStyle = dG(c, ky - h, ky, [acik(ton, 0.35), ton, koyu(ton, 0.35)])
+      c.fill(p)
+      c.strokeStyle = CIZGI
+      c.lineWidth = 0.6
+      c.stroke(p)
+      c.fillStyle = 'rgba(255,255,255,.45)'
+      c.fillRect(kx - w * 0.3, ky - h + 0.4, w * 0.6, 0.6)
+    }
+  }
+}
+function ors(c, x, z, s) {
+  const p = yolCiz([[x - s * 1.3, z - s * 1.1], [x + s * 0.9, z - s * 1.1], [x + s * 1.5, z - s * 1.35], [x + s * 0.9, z - s * 0.7], [x + s * 0.4, z - s * 0.7],
+    [x + s * 0.6, z], [x - s * 0.8, z], [x - s * 0.5, z - s * 0.7], [x - s * 1.1, z - s * 0.7]])
+  c.fillStyle = dG(c, z - s * 1.35, z, ['#8C98A4', '#4A525A', '#2A3036'])
+  c.fill(p)
+  c.strokeStyle = CIZGI
+  c.lineWidth = 0.7
+  c.stroke(p)
+  c.fillStyle = 'rgba(255,255,255,.5)'
+  c.fillRect(x - s * 1.2, z - s * 1.1, s * 2, s * 0.12)
+}
+function tasBloklari(c, x, z, s, kp) {
+  for (const [dx, dy, w, h] of [[0, 0, 1.6, 0.9], [1.7, 0, 1.3, 0.9], [0.7, 0.9, 1.5, 0.8]]) {
+    const bx = x + dx * s, by = z - dy * s
+    c.fillStyle = dG(c, by - h * s, by, [acik(kp.tas[1], 0.35), kp.tas[1], koyu(kp.tas[1], 0.3)])
+    c.fillRect(bx, by - h * s, w * s, h * s)
+    c.fillStyle = 'rgba(255,255,255,.3)'
+    c.fillRect(bx, by - h * s, w * s, 0.6)
+    c.strokeStyle = CIZGI
+    c.lineWidth = 0.6
+    c.strokeRect(bx, by - h * s, w * s, h * s)
+  }
+}
+
 function esyalar(c, X, Y, v, kod) {
   const z = Y(73)
+  // Üçüncü düzende bölgeye özgü eşyalar
+  if (v === 2 && kod !== 'zonguldak') {
+    if (kod === 'eregli') {
+      kulceler(c, X(206), z, X(6.5), Y(3.2), '#8A5A4A')
+      ors(c, X(232), z, X(5.5))
+    } else if (kod === 'karabuk') {
+      tasBloklari(c, X(198), z, X(9), kaya(kod))
+      c.lineCap = 'round'
+      c.strokeStyle = '#3A2414'; c.lineWidth = X(1.6)
+      c.beginPath(); c.moveTo(X(234), z - Y(1)); c.lineTo(X(240), z - Y(14)); c.stroke()
+      c.fillStyle = dG(c, z - Y(18), z - Y(12), ['#8C98A4', '#4A525A'])
+      c.fillRect(X(236), z - Y(18), X(8), Y(5))
+      c.strokeStyle = CIZGI; c.lineWidth = 0.6; c.strokeRect(X(236), z - Y(18), X(8), Y(5))
+    } else {
+      kulceler(c, X(206), z, X(6.5), Y(3.2), '#C8743A')
+      sandik(c, X(226), z, X(13), Y(11), 77, { metin: 'Cu', renk: '#7FD0B0' })
+    }
+    return
+  }
   if (v === 0) {
     sandik(c, X(198), z, X(15), Y(12), 61)
     sandik(c, X(201), z - Y(12), X(10), Y(9), 62, { metin: 'TNT', renk: '#E25A43' })
@@ -815,13 +875,11 @@ export function yuklemeCiz(c, W, H, y, kod) {
   c.lineWidth = 0.8
   c.stroke(oluk)
 
-  kamyonCiz(c, X, Y)
 }
 
 // Kamyon: tırtıklı lastikler, camında yansıma olan kabin, far, damper kasası, egzoz, merdiven
-function kamyonCiz(c, X, Y) {
-  c.fillStyle = 'rgba(0,0,0,.4)'
-  c.beginPath(); c.ellipse(X(166), Y(97), X(60), Y(3.2), 0, 0, TAU); c.fill()
+// Kamyon gövdesi (lastikler ayrı çizilir, dönerek). X, Y: referans → çizim birimi
+export function kamyonGovde(c, X, Y) {
   c.fillStyle = yG(c, X(119), X(123), ['#2A3036', '#8C98A4', '#3A4048'])
   c.fillRect(X(119.5), Y(43), X(3.2), Y(15))
   c.fillStyle = '#1C1F23'
@@ -879,12 +937,14 @@ function kamyonCiz(c, X, Y) {
   c.fillRect(X(153), Y(56.2), X(68), 0.8)
   c.fillStyle = dG(c, Y(82.5), Y(87), ['#4A525A', '#1C1F23'])
   c.fillRect(X(110), Y(82.5), X(113), Y(4.5))
-  for (const x of [128, 172, 205]) {
+  for (const x of KAMYON.teker) {
     c.fillStyle = '#2A3036'
     c.beginPath(); c.ellipse(X(x), Y(84.5), X(9.5), Y(4), 0, Math.PI, 0); c.fill()
-    lastik(c, X(x), Y(89), Y(7.6))
   }
 }
+// Kamyon ölçüleri (referans): gövde kutusu, teker merkezleri, teker yarıçapı (dikey birim)
+export const KAMYON = Object.freeze({ x0: 104, y0: 40, x1: 228, y1: 99, teker: [128, 172, 205], tekerY: 89, tekerR: 7.6 })
+export function lastikCiz(c, x, y, r) { lastik(c, x, y, r) }
 function lastik(c, x, y, r) {
   c.fillStyle = '#141619'
   c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill()

@@ -96,6 +96,7 @@ export function kur(B) {
 
   let sonAcik = -1
   let sonDarbogaz = null
+  let asansorUst = 181
   const atanan = {}
 
   // ── Yerleşim ──
@@ -229,6 +230,10 @@ export function kur(B) {
     }
     rozetBagla(rA, atanan.asansor, d, 20)
     if (B.yer.yuklemeY < alt) rozetBagla(rD, atanan.depo, d, 24)
+    // Asansör etiketi kuyunun tepesinden yukarıda (boş kayada) kalmasın
+    const kuyuUst = B.yer.satirY(Math.max(0, b.madenler.length - 1)) - B.kaydirY
+    const ust2 = Math.round(Math.max(181, kuyuUst + 8))
+    if (ust2 !== asansorUst) { asansorUst = ust2; asansorKap.style.top = ust2 + 'px' }
   }
 
   // ── Uzun basma: hızlı alım ──

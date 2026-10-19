@@ -121,6 +121,13 @@ export const Ses = (() => {
       can(1046, t + 0.55, 0.1)
     },
     hata: (t) => nota(220, t, 0.14, { tip: 'square', ses: 0.04, kayF: 180 }),
+    // Kamyon kornası: iki tonlu, kısa
+    korna: (t) => {
+      ;[[0, 0.16], [0.2, 0.26]].forEach(([d, sure]) => {
+        nota(330, t + d, sure, { tip: 'square', ses: 0.035 })
+        nota(415, t + d, sure, { tip: 'square', ses: 0.03 })
+      })
+    },
     // Hazine damarı belirdi: yumuşak, yukarı tırmanan pırıltı
     hazine: (t) => { [1319, 1568, 1976, 2637].forEach((f, k) => nota(f, t + k * 0.06, 0.22, { tip: 'sine', ses: 0.05 })) },
     // Şenlik: davul (düm-tek-tek-düm) ve zurnadan kısa bir nağme
