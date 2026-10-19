@@ -38,13 +38,6 @@ try {
     }
     await writeFile(yol, s)
   }
-  // Sahne dokuları: import.meta.url ile kurulan yol yerine gömülü tablo
-  const sahne = await readFile(join(gecici, 'js', 'sahne', 'sahne.js'), 'utf8')
-  const dokular = [...sahne.matchAll(/\['([a-z0-9-]+\.png)',/g)].map((m) => m[1])
-  await duzelt('sahne/sahne.js', [
-    ["const KOK = new URL('../../img/ref/', import.meta.url).href", `const KOK = 'img/ref/'\nconst DOKU_URL = {${dokular.map((d) => `'${d}': 'img/ref/${d}'`).join(', ')}}`],
-    ['Varliklar.png(a, KOK + dosya)', 'Varliklar.png(a, DOKU_URL[dosya] || KOK + dosya)'],
-  ])
   // Dinamik dosya adı: iki seçeneği de açık yaz ki gömülebilsin
   await duzelt('arayuz/genisletme.js', [
     ["img/ref/loj-${liman ? 'liman' : 'depo'}.png", "${liman ? 'img/ref/loj-liman.png' : 'img/ref/loj-depo.png'}"],

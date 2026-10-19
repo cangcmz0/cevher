@@ -1428,11 +1428,33 @@ Each S2 package follows the same ownership, interfaces and acceptance rules as s
 | Treasure vein | `HAZINE`, `hazineKontrol`, `hazineAl`; `js/arayuz/hazine.js` | After the tutorial, with at least 2 floors open, a glowing vein shows up on a random floor every 70–140 s for 24 s (seeded by `durum.tohum`). Gold gives 45 s of income (minimum 60); elmas (15%) gives 2–5 elmas. It lives in `calisma`, so it is never saved. When the vein is off-screen, a `Hazine!` ↑/↓ pill scrolls to it. Collecting it flies the reward to the HUD counter. There is a daily mission for it. |
 | Achievements | `BASARIMLAR`, `BASARIM_ODUL`, `basarimDeger/basarimIlerleme`, `basarimAl`; `js/arayuz/profil.js` | 13 tiered achievements (44 tiers), each tier paying elmas + XP. Progress is the best value seen (`basarim.rekor`), so prestige never takes it back. Lifetime earnings carry over through `istatistik.prestijKazanc`. Newly claimable tiers raise a toast (tiers already claimable at load are not re-announced). The avatar opens the profile sheet, which shows stats and the achievement list, and carries a red dot while something can be claimed. |
 
-Scene animation (`js/sahne/sahne.js`: sprites are pre-rendered once and cached, and each frame only issues drawImage calls):
-- **Elevator:** the cabin follows the simulation through a lightly damped spring (soft start, small settle). A pulley at the top of the shaft turns with the cable, and the cables sway while moving. Ore chunks arc from the floor belt into the cabin while it loads, and drop from the cabin onto the depot pile while it unloads.
-- **Miners:** pick tempo grows with floor level (`katTempo`) and jumps ×1.55 while the floor manager's ability is active (warm pulse plus sparkles). Miners rest with a breathing pose when the floor is idle or its pile is full. The belt stops when the pile is full and keeps its ore.
-- **Carriers:** ore drops from the depot into the cart while it loads. At the sale point the cart tips forward and its ore flies onto the truck. The truck puffs exhaust while carriers run.
-- **Ambient and feedback:** dust motes drift in the lamp light (off on `pil`), and every upgrade adds a small sparkle (milestones a large burst). Consecutive sale numbers are staggered.
+Scene v3 (`js/sahne/sahne.js`, `dekor.js`, `karakter.js`): the scene no longer uses textures cut from the reference.
+It is drawn in a simple, flat-shaded style: one light direction, a thin dark outline, few gradients. The layout is
+`yerlesim.js` unchanged, so the DOM cards, badges and transparent buttons line up as before. Strips and character
+frames are drawn once at screen resolution and cached; each frame only issues drawImage calls.
+- **Backdrop (`dekor.js`):** each region has its own rock palette. A floor strip has:
+  - a timbered tunnel: two posts, a top beam, ceiling boards and hanging lamps,
+  - the ore face on the left and a small pile of dug ore,
+  - props (crates, barrel, shovel or a tool rack and bucket),
+  - rails, and an ore bunker next to the shaft,
+  - a steel girder, the upgrade-arrow plate and a pipe in the band between floors.
+
+  The shaft column has steel guide rails and a landing.
+
+  The loading floor has the truck, a depot shed, the depot bunker with its sign, and a chute under the shaft.
+- **Characters (`karakter.js`):** a jointed rig with two-segment legs and arms (knees and elbows bend). The arms use IK to hold the pickaxe or a cart.
+  - Animations: `yuru`, `tasi` (sack on the shoulder), `it` (push a cart), `kaz`, `bekle`, `dinlen` (sit on a crate), `sevin`, `egil`, `bosalt`.
+  - There are four looks, and the cart is a separate sprite.
+  - Frames are baked lazily per look, animation, frame and scale.
+- **Floor crews:**
+  - a digger at the face, with sparks and dust on the impact frame;
+  - a hauler who picks up a sack, carries it to the bunker, empties it and walks back;
+  - from level 25, a cart pusher who waits for the cart to fill, pushes it to the bunker, tips it and pulls it back;
+  - from level 75, a second hauler.
+
+  The tempo follows the floor level and the manager's ability. When the floor is idle or full, the crew stands. After 6 s they sit down. They cheer on an upgrade or a treasure. The bunker pile follows `yigin / yiginKap`.
+- **Elevator:** a spring-smoothed cabin with an operator inside and the load pile on the floor. A direction light is green while moving and blinks amber while loading. Ore arcs from the floor bunker into the cabin and from the cabin into the depot bunker.
+- **Loading floor:** carriers push carts between the depot bunker and the truck. They follow the simulation's position, fill the cart under the chute, and tip it into the truck bed, which slowly fills. The truck puffs exhaust.
 
 All new state is in the save whitelist (`kayit.js`) and repaired by `dogrula`. Older saves get the new fields with
 defaults, and their partners unlock from tutorial/quest progress. Tests: `npm test` (48) and
