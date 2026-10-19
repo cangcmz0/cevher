@@ -6,37 +6,41 @@
 //  alınmaz); uygulamada Google Play ödemesi açılır (magaza.js).
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
-import { A, yaz, sinif, gizle, bicim, sayac, bolgeAl } from './ortak.js'
+import { A, yaz, sinif, gizle, bicim, sayac, bolgeAl, simge, simgeleriCiz } from './ortak.js'
 import { Magaza } from '../magaza.js'
 import { gunKodu, kalanKisa } from './harita.js'
 import { otoGelir } from '../ekonomi.js'
 
-const HEDIYE_IKON = { para: 'para', elmas: 'elmas', takviye: 'topla', yonetici: 'yonetici' }
+const HEDIYE_SIMGE = { para: 'sikke', elmas: 'elmas', takviye: 'sikke', yonetici: 'kask' }
 const GUC = [
-  { kod: 'takviye4', ikon: 'topla', aciklama: 'Bütün satışlar 4 saat ×2 (24 saate kadar birikir)' },
-  { kod: 'atla1', ikon: 'saat', aciklama: 'Yöneticili zincirin 1 saatlik geliri hemen' },
-  { kod: 'atla4', ikon: 'saat', aciklama: 'Yöneticili zincirin 4 saatlik geliri hemen' },
-  { kod: 'yenile', ikon: 'yildirim', aciklama: 'Bekleyen bütün yönetici yetenekleri hemen hazır' },
+  { kod: 'takviye4', simge: 'sikke', rozet: '×2', aciklama: 'Bütün satışlar 4 saat ×2 (24 saate kadar birikir)' },
+  { kod: 'atla1', simge: 'kumsaati', aciklama: 'Yöneticili zincirin 1 saatlik geliri hemen' },
+  { kod: 'atla4', simge: 'kumsaati', aciklama: 'Yöneticili zincirin 4 saatlik geliri hemen' },
+  { kod: 'yenile', simge: 'yildirim', aciklama: 'Bekleyen bütün yönetici yetenekleri hemen hazır' },
 ]
+const urunSimge = (u) => (u.tur === 'elmas' ? 'elmas' : u.id === 'altin_kazma' ? 'kazma' : u.id === 'reklamsiz' ? 'yildirim' : 'hediye')
 
 export function kur(B, govde) {
   const urunler = Magaza.URUNLER
-  govde.innerHTML = `<div class="dk">
-    <section class="dk-panel dk-gunluk"><h3>${ikon('hediye')}Günlük Hediye<small class="dk-gun-sure"></small></h3>
-      <div class="dk-gunler">${A.GUNLUK_HEDIYE.map((h, i) => `<div class="dk-gun" data-i="${i}"><small>${i + 1}. gün</small>${ikon(HEDIYE_IKON[h.tur] || 'hediye')}<span>${h.metin}</span></div>`).join('')}</div>
+  const kod0 = B.durumAl().aktifBolge
+  govde.innerHTML = `<div class="dk sy">
+    <header class="sy-bas">${simge('hediye', '', 54)}<div><h2>Mağaza</h2><small>Günlük hediyeler, güçlendirmeler ve elmas paketleri</small></div></header>
+    <section class="pano dk-gunluk"><h3 class="plaka">${ikon('hediye')}<span>Günlük Hediye</span><small class="dk-gun-sure"></small></h3>
+      <div class="dk-gunler">${A.GUNLUK_HEDIYE.map((h, i) => `<div class="yuva dk-gun" data-i="${i}"><small>${i + 1}. gün</small>${simge(HEDIYE_SIMGE[h.tur] || 'hediye', kod0, i === 6 ? 44 : 36)}<span>${h.metin}</span><i class="dk-tik">${ikon('tik')}</i></div>`).join('')}</div>
       <button class="btn btn-yesil dk-al" data-eylem="dk-gunluk">Hediyeyi Al</button></section>
-    <section class="dk-panel"><h3>${ikon('elmas')}Ücretsiz Elmas</h3>
-      <div class="dk-satir"><div><b>Reklam izle, 5 elmas kazan</b><small class="dk-reklam-kalan"></small></div>
+    <section class="pano"><h3 class="plaka">${ikon('elmas')}<span>Ücretsiz Elmas</span></h3>
+      <div class="dk-satir">${simge('elmas', '', 46)}<div><b>Reklam izle, 5 elmas kazan</b><small class="dk-reklam-kalan"></small></div>
       <button class="btn btn-mavi" data-eylem="dk-reklam">${ikon('oynat')}<span>İzle</span></button></div></section>
-    <section class="dk-panel"><h3>${ikon('yildirim')}Güçlendirmeler</h3>
-      ${GUC.map((g) => `<div class="dk-satir" data-guc="${g.kod}"><i class="dk-ikon">${ikon(g.ikon)}</i><div><b>${A.ELMAS_HARCAMA[g.kod].metin}</b><small>${g.aciklama}</small><small class="dk-ek sayi"></small></div>
+    <section class="pano"><h3 class="plaka">${ikon('yildirim')}<span>Güçlendirmeler</span></h3>
+      ${GUC.map((g) => `<div class="dk-satir" data-guc="${g.kod}"><span class="dk-simge">${simge(g.simge, kod0, 46)}${g.rozet ? `<em>${g.rozet}</em>` : ''}</span><div><b>${A.ELMAS_HARCAMA[g.kod].metin}</b><small>${g.aciklama}</small><small class="dk-ek sayi"></small></div>
         <button class="btn btn-turuncu" data-eylem="dk-guc" data-kod="${g.kod}">${ikon('elmas')}<span class="sayi">${A.ELMAS_HARCAMA[g.kod].elmas}</span></button></div>`).join('')}</section>
-    <section class="dk-panel dk-paketler"><h3>${ikon('magaza')}Elmas Paketleri</h3>
-      ${urunler.map((u) => `<div class="dk-satir dk-urun${u.id === 'baslangic' ? ' teklif' : ''}" data-urun="${u.id}"><i class="dk-ikon">${ikon(u.tur === 'elmas' ? 'elmas' : u.id === 'altin_kazma' ? 'kazma' : u.id === 'reklamsiz' ? 'oynat' : 'hediye')}</i>
+    <section class="pano dk-paketler"><h3 class="plaka">${ikon('magaza')}<span>Elmas Paketleri</span></h3>
+      ${urunler.map((u) => `<div class="dk-satir dk-urun${u.id === 'baslangic' ? ' teklif' : ''}" data-urun="${u.id}">${simge(urunSimge(u), kod0, 46)}
         <div><b>${u.ad}${u.etiket ? ` <em>${u.etiket}</em>` : ''}</b><small>${u.ne || (u.n ? u.n + ' elmas' : '')}</small></div>
         <button class="btn btn-yesil" data-eylem="dk-urun" data-id="${u.id}"><span class="sayi">${Magaza.fiyat(u)}</span></button></div>`).join('')}
       <p class="sayfa-not dk-not"></p></section>
   </div>`
+  simgeleriCiz(govde, B)
   const q = (s) => govde.querySelector(s)
   const el = {
     gunler: [...govde.querySelectorAll('.dk-gun')], gunAl: q('.dk-al'), gunSure: q('.dk-gun-sure'),

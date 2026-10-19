@@ -56,6 +56,13 @@
   --golge-panel: 0 10px 28px rgba(0, 0, 0, .40);
   --golge-yazi: 0 1px 0 rgba(0, 0, 0, .30);
 
+  /* Maden teması: dokular sahne çiziminden üretilir (simge.js), paneller kat kartlarıyla aynı */
+  --doku-kaya: none;
+  --doku-tahta: none;
+  --pano-zemin: linear-gradient(180deg, #0D3D53, #07324A 45%, #042A3C);
+  --pano-cerceve: linear-gradient(140deg, #F2C14E, #B8933E 16%, #3E7F95 40%, #1E5068 72%, #163E52);
+  --pano-golge: 0 6px 14px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .08);
+
   --st: env(safe-area-inset-top, 0px);
   --sb: env(safe-area-inset-bottom, 0px);
   --yay: cubic-bezier(.3, 1.6, .5, 1);

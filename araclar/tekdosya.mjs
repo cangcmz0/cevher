@@ -25,23 +25,10 @@ const gom = (metin) => metin.replace(/img\/ref\/[a-z0-9-]+\.png/g, (y) => {
   return varlik[y]
 })
 
-// ── JS: geçici kopyada yol düzeltmeleri, sonra esbuild ──
+// ── JS: geçici kopyada görsel yolları gömülür, sonra esbuild ──
 const gecici = await mkdtemp(join(tmpdir(), 'cevher-tek-'))
 try {
   await cp(join(KOK, 'js'), join(gecici, 'js'), { recursive: true, filter: (y) => !/[\\/]taslak([\\/]|$)/.test(y) })
-  const duzelt = async (dosya, degisimler) => {
-    const yol = join(gecici, 'js', dosya)
-    let s = await readFile(yol, 'utf8')
-    for (const [a, b] of degisimler) {
-      if (!s.includes(a)) throw new Error(`${dosya}: beklenen metin yok → ${a}`)
-      s = s.replace(a, b)
-    }
-    await writeFile(yol, s)
-  }
-  // Dinamik dosya adı: iki seçeneği de açık yaz ki gömülebilsin
-  await duzelt('arayuz/genisletme.js', [
-    ["img/ref/loj-${liman ? 'liman' : 'depo'}.png", "${liman ? 'img/ref/loj-liman.png' : 'img/ref/loj-depo.png'}"],
-  ])
   // Kalan bütün literal yolları göm
   const gez = async (d) => {
     for (const g of await readdir(d, { withFileTypes: true })) {

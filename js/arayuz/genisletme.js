@@ -1,127 +1,149 @@
 // Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
-//  MADEN GENİŞLETME (görsel yön 2, referans2 3. ekran) — Yöneticiler sekmesi.
-//  • Dört bölüm referanstan birebir kesildi (img/ref/mg-*.png, 397 px
-//    genişlik): kaynaklar, yöneticiler, lojistik, kontrat + prestij.
+//  MADEN GENİŞLETME — Yöneticiler sekmesi.
+//  • Bütün bölümler kodla kurulur (maden ekranıyla aynı dil): kaya dokulu
+//    zemin, altın kenarlı paneller, kalas başlık plakaları ve sahnedeki
+//    çizimlerden üretilen simgeler (cevher, vagon, kabin, gemi, ambar...).
 //  • Kaynak kutuları bölgelerdir (Kömür → Zonguldak, Demir → Ereğli,
 //    Taş → Karabük, Bakır → Kastamonu); dokununca o bölgeye geçilir.
 //  • Dört yönetici kartı hikâyenin ortaklarıdır (Ahmet, Elif, Mehmet,
 //    Zeynep): sahnede tanışınca katılır, elmasla seviye atlar.
-//  • İstasyon yöneticileri (ustabaşılar) "Tümünü Gör" penceresindedir.
+//  • İstasyon yöneticileri (ustabaşılar) "Ustabaşılar" satırındadır.
 //  • Alt pencereler: ortak, ustalar, lojistik, prestij.
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
 import {
   E, A, yaz, sinif, gizle, cubuk, bicim, sayac, sure, bolgeAl, nadirlik, yetenekEtki, yoneticiAdi, yetenekHali, canlandir,
+  simge, simgeleriCiz,
 } from './ortak.js'
 import { kontratDurumu, prestijUygun } from '../benzetim.js'
 import { KISILER } from '../hikaye.js'
 import { kontratAl } from './harita.js'
 
-const RW = 397
-const yuzde = (v, t) => (v / t * 100).toFixed(3) + '%'
-const kutu = (x, y, w, h, H) => `left:${yuzde(x, RW)};top:${yuzde(y, H)};width:${yuzde(w, RW)};height:${yuzde(h, H)}`
-const UH = 189, YH = 252, LH = 129, AH = 152
 const SALLA = [{ transform: 'translateX(0)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'none' }]
-
-// Kaynak kutuları (mg-ust içinde) → bölge
-const KAYNAK = [
-  { kod: 'zonguldak', k: [9.7, 58.7, 94, 116.6] },
-  { kod: 'eregli', k: [108.7, 58.7, 88.3, 116.6] },
-  { kod: 'kastamonu', k: [203, 58.7, 91.7, 116.6] },
-  { kod: 'karabuk', k: [300, 58.7, 92, 116.6] },
-]
-// Ortak kartları (mg-yon içinde): kart kutusu, etki yazısı yaması, yama rengi
-const KART = {
-  ahmet: { k: [13, 33, 92, 156], y: [39, 140.5, 59, 13], r: '#03362A' },
-  elif: { k: [109, 33, 89, 156], y: [136.5, 140.5, 56, 13], r: '#0D2F50' },
-  mehmet: { k: [203, 33, 91, 156], y: [230, 140.5, 56, 13], r: '#0C2E42' },
-  zeynep: { k: [297.7, 33, 91, 156], y: [324, 140.5, 59, 13], r: '#0E2A56' },
-}
-// Lojistik kutuları (mg-loj içinde): dokunma, Lv yaması, çubuk
+const KAYNAKLAR = ['zonguldak', 'eregli', 'karabuk', 'kastamonu']
 const LOJ = [
-  { tur: 'depo', ad: 'Maden Vagonu', k: [15, 38, 89, 92], lv: [44, 97.5, 32, 14], c: [23, 113, 76, 10] },
-  { tur: 'asansor', ad: 'Konveyör', k: [116, 38, 94, 92], lv: [149, 97.5, 32, 14], c: [128, 113, 72, 10] },
-  { tur: 'liman', ad: 'Liman', k: [230, 38, 73, 92], lv: [249, 97.5, 32, 14], c: [235, 113, 62, 10] },
-  { tur: 'ambar', ad: 'Depo', k: [315, 38, 69, 92], lv: [333, 97.5, 32, 14], c: [320, 113, 59, 10] },
+  { tur: 'depo', ad: 'Depo', simge: 'vagon' },
+  { tur: 'asansor', ad: 'Asansör', simge: 'kabin' },
+  { tur: 'liman', ad: 'Liman', simge: 'gemi' },
+  { tur: 'ambar', ad: 'Ambar', simge: 'ambar' },
 ]
 
 export const ortakEtkiYazi = (o, L) => o.metin.replace('{p}', Math.round((o.taban + o.artis * (Math.max(1, L) - 1)) * 100))
 
 export function kur(B, govde) {
+  const d0 = B.durumAl()
+  const kod0 = d0.aktifBolge
   govde.innerHTML = `
-    <div class="mg">
-      <div class="hr-katman" style="aspect-ratio:${RW}/${UH}">
-        <img src="img/ref/mg-ust.png" alt="Maden Genişletme: Hangi kaynağa odaklanmak istiyorsun?" draggable="false">
-        ${KAYNAK.map((t) => `<button class="mg-kaynak" data-eylem="mg-kaynak" data-kod="${t.kod}" style="${kutu(...t.k, UH)}" aria-label="${A.BOLGE[t.kod].cevher}">
-          <i class="mg-kilit">${ikon('kilit')}<b class="sayi"></b></i></button>`).join('')}
-      </div>
-      <div class="hr-katman" style="aspect-ratio:${RW}/${YH}">
-        <img src="img/ref/mg-yon.png" alt="Yöneticiler" draggable="false">
-        <span class="hr-yama mg-sayi sayi" style="${kutu(97, 9.5, 24, 13, YH)};--yb:#022131"></span>
-        <button class="hr-sicak" data-eylem="mg-tumu" style="${kutu(300, 4, 84, 22, YH)}" aria-label="Tümünü Gör"></button>
-        ${A.ORTAKLAR.map((o) => {
-          const k = KART[o.kod]
-          return `<span class="hr-yama mg-etki" data-etki="${o.kod}" style="${kutu(...k.y, YH)};--yb:${k.r}"></span>
-            <button class="mg-ortak" data-eylem="mg-ortak" data-kod="${o.kod}" style="${kutu(...k.k, YH)}" aria-label="${KISILER[o.kod].ad}">
-              <i class="mg-ortak-kilit">${ikon('kilit')}<small>Hikâyede tanışacaksın</small></i><i class="mg-lv sayi"></i></button>`
-        }).join('')}
-        <button class="hr-sicak" data-eylem="mg-tumu" style="${kutu(9, 191, 385, 57, YH)}" aria-label="Ustabaşılar ve yetenekler"></button>
-      </div>
-      <div class="hr-katman" style="aspect-ratio:${RW}/${LH}">
-        <img src="img/ref/mg-loj.png" alt="Lojistik ve Altyapı" draggable="false">
-        ${LOJ.map((l) => `<span class="hr-yama mg-lv-yama sayi" data-lv="${l.tur}" style="${kutu(...l.lv, LH)};--yb:#02232F"></span>
-          <span class="hr-cubuk mg-cubuk" data-cubuk="${l.tur}" style="${kutu(...l.c, LH)}"><i></i></span>
-          <button class="hr-sicak" data-eylem="mg-loj" data-tur="${l.tur}" style="${kutu(...l.k, LH)}" aria-label="${l.ad}"></button>`).join('')}
-      </div>
-      <div class="hr-katman" style="aspect-ratio:${RW}/${AH}">
-        <img src="img/ref/mg-alt.png" alt="Kontrat Hedefleri ve Prestij" draggable="false">
-        <div class="hr-yama hr-krem mg-kyazi" style="${kutu(52, 53, 114, 27, AH)};--yb:#F8EACB"><b></b><span></span></div>
-        <span class="hr-yama hr-krem mg-kodul sayi" style="${kutu(193, 84.5, 36, 13, AH)};--yb:#F1E2BE"></span>
-        <span class="hr-yama hr-krem mg-kelmas sayi" style="${kutu(193, 99.5, 36, 13, AH)};--yb:#F1E2BE"></span>
-        <div class="hr-cubuk mg-kcubuk" style="${kutu(21.5, 89.5, 137.5, 15, AH)}"><i></i><span class="sayi"></span></div>
-        <button class="hr-sicak hr-detay mg-detay" data-eylem="mg-kontrat" style="${kutu(21.5, 112, 105, 24, AH)}" aria-label="Kontrat"><span>Teslim Al</span></button>
-        <span class="hr-yama mg-prestij sayi" style="${kutu(285, 129.5, 72, 13, AH)};--yb:#1E1A45"></span>
-        <i class="mg-prestij-kilit" style="${kutu(272.5, 95, 102.5, 30, AH)}" hidden></i>
-        <button class="hr-sicak" data-eylem="mg-prestij" style="${kutu(272.5, 95, 102.5, 30, AH)}" aria-label="Prestij Yap"></button>
-      </div>
+    <div class="mg sy">
+      <header class="sy-bas">${simge('kazma', kod0, 54)}<div><h2>Maden Genişletme</h2><small>Hangi kaynağa odaklanmak istiyorsun?</small></div></header>
+
+      <section class="pano">
+        <h3 class="plaka">${ikon('harita')}<span>Kaynaklar</span><small>Bölgeye geç</small></h3>
+        <div class="mg-kaynaklar">
+          ${KAYNAKLAR.map((kod) => {
+            const bb = A.BOLGE[kod]
+            return `<button class="yuva mg-kaynak" data-eylem="mg-kaynak" data-kod="${kod}" aria-label="${bb.cevher} · ${bb.ad}">
+              ${simge('cevher', kod, 50)}<b>${bb.cevher}</b><small>${bb.ad}</small>
+              <span class="mg-durum"><i class="mg-kilit">${ikon('kilit')}</i><span></span></span></button>`
+          }).join('')}
+        </div>
+      </section>
+
+      <section class="pano">
+        <h3 class="plaka">${ikon('yonetici')}<span>Yöneticiler</span><small class="mg-sayi"></small></h3>
+        <div class="mg-ortaklar">
+          ${A.ORTAKLAR.map((o) => {
+            const k = KISILER[o.kod]
+            return `<button class="yuva mg-ortak ot-${o.kod}" data-eylem="mg-ortak" data-kod="${o.kod}" aria-label="${k.ad}">
+              <span class="mg-yuz"><img src="${k.resim}" alt="" draggable="false"><i class="mg-yuz-kilit">${ikon('kilit')}</i></span>
+              <i class="mg-lv sayi"></i>
+              <b>${k.ad.split(' ')[0]}</b><small class="mg-unvan">${o.etiket}</small>
+              <span class="mg-etki"></span></button>`
+          }).join('')}
+        </div>
+        <button class="mg-usta" data-eylem="mg-tumu">
+          <span class="mg-usta-yuzler"></span>
+          <span class="mg-usta-yazi"><b>Ustabaşılar</b><small class="mg-usta-alt"></small></span>
+          ${ikon('ileri')}
+        </button>
+      </section>
+
+      <section class="pano">
+        <h3 class="plaka">${ikon('gemi')}<span>Lojistik ve Altyapı</span></h3>
+        <div class="mg-lojistik">
+          ${LOJ.map((l) => `<button class="yuva mg-loj" data-eylem="mg-loj" data-tur="${l.tur}" aria-label="${l.ad}">
+            ${simge(l.simge, kod0, 52)}<b>${l.ad}</b><span class="mg-loj-lv sayi" data-lv="${l.tur}"></span>
+            <span class="cubuk-ince" data-cubuk="${l.tur}"><i></i></span></button>`).join('')}
+        </div>
+      </section>
+
+      <section class="pano mg-kontrat">
+        <h3 class="plaka">${ikon('kitap')}<span>Kontrat Hedefi</span><small class="mg-musteri"></small></h3>
+        <div class="mg-k-ust">${simge('kontrat', kod0, 56)}<div><b class="mg-k-baslik"></b><small class="mg-k-metin"></small>
+          <span class="mg-k-odul"><img src="img/ref/hud-para.png" alt=""><b class="sayi mg-k-para"></b><img src="img/ref/hud-elmas.png" alt=""><b class="sayi mg-k-elmas"></b></span></div></div>
+        <div class="kt-cubuk mg-k-cubuk"><i></i><span class="sayi"></span></div>
+        <button class="btn btn-mavi mg-k-btn" data-eylem="mg-kontrat"><span>Detaylar</span></button>
+      </section>
+
+      <section class="pano pano-mor mg-prestij">
+        <h3 class="plaka plaka-mor">${ikon('prestij')}<span>Prestij</span><small class="mg-p-sv sayi"></small></h3>
+        <div class="mg-p-ust">${simge('madalya', '', 60)}<div><b>Yeni nesil maden</b><small>Bütün madenleri yeniden kur, kalıcı satış çarpanıyla daha güçlü başla.</small>
+          <span class="mg-p-sart"></span></div></div>
+        <button class="btn btn-turuncu mg-p-btn" data-eylem="mg-prestij"><span>Prestij Yap</span></button>
+      </section>
     </div>`
+  simgeleriCiz(govde, B)
 
   const q = (s) => govde.querySelector(s)
   const qa = (s) => [...govde.querySelectorAll(s)]
   const el = {
-    kaynaklar: qa('.mg-kaynak'),
+    kaynaklar: qa('.mg-kaynak').map((b) => ({ b, kod: b.dataset.kod, yazi: b.querySelector('.mg-durum > span') })),
     sayi: q('.mg-sayi'),
-    ortaklar: Object.fromEntries(qa('.mg-ortak').map((x) => [x.dataset.kod, x])),
-    etkiler: Object.fromEntries(qa('.mg-etki').map((x) => [x.dataset.etki, x])),
+    ortaklar: A.ORTAKLAR.map((o) => {
+      const b = q(`.mg-ortak[data-kod="${o.kod}"]`)
+      return { o, b, lv: b.querySelector('.mg-lv'), etki: b.querySelector('.mg-etki') }
+    }),
+    ustaYuzler: q('.mg-usta-yuzler'), ustaAlt: q('.mg-usta-alt'),
     lv: Object.fromEntries(qa('[data-lv]').map((x) => [x.dataset.lv, x])),
     cubuk: Object.fromEntries(qa('[data-cubuk]').map((x) => [x.dataset.cubuk, x.firstElementChild])),
-    kBaslik: q('.mg-kyazi b'), kMetin: q('.mg-kyazi span'), kOdul: q('.mg-kodul'), kElmas: q('.mg-kelmas'),
-    kCubuk: q('.mg-kcubuk i'), kCubukYazi: q('.mg-kcubuk span'), detay: q('.mg-detay'),
-    prestij: q('.mg-prestij'), prestijKilit: q('.mg-prestij-kilit'),
+    musteri: q('.mg-musteri'), kBaslik: q('.mg-k-baslik'), kMetin: q('.mg-k-metin'), kPara: q('.mg-k-para'), kElmas: q('.mg-k-elmas'),
+    kCubuk: q('.mg-k-cubuk i'), kCubukYazi: q('.mg-k-cubuk span'), kBtn: q('.mg-k-btn'), kBtnYazi: q('.mg-k-btn span'),
+    pSv: q('.mg-p-sv'), pSart: q('.mg-p-sart'), pBtn: q('.mg-p-btn'), pBtnYazi: q('.mg-p-btn span'),
   }
+  let ustaImza = ''
 
   function kare2(d) {
     const b = bolgeAl(d)
-    for (const btn of el.kaynaklar) {
-      const kod = btn.dataset.kod
-      const bb = A.BOLGE[kod]
-      const acik = !!d.bolgeler[kod] || d.oyuncu.lv >= bb.acilisLv
-      sinif(btn, 'aktif', d.aktifBolge === kod)
-      sinif(btn, 'kilitli', !acik)
-      sinif(btn, 'yeni', !d.bolgeler[kod] && acik)
-      yaz(btn.querySelector('.mg-kilit b'), 'Sv.' + bb.acilisLv)
+    for (const k of el.kaynaklar) {
+      const bb = A.BOLGE[k.kod]
+      const acik = !!d.bolgeler[k.kod] || d.oyuncu.lv >= bb.acilisLv
+      const yeni = !d.bolgeler[k.kod] && acik
+      sinif(k.b, 'aktif', d.aktifBolge === k.kod)
+      sinif(k.b, 'kilitli', !acik)
+      sinif(k.b, 'yeni', yeni)
+      yaz(k.yazi, d.aktifBolge === k.kod ? 'Buradasın' : !acik ? 'Sv.' + bb.acilisLv : yeni ? 'Aç!' : 'Geç')
     }
     let tanisilan = 0
-    for (const o of A.ORTAKLAR) {
-      const L = d.ortak[o.kod] || 0
+    for (const r of el.ortaklar) {
+      const L = d.ortak[r.o.kod] || 0
       if (L > 0) tanisilan++
-      sinif(el.ortaklar[o.kod], 'kilitli', L < 1)
-      yaz(el.ortaklar[o.kod].querySelector('.mg-lv'), L > 0 ? 'Lv.' + L : '')
-      yaz(el.etkiler[o.kod], ortakEtkiYazi(o, L))
-      sinif(el.ortaklar[o.kod], 'alinir', L > 0 && L < A.ORTAK_MAKS && d.oyuncu.elmas >= A.ORTAK_MALIYET[L])
+      sinif(r.b, 'kilitli', L < 1)
+      yaz(r.lv, L > 0 ? 'Lv.' + L : '')
+      yaz(r.etki, L > 0 ? ortakEtkiYazi(r.o, L) : 'Hikâyede tanış')
+      sinif(r.b, 'alinir', L > 0 && L < A.ORTAK_MAKS && d.oyuncu.elmas >= A.ORTAK_MALIYET[L])
     }
-    yaz(el.sayi, tanisilan + '/' + A.ORTAKLAR.length)
+    yaz(el.sayi, tanisilan + ' / ' + A.ORTAKLAR.length)
+    // ustabaşılar: ilk üç portre, kişi ve hazır yetenek sayısı
+    const im = d.aktifBolge + b.yoneticiler.slice(0, 3).map((y) => y.id).join(',')
+    if (im !== ustaImza) {
+      ustaImza = im
+      el.ustaYuzler.innerHTML = b.yoneticiler.slice(0, 3).map((y) => `<canvas style="--nr:${nadirlik(y.nadirlik).renk}" data-tohum="${y.tohum}" data-nadir="${y.nadirlik}"></canvas>`).join('') || `<i>${ikon('yonetici')}</i>`
+      for (const c of el.ustaYuzler.querySelectorAll('canvas')) { try { B.sahne.portre(+c.dataset.tohum, +c.dataset.nadir, c, 34) } catch {} }
+    }
+    let hazir = 0
+    for (const y of b.yoneticiler) if (y.atanan && yetenekHali(d, y).durum === 'hazir') hazir++
+    yaz(el.ustaAlt, b.yoneticiler.length ? `${b.yoneticiler.length} kişi${hazir ? ` · ${hazir} yetenek hazır` : ''}` : 'İstasyonları otomatik çalıştıran ustalar tut')
     // lojistik
     const lv = { depo: b.depo.L, asansor: b.asansor.L, liman: b.liman || 0, ambar: b.ambar || 0 }
     for (const l of LOJ) {
@@ -131,18 +153,26 @@ export function kur(B, govde) {
     }
     // kontrat
     const k = kontratDurumu(d, b)
+    yaz(el.musteri, k.musteri || '')
     yaz(el.kBaslik, k.cevher + ' Kontratı')
     yaz(el.kMetin, `${bicim(k.hedef)} ton ${k.cevher.toLocaleLowerCase('tr')} sevkiyatı`)
-    const po = '+' + bicim(k.odul.para)
-    yaz(el.kOdul, po)
-    el.kOdul.style.fontSize = Math.min(2.45, 2.45 * 6 / Math.max(6, po.length)).toFixed(2) + 'cqw'
+    yaz(el.kPara, '+' + bicim(k.odul.para))
     yaz(el.kElmas, '+' + k.odul.elmas)
     cubuk(el.kCubuk, k.hedef > 0 ? k.ilerleme / k.hedef : 0)
     yaz(el.kCubukYazi, bicim(k.ilerleme) + ' / ' + bicim(k.hedef))
-    sinif(el.detay, 'hazir', k.hazir)
+    sinif(el.kBtn, 'btn-mavi', !k.hazir)
+    sinif(el.kBtn, 'btn-yesil', k.hazir)
+    sinif(el.kBtn, 'nabiz', k.hazir)
+    yaz(el.kBtnYazi, k.hazir ? 'Teslim Al' : 'Detaylar')
     // prestij
-    yaz(el.prestij, 'Mevcut Seviye: ' + (d.prestij.sv + 1))
-    gizle(el.prestijKilit, prestijUygun(d))
+    const uygun = prestijUygun(d)
+    yaz(el.pSv, 'Seviye ' + (d.prestij.sv + 1))
+    let usta = 0
+    for (const kod of Object.keys(d.bolgeler)) if (d.bolgeler[kod].usta) usta++
+    yaz(el.pSart, uygun ? 'Şartlar tamam!' : `Gerekli: Seviye ${A.PRESTIJ.lv} · ${A.PRESTIJ.usta} Bölge Ustası (${usta}/${A.PRESTIJ.usta})`)
+    sinif(el.pSart, 'tamam', uygun)
+    sinif(el.pBtn, 'soluk', !uygun)
+    sinif(el.pBtn, 'nabiz', uygun)
   }
 
   B.eylemler['mg-kaynak'] = (btn) => {
@@ -271,12 +301,13 @@ export function hazirla(B) {
   P.kaydet('lojistik', (g, veri) => {
     const liman = veri.tur === 'liman'
     const t = liman ? A.LIMAN : A.AMBAR
-    g.innerHTML = `<div class="ot-ust"><img class="ot-yuz loj" src="img/ref/loj-${liman ? 'liman' : 'depo'}.png" alt=""><div><h2>${liman ? 'Liman' : 'Depo (Ambar)'}</h2>
+    g.innerHTML = `<div class="ot-ust">${simge(liman ? 'gemi' : 'ambar', B.durumAl().aktifBolge, 76)}<div><h2>${liman ? 'Liman' : 'Ambar'}</h2>
       <small>${liman ? 'Cevheri gemilerle uzak pazarlara gönder: bu bölgenin satışları artar.' : 'Daha büyük ambar: uygulama kapalıyken ve başka bölgedeyken daha uzun kazanırsın.'}</small></div></div>
       <div class="ot-satirlar"><div class="ot-satir"><span>Seviye</span><b class="sayi lj-lv"></b></div>
       <div class="ot-satir"><span>Şu anki etki</span><b class="lj-etki"></b></div>
       <div class="ot-satir"><span>Sonraki seviye</span><b class="lj-sonraki"></b></div></div>
       <button class="btn btn-turuncu ot-al" data-eylem="lojistik-al" data-tur="${veri.tur}">${ikon('para')}<span class="sayi"></span></button>`
+    simgeleriCiz(g, B)
     const e = { lv: g.querySelector('.lj-lv'), etki: g.querySelector('.lj-etki'), sonraki: g.querySelector('.lj-sonraki'), al: g.querySelector('.ot-al'), alYazi: g.querySelector('.ot-al span') }
     const etki = (L) => (liman ? `Satış +%${Math.round(L * t.satis * 100)}` : `Çevrimdışı +${L * t.dakika} dk`)
     return (d) => {
@@ -293,13 +324,13 @@ export function hazirla(B) {
   })
   B.eylemler['lojistik-al'] = (btn) => {
     const s = B.eylem('lojistik', { tur: btn.dataset.tur })
-    if (s && s.ok) B.bildir('basari', `${btn.dataset.tur === 'liman' ? 'Liman' : 'Depo'} ${s.L}. seviye!`)
+    if (s && s.ok) B.bildir('basari', `${btn.dataset.tur === 'liman' ? 'Liman' : 'Ambar'} ${s.L}. seviye!`)
     else if (s && s.sebep === 'para') B.bildir('bilgi', 'Yetersiz para')
   }
 
   // Prestij: şartlar ve iki adımlı onay
   P.kaydet('prestij', (g) => {
-    g.innerHTML = `<div class="ot-ust"><img class="ot-yuz loj" src="img/ref/prestij-panel.png" alt=""><div><h2>Prestij: Yeni Nesil</h2><small>Bütün madenleri yeniden kur, kalıcı olarak daha güçlü başla.</small></div></div>
+    g.innerHTML = `<div class="ot-ust">${simge('madalya', '', 76)}<div><h2>Prestij: Yeni Nesil</h2><small>Bütün madenleri yeniden kur, kalıcı olarak daha güçlü başla.</small></div></div>
       <div class="ot-satirlar">
         <div class="ot-satir"><span>Mevcut prestij</span><b class="sayi ps-sv"></b></div>
         <div class="ot-satir"><span>Satış çarpanı</span><b class="sayi ps-carpan"></b></div>
@@ -307,6 +338,7 @@ export function hazirla(B) {
         <div class="ot-satir"><span>Bölge Ustası</span><b class="sayi ps-usta"></b></div></div>
       <p class="sayfa-not">Sıfırlanır: bölgelerin parası, katları, istasyonları, ustabaşıları, görevleri ve kontratları.<br>Kalır: oyuncu seviyesi, elmaslar, araştırmalar, ortaklar, hikâye ve açılmış bölgeler.</p>
       <button class="btn btn-turuncu ot-al ps-al" data-eylem="prestij-yap"></button>`
+    simgeleriCiz(g, B)
     const e = { sv: g.querySelector('.ps-sv'), carpan: g.querySelector('.ps-carpan'), lv: g.querySelector('.ps-lv'), usta: g.querySelector('.ps-usta'), al: g.querySelector('.ps-al') }
     return (d) => {
       let usta = 0

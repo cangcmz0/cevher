@@ -163,3 +163,12 @@ export const YUVARLA = [{ transform: 'translateY(6px)', opacity: 0 }, { transfor
 
 const azHareketSorgu = typeof matchMedia !== 'undefined' ? matchMedia('(prefers-reduced-motion: reduce)') : null
 export const azHareket = () => !!(azHareketSorgu && azHareketSorgu.matches)
+
+// Çizim simgeleri: <canvas data-simge="vagon" data-kod="eregli" data-boy="56"> öğelerini sahne çizer
+export const simge = (ad, kod = '', boy = 56, sinifAd = '') => `<canvas class="simge ${sinifAd}" data-simge="${ad}" data-kod="${kod}" data-boy="${boy}" style="width:${boy}px;height:${boy}px" aria-hidden="true"></canvas>`
+export function simgeleriCiz(kap, B) {
+  for (const c of kap.querySelectorAll('canvas[data-simge]')) {
+    try { B.sahne.simge(c.dataset.simge, c.dataset.kod, c, +c.dataset.boy || 56, c.dataset.ek) } catch {}
+  }
+}
+

@@ -1193,3 +1193,33 @@ export function yiginCiz(c, w, h, kod, tohum) {
   c.lineWidth = 0.8
   c.stroke(p)
 }
+
+// ════════ Arayüz dokuları (sayfa ve pencere arka planları) ════════
+// Döşenebilir kaya: kenardan taşan taş karşı kenarda da aynı biçimle çizilir, dikişsiz tekrarlanır.
+export function kayaDokusu(c, w, h, kod, tohum, isik = 0.8, buyukluk = 1.5) {
+  const kp = kaya(kod)
+  c.fillStyle = kp.koyu
+  c.fillRect(0, 0, w, h)
+  const r = rastgele(tohum)
+  const satir = Math.max(1, Math.round(h / (7.5 * buyukluk)))
+  for (let i = 0; i < satir; i++) {
+    const yy = ((i + 0.5) * h) / satir
+    for (let xx = r() * 6; xx < w; xx += (9 + r() * 9) * buyukluk) {
+      const rx = (4.2 + r() * 5.6) * buyukluk, ry = (2.8 + r() * 3.2) * buyukluk
+      const renk = kp.tas[Math.floor(r() * kp.tas.length)]
+      const sy = yy + (r() - 0.5) * 3, ti = isik * (0.7 + r() * 0.5), t = Math.floor(r() * 1e9)
+      for (const ox of [-w, 0, w]) for (const oy of [-h, 0, h]) {
+        const x = xx + ox, y = sy + oy
+        if (x + rx * 1.3 < 0 || x - rx * 1.3 > w || y + ry * 1.4 < 0 || y - ry * 1.4 > h) continue
+        tas(c, x, y, rx, ry, renk, rastgele(t), ti)
+      }
+    }
+  }
+}
+
+// Kalas levha: başlık plakaları için yatay tahtalar (üstte ışık, uçlarda çivi)
+export function tahtaDokusu(c, w, h, tohum, ton = '#8A5A30') {
+  const n = Math.max(1, Math.round(h / 16))
+  for (let i = 0; i < n; i++) kalas(c, 0, (i * h) / n, w, h / n, true, tohum + i * 13, i % 2 ? koyu(ton, 0.06) : ton)
+}
+export function kristalCiz(c, x, y, s, a, kod, tohum) { kristal(c, x, y, s, a, kod, rastgele(tohum)) }

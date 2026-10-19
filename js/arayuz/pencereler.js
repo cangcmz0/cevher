@@ -10,7 +10,7 @@
 import { ikon, cevherIkonu } from './ikonlar.js'
 import {
   E, A, yaz, sinif, gizle, cubuk, bicim, oranYazi, tam, sayac, sure, ogeYap, bolgeAl, istasyonAdi, nadirlik,
-  yetenekHali, yetenekEtki, yoneticiAdi, kartHizi, madenMi, istasyonTipi,
+  yetenekHali, yetenekEtki, yoneticiAdi, kartHizi, madenMi, istasyonTipi, simge, simgeleriCiz,
 } from './ortak.js'
 import { DURAK, BOSALTMA } from '../ayar.js'
 import { KISILER, SAHNELER, BOLUMLER, sahneBolumu } from '../hikaye.js'
@@ -422,13 +422,14 @@ export function kur(B) {
     const acilimlar = (veri.acilan || []).map((k) => A.ACILIM_ADLARI && A.ACILIM_ADLARI[k]).filter(Boolean)
     g.innerHTML = `<i class="isinlar"></i>
       <h2>Seviye Atladın!</h2>
-      <div class="madalya">${ikon('madalya')}</div><b class="madalya-yazi sayi">Lv. ${veri.lv}</b>
+      <div class="madalya">${simge('madalya', '', 104)}</div><b class="madalya-yazi sayi">Lv. ${veri.lv}</b>
       <div class="odul-satirlar">
         <div class="odul-satir">${ikon('elmas')}<span class="sayi">+${veri.elmas} elmas</span></div>
         <div class="odul-satir">${ikon('para')}<span>Bütün satışlar +%${2 * (veri.adet || 1)}</span></div>
         ${acilimlar.map((m) => `<div class="odul-satir acilim">${ikon('kilit-acik')}<span>${m} açıldı!</span></div>`).join('')}
       </div>
       <div class="modal-dugmeler"><button class="btn btn-turuncu" data-eylem="modal-kapat" data-ogretici-modal>Harika!</button></div>`
+    simgeleriCiz(g, B)
     return null
   }
 

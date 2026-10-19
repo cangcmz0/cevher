@@ -16,6 +16,8 @@ import * as E from '../ekonomi.js'
 import { bicim } from '../bicim.js'
 import * as D from './dekor.js'
 import * as K from './karakter.js'
+import { simgeCiz, arayuzDokulari } from './simge.js'
+import { haritaCiz } from './harita.js'
 
 const DPR_TAVAN = { yuksek: 2, dengeli: 1.5, pil: 1.25 }
 const KAZI_MS = 1600
@@ -1161,6 +1163,11 @@ export const Sahne = {
     c.setTransform(dpr, 0, 0, dpr, 0, 0)
     rozetCiz(c, s)
   },
+
+  // Sayfalardaki çizim simgeleri (cevher, vagon, kabin, gemi...) ve arayüz dokuları
+  simge(ad, kod, canvas, boyut, ek) { simgeCiz(canvas, ad, kod, boyut, ek) },
+  harita(canvas, gen) { haritaCiz(canvas, gen) },
+  dokular(kod) { try { arayuzDokulari(kod || 'zonguldak') } catch (h) { console.warn('Doku üretilemedi', h) } },
 
   portre(tohum, nadirlik, canvas, boyut) {
     const dpr = Math.min((typeof devicePixelRatio === 'number' && devicePixelRatio) || 1, 2)

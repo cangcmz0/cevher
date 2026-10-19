@@ -169,6 +169,7 @@ export const Arayuz = {
       setTimeout(() => {
         const r = B.eylem('bolgeGit', { kod })
         if (r && r.ok) {
+          try { B.sahne.dokular(kod) } catch {}
           B.sayfa.kapat()
           B.pencere.kapatSayfa()
           B.kaydirKonumu(1e9, { anim: false })
@@ -178,6 +179,11 @@ export const Arayuz = {
         setTimeout(() => { gecis.classList.remove('acik'); gecisVar = false }, 450)
       }, 420)
     }
+
+    // Sayfa ve pencere dokuları etkin bölgenin kayasından (açılışı bekletmesin diye sonra)
+    setTimeout(() => { try { B.sahne.dokular(B.durumAl().aktifBolge) } catch {} }, 60)
+    // Harita da boşta önceden çizilir (ilk açılışta takılmasın)
+    setTimeout(() => { try { B.sahne.harita(document.createElement('canvas'), B.kok.clientWidth || 390) } catch {} }, 4000)
 
     kok.addEventListener('click', tikla)
     Veriyolu.dinle('uzunBasma', (o) => B.kartlar.uzunBasma(o.el))
