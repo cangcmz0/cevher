@@ -321,6 +321,22 @@ function fenerGovde(c, x, y, zincir) {
   c.stroke()
 }
 
+// Projektör: dikdörtgen gövde, parlak cam, kelepçe
+function projektor(c, x, y) {
+  c.fillStyle = '#2B2F33'
+  c.fillRect(x - 0.6, y - 4, 1.2, 3)
+  const g = yolCiz([[x - 5, y - 1.4], [x + 5, y - 1.4], [x + 4.2, y + 2.6], [x - 4.2, y + 2.6]])
+  c.fillStyle = dG(c, y - 1.4, y + 2.6, ['#5E6A76', '#2E353B'])
+  c.fill(g)
+  c.strokeStyle = CIZGI
+  c.lineWidth = 0.6
+  c.stroke(g)
+  const cam = c.createLinearGradient(0, y + 1.4, 0, y + 3.6)
+  cam.addColorStop(0, '#FFFFFF'); cam.addColorStop(1, '#FFE6A8')
+  c.fillStyle = cam
+  c.fillRect(x - 3.8, y + 1.6, 7.6, 1.8)
+}
+
 // Duvara düşen sıcak ışık havuzu (fırınlanmış)
 function isikHavuzu(c, x, y, r, guc = 1) {
   c.save()
@@ -574,7 +590,10 @@ function esyalar(c, X, Y, v, kod) {
 }
 
 // ════════ Kat şeridi ════════
-export function katCiz(c, W, H, y, kod, v) {
+// Kat aşaması: seviye arttıkça iskelet ve ışıklar gelişir (0 ahşap, 1 güçlendirilmiş, 2 çelik)
+export const katAsamasi = (L) => (L >= 100 ? 2 : L >= 25 ? 1 : 0)
+
+export function katCiz(c, W, H, y, kod, v, asama = 0) {
   const k = y.k, ky = H / 107
   const X = (r) => r * k, Y = (r) => r * ky
   const kp = kaya(kod)
@@ -606,9 +625,32 @@ export function katCiz(c, W, H, y, kod, v) {
     kristal(c, px, py, X(1.4 + r3() * 1.6), r3() * TAU, kod, r3)
   }
   for (const [fx, fy] of KAT.fener) isikHavuzu(c, X(fx), Y(fy + 20), X(64), 0.75)
-  // Tavan kaplaması: üst kirişin altında dikine tahtalar
-  for (let x = tx0 + X(8), q = 0; x < tx1 - X(8); x += X(12), q++) {
-    kalas(c, x, ty0 + Y(5.5), X(11.6), Y(6 + (q % 3) * 1.5), false, 400 + q + v * 50, q % 2 ? '#7A4E2A' : '#6A4424')
+  // Tavan kaplaması: ahşapta dikine tahtalar, çelikte oluklu sac ve havalandırma borusu
+  if (asama < 2) {
+    for (let x = tx0 + X(8), q = 0; x < tx1 - X(8); x += X(12), q++) {
+      kalas(c, x, ty0 + Y(5.5), X(11.6), Y(6 + (q % 3) * 1.5), false, 400 + q + v * 50, q % 2 ? '#7A4E2A' : '#6A4424')
+    }
+  } else {
+    c.fillStyle = dG(c, ty0 + Y(5), ty0 + Y(12), ['#7E8C9A', '#4A5662'])
+    c.fillRect(tx0, ty0 + Y(5), tx1 - tx0, Y(7))
+    for (let x = tx0; x < tx1; x += X(4)) {
+      c.fillStyle = 'rgba(255,255,255,.22)'
+      c.fillRect(x, ty0 + Y(5), X(1.2), Y(7))
+      c.fillStyle = 'rgba(0,0,0,.25)'
+      c.fillRect(x + X(2.2), ty0 + Y(5), X(1.2), Y(7))
+    }
+    // Sarı esnek havalandırma borusu (halkalı)
+    const by = ty0 + Y(15.5), br = Y(3.4)
+    c.fillStyle = dG(c, by - br, by + br, ['#FFE08A', '#F2B632', '#B07414'])
+    c.fillRect(tx0 + X(8), by - br, tx1 - tx0 - X(16), br * 2)
+    c.strokeStyle = 'rgba(120,70,10,.55)'
+    c.lineWidth = 0.6
+    c.beginPath()
+    for (let x = tx0 + X(9); x < tx1 - X(9); x += X(2.6)) { c.moveTo(x, by - br); c.lineTo(x, by + br) }
+    c.stroke()
+    c.strokeStyle = CIZGI
+    c.lineWidth = 0.7
+    c.strokeRect(tx0 + X(8), by - br, tx1 - tx0 - X(16), br * 2)
   }
   // Ortam gölgesi: tavan, kenarlar, zemin
   c.fillStyle = dG(c, ty0, ty0 + Y(26), ['rgba(8,5,3,.6)', 'rgba(8,5,3,0)'])
@@ -651,6 +693,16 @@ export function katCiz(c, W, H, y, kod, v) {
     c.fillStyle = r5() < 0.5 ? rgba(kp.tas[1], 0.9) : rgba('#000000', 0.35)
     c.beginPath(); c.ellipse(X(104 + r5() * 182), Y(72.5 + r5() * 4.5), X(0.6 + r5() * 1.1), Y(0.4 + r5() * 0.6), 0, 0, TAU); c.fill()
   }
+  if (asama === 2) {
+    // Metal ızgara yürüme yolu (rayın arkasında)
+    c.fillStyle = dG(c, Y(71.2), Y(74), ['#9AA6B2', '#5E6A76'])
+    c.fillRect(X(130), Y(71.2), X(150), Y(2.8))
+    c.strokeStyle = 'rgba(20,24,28,.5)'
+    c.lineWidth = 0.5
+    c.beginPath()
+    for (let x = X(131); x < X(280); x += X(2.4)) { c.moveTo(x, Y(71.4)); c.lineTo(x, Y(73.8)) }
+    c.stroke()
+  }
   rayCiz(c, X(126), X(252), Y(KAT.ray), 71 + v)
   c.save()
   c.translate(X(KAT.kaziYigini), Y(73.4))
@@ -672,30 +724,83 @@ export function katCiz(c, W, H, y, kod, v) {
   c.lineWidth = 0.8
   c.strokeRect(bx0, bu, bx1 - bx0, Y(76) - bu)
 
-  // 6. Ahşap iskelet: iki dikme, üst kiriş, köşe payandaları, demir bağlantılar
-  kalas(c, X(100.5), Y(4.5), X(7.5), Y(73.5), false, 11 + v, '#8E5A30')
-  kalas(c, X(282.5), Y(4.5), X(7.5), Y(73.5), false, 12 + v, '#8E5A30')
-  kalas(c, X(98.5), Y(2.5), X(194), Y(7.5), true, 13 + v, '#9A6334')
-  for (const [x0, yon] of [[X(108), 1], [X(282.5), -1]]) {
-    const p = yolCiz([[x0, Y(10)], [x0 + yon * X(15), Y(10)], [x0 + yon * X(2.4), Y(10) + Y(15)], [x0, Y(10) + Y(15)]])
-    c.fillStyle = dG(c, Y(10), Y(25), ['#8E5A30', '#5E3A1E'])
-    c.fill(p)
-    c.strokeStyle = CIZGI
-    c.lineWidth = 0.8
-    c.stroke(p)
-  }
-  for (const x of [X(101.5), X(283.5)]) {
-    c.fillStyle = dG(c, Y(2), Y(11), ['#6E7A86', '#3A4048'])
-    c.fillRect(x, Y(2.5), X(5.5), Y(8.5))
-    c.strokeStyle = CIZGI
-    c.lineWidth = 0.5
-    c.strokeRect(x, Y(2.5), X(5.5), Y(8.5))
-    percin(c, x + X(1.6), Y(5), 0.7)
-    percin(c, x + X(3.9), Y(8.5), 0.7)
+  // 6. İskelet: aşamaya göre ahşap, güçlendirilmiş ahşap ya da çelik
+  if (asama < 2) {
+    kalas(c, X(100.5), Y(4.5), X(7.5), Y(73.5), false, 11 + v, '#8E5A30')
+    kalas(c, X(282.5), Y(4.5), X(7.5), Y(73.5), false, 12 + v, '#8E5A30')
+    kalas(c, X(98.5), Y(2.5), X(194), Y(7.5), true, 13 + v, '#9A6334')
+    for (const [x0, yon] of [[X(108), 1], [X(282.5), -1]]) {
+      const p = yolCiz([[x0, Y(10)], [x0 + yon * X(15), Y(10)], [x0 + yon * X(2.4), Y(10) + Y(15)], [x0, Y(10) + Y(15)]])
+      c.fillStyle = dG(c, Y(10), Y(25), ['#8E5A30', '#5E3A1E'])
+      c.fill(p)
+      c.strokeStyle = CIZGI
+      c.lineWidth = 0.8
+      c.stroke(p)
+    }
+    for (const x of [X(101.5), X(283.5)]) {
+      c.fillStyle = dG(c, Y(2), Y(11), ['#6E7A86', '#3A4048'])
+      c.fillRect(x, Y(2.5), X(5.5), Y(8.5))
+      c.strokeStyle = CIZGI
+      c.lineWidth = 0.5
+      c.strokeRect(x, Y(2.5), X(5.5), Y(8.5))
+      percin(c, x + X(1.6), Y(5), 0.7)
+      percin(c, x + X(3.9), Y(8.5), 0.7)
+    }
+    if (asama === 1) {
+      // Güçlendirme: dikmelerde çelik kuşaklar, kirişte ikaz şeridi
+      for (const x of [X(100.5), X(282.5)]) {
+        for (const yy of [Y(28), Y(52)]) {
+          c.fillStyle = dG(c, yy, yy + Y(3), ['#C9D2DA', '#4A525A'])
+          c.fillRect(x - 0.5, yy, X(8.5), Y(3))
+          percin(c, x + X(3.8), yy + Y(1.5), 0.65)
+        }
+      }
+      ikaz(c, X(130), Y(3.4), X(132), Y(2.6))
+    }
+  } else {
+    // Çelik iskelet: mavi boyalı I-kiriş dikmeler ve üst kiriş, köşe takviyeleri
+    const celik = (x, yy, w, h, dikey) => {
+      c.fillStyle = dikey ? yG(c, x, x + w, ['#2E4A66', '#6E9AC4', '#3A5E82', '#22384E']) : dG(c, yy, yy + h, ['#7FA6CC', '#3A5E82', '#22384E'])
+      c.fillRect(x, yy, w, h)
+      c.fillStyle = 'rgba(255,255,255,.3)'
+      if (dikey) c.fillRect(x + w * 0.3, yy, 0.8, h)
+      else c.fillRect(x, yy + 0.5, w, 0.8)
+      c.strokeStyle = CIZGI
+      c.lineWidth = 0.8
+      c.strokeRect(x, yy, w, h)
+    }
+    celik(X(100.5), Y(4.5), X(7.5), Y(73.5), true)
+    celik(X(282.5), Y(4.5), X(7.5), Y(73.5), true)
+    celik(X(98.5), Y(2.5), X(194), Y(7), false)
+    for (let x = X(112); x < X(282); x += X(14)) percin(c, x, Y(6), 0.7)
+    for (const x of [X(104.3), X(286.3)]) for (let yy = Y(14); yy < Y(76); yy += Y(12)) percin(c, x, yy, 0.65)
+    for (const [x0, yon] of [[X(108), 1], [X(282.5), -1]]) {
+      const p = yolCiz([[x0, Y(9.5)], [x0 + yon * X(12), Y(9.5)], [x0, Y(9.5) + Y(12)]])
+      c.fillStyle = dG(c, Y(9.5), Y(21), ['#5A82AA', '#2E4A66'])
+      c.fill(p)
+      c.strokeStyle = CIZGI
+      c.lineWidth = 0.7
+      c.stroke(p)
+      percin(c, x0 + yon * X(3), Y(12.5), 0.65)
+    }
   }
 
-  // 7. Fener gövdeleri (ışıklar karede eklenir)
-  for (const [fx, fy] of KAT.fener) fenerGovde(c, X(fx), Y(fy), Y(fy) - Y(10))
+  // 7. Işık gövdeleri: ahşapta yağ feneri, güçlendirilmişte kablolu ampul, çelikte projektör
+  for (const [fx, fy] of KAT.fener) {
+    if (asama === 2) projektor(c, X(fx), Y(fy))
+    else fenerGovde(c, X(fx), Y(fy), Y(fy) - Y(10))
+  }
+  if (asama >= 1) {
+    // Fenerleri bağlayan elektrik kablosu (sarkık)
+    c.strokeStyle = '#1C1F23'
+    c.lineWidth = 0.8
+    c.beginPath()
+    c.moveTo(X(112), Y(10.5))
+    c.quadraticCurveTo(X(136), Y(14), X(KAT.fener[0][0]), Y(10.5))
+    c.quadraticCurveTo(X(196), Y(15), X(KAT.fener[1][0]), Y(10.5))
+    c.quadraticCurveTo(X(258), Y(14), X(282), Y(10.5))
+    c.stroke()
+  }
 
   // 8. Kat ayırıcı: çelik kiriş, boru, kablo, yükseltme oku plakası
   kiris(c, 0, Y(78), X(290), Y(5.5))

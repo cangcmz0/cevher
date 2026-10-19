@@ -1453,6 +1453,12 @@ frames are baked lazily. Each frame only issues drawImage calls. Floors cycle th
   - Animations: `yuru`, `tasi` (sack on the shoulder), `it` (push a cart), `kaz`, `bekle`, `dinlen` (sit on a crate), `sevin`, `egil`, `bosalt`.
   - There are four looks, and the cart is a separate sprite.
   - Frames are baked lazily per look, animation, frame and scale.
+- **Floor stages (`katAsamasi`):** a floor's look improves with its level.
+  - Below 25: a wooden frame with oil lamps.
+  - 25 to 99: reinforced with steel bands, a hazard-taped beam, and lamps on a sagging cable.
+  - 100 and up: a blue steel I-beam frame, a corrugated ceiling with a yellow ventilation duct, a metal grating walkway and floodlights.
+
+  Strips are cached per layout and stage.
 - **Floor crews:**
   - a digger at the face, with sparks and dust on the impact frame;
   - a hauler who picks up a sack, carries it to the bunker, empties it and walks back;
@@ -1461,6 +1467,7 @@ frames are baked lazily. Each frame only issues drawImage calls. Floors cycle th
 
   The tempo follows the floor level and the manager's ability. When the floor is idle or full, the crew stands. After 6 s they sit down. They cheer on an upgrade or a treasure. The bunker pile follows `yigin / yiginKap`.
 - **Elevator:** a spring-smoothed cabin with an operator inside and the load pile on the floor. A direction light is green while moving and blinks amber while loading. Ore arcs from the floor bunker into the cabin and from the cabin into the depot bunker.
+- **Truck:** it is a separate sprite with rotating wheels. When its bed is full it honks, drives off left with heavy exhaust, and returns empty. While it is away, tipped ore falls to the ground.
 - **Loading floor:** carriers push carts between the depot bunker and the truck. They follow the simulation's position, fill the cart under the chute, and tip it into the truck bed, which slowly fills. The truck puffs exhaust.
 
 All new state is in the save whitelist (`kayit.js`) and repaired by `dogrula`. Older saves get the new fields with
