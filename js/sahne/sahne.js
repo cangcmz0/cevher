@@ -187,6 +187,25 @@ function arabaciPoz(u, x0, x1) {
   return { ax, x: ax - d, anim: 'yuru', kare: yuruKare(x1 - ax), yon: -1, dolu: false, aci: 0, parca: 3 }
 }
 
+// Yeni açılan katta ekip asansör tarafından yürüyerek gelir (sn)
+const GIRIS_SURE = 2.2
+function girisCiz(d, b, i, sy, e, kod) {
+  const zemin = sy + Yk(D.KAT.zemin)
+  const L = b.madenler[i].L
+  const n = 2 + (L >= 25 ? 1 : 0) + (L >= 75 ? 1 : 0)
+  const hedef = [D.KAT.kaziciX, D.KAT.alX, D.KAT.arabaSol - 17 * KARAKTER, D.KAT.alX + 6]
+  const gor = [(i % 2) * 2, 1, 2, 3]
+  for (let j = n - 1; j >= 0; j--) {
+    const q = Math.max(0, Math.min(1, (e - j * 0.18) / (1 - 0.18 * (n - 1))))
+    const x0 = 262 + j * 7, x1 = hedef[j]
+    const x = x0 + (x1 - x0) * (1 - (1 - q) * (1 - q))
+    const yerde = q >= 1
+    const y0 = j === 2 ? zemin + Yk(1.5) : j === 0 ? zemin + 1 : zemin - Yk(2.5)
+    if (j === 2) araba(false, kod, X(x + 17 * KARAKTER), y0)
+    figur(gor[j], yerde ? 'bekle' : (j === 2 ? 'it' : 'yuru'), yerde ? 0 : yuruKare(x0 - x), X(x), y0, j === 2 && !yerde ? 1 : -1)
+  }
+}
+
 function katIscileri(d, b, i, sy, dt, tempo, simdiMs) {
   const kod = d.aktifBolge
   const c = d.calisma.madenler[i]
@@ -904,7 +923,9 @@ export const Sahne = {
         continue
       }
       if (i % D.KAT_DUZEN === 1) kanarya(sy, t, i)
-      katIscileri(durum, b, i, sy, dt, katTempo(b, i, yetAktif.has('m' + i)), simdiMs)
+      const giris = kb ? (simdiMs - kb - KAZI_MS) / 1000 : 99
+      if (giris < GIRIS_SURE) girisCiz(durum, b, i, sy, giris / GIRIS_SURE, kod)
+      else katIscileri(durum, b, i, sy, dt, katTempo(b, i, yetAktif.has('m' + i)), simdiMs)
       const c = durum.calisma.madenler[i]
       if (c && c.dolu) ctx.drawImage(al('dolu.etiket'), X(D.KAT.bunkerX0) - 2, sy + Yk(D.KAT.bunkerUst) - Yk(30), 30, 12)
     }
