@@ -63,6 +63,8 @@
   background: linear-gradient(180deg, #FFE68A, #FCC92A 55%, #DFA21A);
 }
 .ust-xp:active { transform: scale(.97); }
+.ust-xp.hazir { border-color: #FFE08A; animation: rozetNefes 1.2s ease-in-out infinite; }
+.ust-xp.hazir span { left: 0; right: 0; text-align: center; font-weight: 700; color: #FFF4DE; }
 .ust-xp span { position: absolute; right: 8px; top: 0; font: 500 11px/15px var(--f-govde); color: var(--acik); text-shadow: 0 1px 1px rgba(0, 0, 0, .8); }
 .ust-para, .ust-elmas {
   position: absolute;

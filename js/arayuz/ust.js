@@ -9,7 +9,8 @@
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
 import { A, E, yaz, sinif, cubuk, bicim, oranYazi, tam, yuzde, artiYuzde, bolgeAl, bolgeAdi, canlandir, PARLA, ozellik } from './ortak.js'
-import { uretimArtisi } from '../benzetim.js'
+import { uretimArtisi, gorevDurumu } from '../benzetim.js'
+import { gorevAl } from './harita.js'
 
 
 export function kur(B) {
@@ -17,7 +18,7 @@ export function kur(B) {
   ust.innerHTML = `
     <button class="ust-avatar" data-eylem="avatar" aria-label="Oyuncu"><img src="img/ref/avatar.png" alt="" draggable="false"></button>
     <b class="ust-seviye">Zonguldak</b>
-    <button class="ust-xp" data-eylem="harita-gorevler" role="progressbar" aria-label="Bölge görevleri"><i></i><span class="sayi">Görev 0 / 15</span></button>
+    <button class="ust-xp" data-eylem="ust-gorev" role="progressbar" aria-label="Bölge görevleri"><i></i><span class="sayi">Görev 0 / 15</span></button>
     <div class="ust-para hap"><img class="hud-ikon" src="img/ref/hud-para.png" alt="" draggable="false"><b class="sayi">0</b><button class="arti-btn" data-eylem="magaza-yakinda" aria-label="Para al">${ikon('arti')}</button></div>
     <div class="ust-elmas hap"><img class="hud-ikon" src="img/ref/hud-elmas.png" alt="" draggable="false"><b class="sayi">0</b><button class="arti-btn" data-eylem="magaza-yakinda" aria-label="Elmas al">${ikon('arti')}</button></div>
     <button class="ust-ayar" data-eylem="ayarlar" aria-label="Ayarlar">${ikon('ayar')}</button>`
@@ -58,6 +59,12 @@ export function kur(B) {
   const BILGI = ['Bütün katların saniyelik üretimi.', 'Depodaki cevherin doluluk oranı.', 'Satıştan gelen saniyelik kazanç.']
   B.eylemler.istatistik = (b) => B.bildir('bilgi', BILGI[+b.dataset.k] || BILGI[0])
   B.eylemler['magaza-yakinda'] = () => B.bildir('bilgi', 'Mağaza yakında açılıyor.')
+  // Görev çubuğu: görev bittiyse ödülü alır, yoksa görev listesini açar
+  B.eylemler['ust-gorev'] = (btn) => {
+    const d = B.durumAl(), g = gorevDurumu(d, bolgeAl(d))
+    if (g && (g.hazir || g.simdi >= g.hedef) && gorevAl(B, btn)) return
+    B.pencere.ac('gorevler', {})
+  }
 
   function kare10(d, dt) {
     const b = bolgeAl(d)
@@ -69,8 +76,11 @@ export function kur(B) {
     yaz(el.elmas, tam(d.oyuncu.elmas))
     // Bölge adı ve görev ilerlemesi (Idle Miner'daki gibi seviye yerine)
     const n = A.GOREVLER.length, g = Math.min(n, b.gorev.sira)
+    const gd = g < n ? gorevDurumu(d, b) : null
+    const hazir = !!gd && (gd.hazir || gd.simdi >= gd.hedef)
     yaz(el.seviye, bolgeAdi(d.aktifBolge))
-    yaz(el.xpYazi, g >= n ? 'Bölge Ustası' : 'Görev ' + g + ' / ' + n)
+    yaz(el.xpYazi, g >= n ? 'Bölge Ustası' : hazir ? 'Görev hazır · Al' : 'Görev ' + g + ' / ' + n)
+    sinif(el.xp, 'hazir', hazir)
     cubuk(el.xp, g / n)
     if (sonGorevBolge === d.aktifBolge && g > sonGorev) canlandir(el.xp.firstElementChild, PARLA, 500)
     sonGorev = g; sonGorevBolge = d.aktifBolge
