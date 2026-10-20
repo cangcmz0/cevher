@@ -21,28 +21,30 @@ export const KADEME_ISTASYON = don(kademeListesi(800))    // 33 giriş
 
 // Bölgeler (§2.3). bedel: bölgeyi açmak için bir önceki bölgenin kasasından ödenen para (her prestij turunda yeniden).
 // Oyuncu seviyesi yok (Idle Miner gibi): ilerleme yalnız parayla.
+// Bedeller otomatik oyuncuyla ayarlandı: sürekli oynayan biri Beylikova'ya ~400 saatte ulaşır; bölgeler arası süre
+// Karabük'te ~10 saatten Beylikova'da ~90 saate uzar. Bergama'dan sonra adım küçülür (mühür artışı yavaşladığı için).
 export const BOLGELER = don([
   { kod: 'zonguldak', ad: 'Zonguldak', cevher: 'Kömür', bedel: 0, olcek: 1, zorluk: 1, asama: 1, alt: 'Maden Şehri', renk: '#2B2B33', vurgu: '#6E7480' },
   { kod: 'eregli', ad: 'Ereğli', cevher: 'Demir', bedel: 2e11, olcek: 1e3, zorluk: 1.5, asama: 2, alt: 'Demir & Liman', renk: '#7A3E2A', vurgu: '#C0714E' },
-  { kod: 'karabuk', ad: 'Karabük', cevher: 'Taş', bedel: 5e16, olcek: 1e6, zorluk: 2.25, asama: 2, alt: 'Taş Ocakları', renk: '#8C877C', vurgu: '#D2CCBE' },
-  { kod: 'kastamonu', ad: 'Kastamonu', cevher: 'Bakır', bedel: 3e20, olcek: 1e9, zorluk: 3.4, asama: 2, alt: 'Bakır Madenleri', renk: '#A8552A', vurgu: '#E9935A' },
-  { kod: 'balya', ad: 'Balya', cevher: 'Kurşun', bedel: 2e24, olcek: 1e12, zorluk: 5.1, asama: 2, alt: 'Kurşun & Çinko', renk: '#4A5560', vurgu: '#9AAAB8' },
-  { kod: 'afyon', ad: 'Afyon', cevher: 'Mermer', bedel: 2e28, olcek: 1e15, zorluk: 7.6, asama: 2, alt: 'Mermer Ocakları', renk: '#CFC8BC', vurgu: '#FFFFFF' },
-  { kod: 'keciborlu', ad: 'Keçiborlu', cevher: 'Kükürt', bedel: 2e32, olcek: 1e18, zorluk: 11.4, asama: 2, alt: 'Kükürt Madeni', renk: '#C9A21B', vurgu: '#FFE45A' },
-  { kod: 'bergama', ad: 'Bergama', cevher: 'Altın', bedel: 2e36, olcek: 1e21, zorluk: 17, asama: 2, alt: 'Altın Damarları', renk: '#B8860B', vurgu: '#FFD84A' },
-  { kod: 'gumushane', ad: 'Gümüşhane', cevher: 'Gümüş', bedel: 2e40, olcek: 1e24, zorluk: 25.6, asama: 2, alt: 'Gümüş Galerileri', renk: '#8A949E', vurgu: '#E8EEF4' },
-  { kod: 'elazig', ad: 'Elazığ', cevher: 'Krom', bedel: 2e44, olcek: 1e27, zorluk: 38, asama: 2, alt: 'Krom Ocakları', renk: '#3E4A44', vurgu: '#8FB0A0' },
-  { kod: 'kirka', ad: 'Kırka', cevher: 'Bor', bedel: 2e48, olcek: 1e30, zorluk: 57, asama: 2, alt: 'Bor Yatakları', renk: '#CFC4D8', vurgu: '#F6EEFC' },
-  { kod: 'beylikova', ad: 'Beylikova', cevher: 'Neodim', bedel: 2e52, olcek: 1e33, zorluk: 86, asama: 2, alt: 'Nadir Toprak Elementleri', renk: '#5A3A7A', vurgu: '#C49AF0' },
+  { kod: 'karabuk', ad: 'Karabük', cevher: 'Taş', bedel: 3e16, olcek: 1e6, zorluk: 2.25, asama: 2, alt: 'Taş Ocakları', renk: '#8C877C', vurgu: '#D2CCBE' },
+  { kod: 'kastamonu', ad: 'Kastamonu', cevher: 'Bakır', bedel: 4.5e21, olcek: 1e9, zorluk: 3.4, asama: 2, alt: 'Bakır Madenleri', renk: '#A8552A', vurgu: '#E9935A' },
+  { kod: 'balya', ad: 'Balya', cevher: 'Kurşun', bedel: 7e26, olcek: 1e12, zorluk: 5.1, asama: 2, alt: 'Kurşun & Çinko', renk: '#4A5560', vurgu: '#9AAAB8' },
+  { kod: 'afyon', ad: 'Afyon', cevher: 'Mermer', bedel: 1e32, olcek: 1e15, zorluk: 7.6, asama: 2, alt: 'Mermer Ocakları', renk: '#CFC8BC', vurgu: '#FFFFFF' },
+  { kod: 'keciborlu', ad: 'Keçiborlu', cevher: 'Kükürt', bedel: 1.5e37, olcek: 1e18, zorluk: 11.4, asama: 2, alt: 'Kükürt Madeni', renk: '#C9A21B', vurgu: '#FFE45A' },
+  { kod: 'bergama', ad: 'Bergama', cevher: 'Altın', bedel: 7e40, olcek: 1e21, zorluk: 17, asama: 2, alt: 'Altın Damarları', renk: '#B8860B', vurgu: '#FFD84A' },
+  { kod: 'gumushane', ad: 'Gümüşhane', cevher: 'Gümüş', bedel: 3e44, olcek: 1e24, zorluk: 25.6, asama: 2, alt: 'Gümüş Galerileri', renk: '#8A949E', vurgu: '#E8EEF4' },
+  { kod: 'elazig', ad: 'Elazığ', cevher: 'Krom', bedel: 1.4e48, olcek: 1e27, zorluk: 38, asama: 2, alt: 'Krom Ocakları', renk: '#3E4A44', vurgu: '#8FB0A0' },
+  { kod: 'kirka', ad: 'Kırka', cevher: 'Bor', bedel: 6e51, olcek: 1e30, zorluk: 57, asama: 2, alt: 'Bor Yatakları', renk: '#CFC4D8', vurgu: '#F6EEFC' },
+  { kod: 'beylikova', ad: 'Beylikova', cevher: 'Neodim', bedel: 3e55, olcek: 1e33, zorluk: 86, asama: 2, alt: 'Nadir Toprak Elementleri', renk: '#5A3A7A', vurgu: '#C49AF0' },
 ])
 export const BOLGE = don(Object.fromEntries(BOLGELER.map((b) => [b.kod, b])))
 export const BASLANGIC_PARA = 20                           // × olcek
 
 // Madenler (§2.4)
-// 30 kat (Idle Miner gibi); 15. kattan sonra her yeni kat bir öncekinin 20 katı
+// 30 kat (Idle Miner gibi); 15. kattan sonra her yeni kat bir öncekinin 6 katı (derin katlar uzun oyunun hedefi)
 export const MADEN_SAYISI = 30
 export const ACILIS = don([0, 40, 500, 2e4, 1e6, 6e7, 3e9, 1.2e11, 4e12, 1.2e14, 3e15, 6e16, 1.2e18, 2.4e19, 4.8e20,
-  ...Array.from({ length: 15 }, (_, k) => 4.8e20 * Math.pow(20, k + 1))])
+  ...Array.from({ length: 15 }, (_, k) => 4.8e20 * Math.pow(6, k + 1))])
 export const MADEN_URETIM_TABAN = 1
 export const MADEN_URETIM_ARTIS = 5
 export const MADEN_MALIYET_TABAN = 4
@@ -222,7 +224,7 @@ export const KONTRAT_MUSTERI = don({
 export const BASARIMLAR = don([
   { kod: 'kazanc', ad: 'Servet', metin: 'Toplam {n} kazan', esik: [1e4, 1e6, 1e8, 1e10, 1e12], buyuk: true },
   { kod: 'muhur', ad: 'Miras', metin: '{n} Miras Mührü topla', esik: [10, 100, 1000, 1e4, 1e5], buyuk: true },
-  { kod: 'kat', ad: 'Derinlere', metin: 'Bir bölgede {n} maden katı aç', esik: [5, 10, 15, 20, 30] },
+  { kod: 'kat', ad: 'Derinlere', metin: 'Bir bölgede {n} maden katı aç', esik: [5, 10, 14, 17, 20] },
   { kod: 'yukseltme', ad: 'Mühendis', metin: '{n} yükseltme yap', esik: [50, 250, 1000, 5000] },
   { kod: 'kademe', ad: 'Kademe Ustası', metin: '{n} kademe geç', esik: [10, 50, 200] },
   { kod: 'yonetici', ad: 'Ekip Lideri', metin: '{n} yönetici işe al', esik: [3, 10, 25] },

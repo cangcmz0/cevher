@@ -1480,14 +1480,14 @@ frames are baked lazily. Each frame only issues drawImage calls. Floors cycle th
 Prestige is a full restart in the style of Egg Inc and Idle Miner Tycoon:
 
 - **When:** any time after the tutorial, as long as the run would earn at least one seal. The `Yeni Nesil` story scene plays the first time five seals are waiting.
-- **Reward:** `Miras Mührü` (legacy seals) from this run's earnings, `⌊(Σ toplamKazanc / 1e10)^0.15⌋`. Each seal adds +10% to all sales, and the `Miras Bilgisi` research adds +1% per level. Seals add up across runs; `prestijCarpani = 1 + etki × mühür`.
+- **Reward:** `Miras Mührü` (legacy seals) depend on lifetime earnings, as in AdVenture Capitalist and Egg Inc: the right is `hak(L) = ⌊(L / 1e10)^0.15⌋`, where `L` is all earlier runs (`prestij.omur`) plus this run. A prestige pays `hak(omur + tur) − hak(omur)` and then adds the run to `omur`. Very short runs pay little, so runs get longer as the game goes on. Each seal adds +10% to all sales, and the `Miras Bilgisi` research adds +1% per level. Seals add up across runs; `prestijCarpani = 1 + etki × mühür`.
 - **Resets:** every region closes and Zonguldak starts again with one floor and 20 coins. Floors, stations, cash, managers hired with cash, quests and contracts are reset.
-- **Keeps:** player level and XP, elmas, research, partners, story, achievements and statistics. Managers who came from elmas, gifts or the shop (`kalici`) move to the new Zonguldak as well (at most 20, rarest first), and the first floor, elevator and depot get one each.
-- **Regions per run:** a region now needs both its level (a one-time gate, since the level is kept) and an opening cost paid from the previous region's cash: Ereğli 200 mr, Karabük 50 kn, Kastamonu 300 aa. Each cost is about 10–20 minutes of income at the point where the level allows it.
-- **No farming:** quest elmas and the `Bölge Ustası` elmas are paid only once per quest (`prestij.gorevRekor`). Level-up elmas cannot repeat because the level is kept.
-- **UI:** the Yöneticiler prestige card and the prestige sheet show the seals, the waiting seals, the multiplier before and after, progress to the next seal, and what resets and what stays. A red dot on the Yöneticiler tab marks the efficient moment, when the waiting seals reach half of the owned seals (at least 5). Region cards, the map and the regions sheet show the opening cost.
-- **Old saves:** each old prestige becomes 5 seals, so the multiplier stays the same. Quest records are filled from the current regions. Legendary managers count as `kalici`.
-- **Pacing:** this was measured with a bot playing the simulation and prestiging every 3 hours. The multiplier is ×80 after the first day of active play and ×900 after two days, after which it grows by roughly +1000 seals per run. The first run reaches Ereğli in about 70 minutes; Kastamonu (Lv.45) takes about 70 hours without prestige and opens in the 7th run with it.
+- **Keeps:** elmas, research, partners, story, achievements and statistics. Managers who came from elmas, gifts or the shop (`kalici`) move to the new Zonguldak as well (at most 20, rarest first), and the first floor, elevator and depot get one each.
+- **Regions per run:** a region opens in order, for an opening cost paid from the previous region's cash (§10.6). When the cash first reaches the cost, the region's story scene plays and the map card pulses.
+- **No farming:** quest elmas and the `Bölge Ustası` elmas are paid only once per quest (`prestij.gorevRekor`); region and floor elmas only the first time (`prestij.acilan`, `prestij.katRekor`).
+- **UI:** the Yöneticiler prestige card and the prestige sheet show the seals, the waiting seals, the multiplier before and after, progress to the next seal, and what resets and what stays. The sheet also shows lifetime earnings. A red dot on the Yöneticiler tab marks the efficient moment, when the waiting seals reach a quarter of the owned seals (at least 5). Region cards, the map and the regions sheet show the opening cost.
+- **Old saves:** each old prestige becomes 5 seals, so the multiplier stays the same. `omur` starts from `istatistik.prestijKazanc`. Quest records are filled from the current regions. Legendary managers count as `kalici`.
+- **Pacing:** see §10.6.
 
 All new state is in the save whitelist (`kayit.js`) and repaired by `dogrula`. Older saves get the new fields with
 defaults, and their partners unlock from tutorial/quest progress. Tests: `npm test` (48) and
@@ -1514,3 +1514,32 @@ The player level and XP are gone; progress is measured only in money, regions, f
 
 Locked regions show only a lock on their card (the card explains the order when tapped); the next region shows its opening cost, and an affordable one pulses.
 
+
+### 10.6 Pacing (200–1000 hours)
+
+Measured with an automated player that runs the real simulation, taps and upgrades every 2 s, hires managers, uses
+abilities, researches, opens floors when they cost less than 15 minutes of income, and prestiges when its seals per
+hour pass their peak (but not when the next region is close). It never sleeps, so a real player needs roughly
+1.5–2.5× these hours.
+
+| Region | Opening cost | First opened (bot hours) |
+|---|---|---|
+| Ereğli | 200 mr | 0.6 |
+| Karabük | 30 kt | 6 |
+| Kastamonu | 4,5 aa | 23 |
+| Balya | 700 ab | 37 |
+| Afyon | 100 ad | 65 |
+| Keçiborlu | 15 af | 99 |
+| Bergama | 70 ag | 152 |
+| Gümüşhane | 300 ah | 197 |
+| Elazığ | 1,4 aj | 250 |
+| Kırka | 6 ak | 322 |
+| Beylikova | 30 al | 417 |
+
+- The gap between regions grows from about 10 hours to about 90. Up to Keçiborlu each step costs ×150 more relative to the
+  region's scale; from Bergama on the step is ×4.5, because seals grow slowly late (lifetime earnings ^0.15).
+- Runs last about an hour early on and 10–100 hours late (37 prestiges in 500 hours). Seals reach about 5.5 million
+  (×780 000) when Beylikova opens.
+- Floors 16–30 cost ×6 per floor (×20 before), so the deepest floors are the long goal after the last region. The
+  `Derinlere` achievement tiers are 5/10/14/17/20 floors.
+- Knobs: `BOLGELER[].bedel`, `PRESTIJ.us`, `ACILIS`.
