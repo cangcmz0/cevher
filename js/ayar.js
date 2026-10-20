@@ -21,8 +21,8 @@ export const KADEME_ISTASYON = don(kademeListesi(800))    // 33 giriş
 
 // Bölgeler (§2.3). bedel: bölgeyi açmak için bir önceki bölgenin kasasından ödenen para (her prestij turunda yeniden).
 // Oyuncu seviyesi yok (Idle Miner gibi): ilerleme yalnız parayla.
-// Bedeller otomatik oyuncuyla ayarlandı: sürekli oynayan biri Beylikova'ya ~400 saatte ulaşır; bölgeler arası süre
-// Karabük'te ~10 saatten Beylikova'da ~90 saate uzar. Bergama'dan sonra adım küçülür (mühür artışı yavaşladığı için).
+// Bedeller otomatik oyuncuyla ayarlandı: sürekli oynayan biri Beylikova'ya ~440 saatte ulaşır; bölgeler arası süre
+// ~6 saatten ~100 saate uzar. Bergama'dan sonra adım küçülür (mühür artışı yavaşladığı için).
 export const BOLGELER = don([
   { kod: 'zonguldak', ad: 'Zonguldak', cevher: 'Kömür', bedel: 0, olcek: 1, zorluk: 1, asama: 1, alt: 'Maden Şehri', renk: '#2B2B33', vurgu: '#6E7480' },
   { kod: 'eregli', ad: 'Ereğli', cevher: 'Demir', bedel: 2e11, olcek: 1e3, zorluk: 1.5, asama: 2, alt: 'Demir & Liman', renk: '#7A3E2A', vurgu: '#C0714E' },
@@ -41,14 +41,20 @@ export const BOLGE = don(Object.fromEntries(BOLGELER.map((b) => [b.kod, b])))
 export const BASLANGIC_PARA = 20                           // × olcek
 
 // Madenler (§2.4)
-// 30 kat (Idle Miner gibi); 15. kattan sonra her yeni kat bir öncekinin 6 katı (derin katlar uzun oyunun hedefi)
+// 30 kat (Idle Miner gibi). DERIN_KAT'tan (indeks) sonra katlar "derin": açılış bedeli kat başına ×ACILIS_DERIN,
+// üretim kat başına ×MADEN_URETIM_DERIN büyür; böylece derin katlar uzun oyunun hedefi olarak ulaşılabilir kalır.
 export const MADEN_SAYISI = 30
-export const ACILIS = don([0, 40, 500, 2e4, 1e6, 6e7, 3e9, 1.2e11, 4e12, 1.2e14, 3e15, 6e16, 1.2e18, 2.4e19, 4.8e20,
-  ...Array.from({ length: 15 }, (_, k) => 4.8e20 * Math.pow(6, k + 1))])
+export const DERIN_KAT = 12
+export const ACILIS_DERIN = 8
+export const MADEN_URETIM_DERIN = 6.5
+export const ACILIS = don([0, 40, 500, 2e4, 1e6, 6e7, 3e9, 1.2e11, 4e12, 1.2e14, 3e15, 6e16,
+  ...Array.from({ length: MADEN_SAYISI - DERIN_KAT }, (_, k) => 6e16 * Math.pow(ACILIS_DERIN, k + 1))])
 export const MADEN_URETIM_TABAN = 1
 export const MADEN_URETIM_ARTIS = 5
 export const MADEN_MALIYET_TABAN = 4
 export const MADEN_MALIYET_ARTIS = 6
+// Derin katlarda (DERIN_KAT sonrası) seviye maliyetinin kat başına artışı
+export const MADEN_MALIYET_DERIN = 5
 export const MADEN_MALIYET_G = 1.10
 export const YIGIN_SANIYE = 90
 export const MAKS_MADEN_SEVIYE = 400

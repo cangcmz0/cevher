@@ -1528,18 +1528,20 @@ hour pass their peak (but not when the next region is close). It never sleeps, s
 | Karabük | 30 kt | 6 |
 | Kastamonu | 4,5 aa | 23 |
 | Balya | 700 ab | 37 |
-| Afyon | 100 ad | 65 |
-| Keçiborlu | 15 af | 99 |
-| Bergama | 70 ag | 152 |
-| Gümüşhane | 300 ah | 197 |
-| Elazığ | 1,4 aj | 250 |
-| Kırka | 6 ak | 322 |
-| Beylikova | 30 al | 417 |
+| Afyon | 100 ad | 67 |
+| Keçiborlu | 15 af | 110 |
+| Bergama | 70 ag | 155 |
+| Gümüşhane | 300 ah | 209 |
+| Elazığ | 1,4 aj | 270 |
+| Kırka | 6 ak | 345 |
+| Beylikova | 30 al | 443 |
 
-- The gap between regions grows from about 10 hours to about 90. Up to Keçiborlu each step costs ×150 more relative to the
+- The gap between regions grows from about 6 hours to about 100. Up to Keçiborlu each step costs ×150 more relative to the
   region's scale; from Bergama on the step is ×4.5, because seals grow slowly late (lifetime earnings ^0.15).
-- Runs last about an hour early on and 10–100 hours late (37 prestiges in 500 hours). Seals reach about 5.5 million
+- Runs last about an hour early on and 10–100 hours late (about 30 prestiges in 700 hours). Seals reach about 5.5 million
   (×780 000) when Beylikova opens.
-- Floors 16–30 cost ×6 per floor (×20 before), so the deepest floors are the long goal after the last region. The
-  `Derinlere` achievement tiers are 5/10/14/17/20 floors.
-- Knobs: `BOLGELER[].bedel`, `PRESTIJ.us`, `ACILIS`.
+- Deep floors start at floor 14 (`DERIN_KAT = 12`): opening costs ×8 per floor, production ×6.5 per floor and upgrade
+  costs ×5 per floor (×5 / ×6 above). A region is usually left with 14–16 floors, because the next region is opened as soon
+  as it is affordable; the last region reaches about 17 floors by 600 hours, so floors 18–30 are the completionist goal.
+  The `Derinlere` achievement tiers are 5/10/14/17/20 floors.
+- Knobs: `BOLGELER[].bedel`, `PRESTIJ.us`, `ACILIS`, `DERIN_KAT`, `ACILIS_DERIN`, `MADEN_URETIM_DERIN`, `MADEN_MALIYET_DERIN`.

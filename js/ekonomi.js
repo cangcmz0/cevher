@@ -3,7 +3,7 @@
 // b = bölge nesnesi (durum.bolgeler[kod]), d = durum. Seviye (L) verilmezse istasyonun şu anki seviyesi kullanılır.
 
 import {
-  KADEME_MADEN, KADEME_ISTASYON, BOLGE, BOLGELER, ACILIS, MADEN_URETIM_TABAN, MADEN_URETIM_ARTIS,
+  KADEME_MADEN, KADEME_ISTASYON, BOLGE, BOLGELER, ACILIS, MADEN_URETIM_TABAN, MADEN_URETIM_ARTIS, MADEN_URETIM_DERIN, DERIN_KAT, MADEN_MALIYET_DERIN,
   MADEN_MALIYET_TABAN, MADEN_MALIYET_ARTIS, MADEN_MALIYET_G, YIGIN_SANIYE, MAKS_MADEN_SEVIYE,
   ASANSOR_KAP_TABAN, ASANSOR_HIZ_TABAN, DURAK, BOSALTMA, ISTASYON_MALIYET_TABAN, ISTASYON_MALIYET_G,
   MAKS_ISTASYON_SEVIYE, TASIYICI_ESIK, TASIYICI_YUK_TABAN, DEPO_YOL_TABAN, YUKLEME, SATIS, DEPO_KAP_SANIYE,
@@ -115,14 +115,18 @@ const madenL = (b, i, L) => (L === undefined ? b.madenler[i].L : L)
 
 // ---- Madenler (§2.4) ----
 
+// Kat çarpanı: 15. kata kadar kat başına ×MADEN_URETIM_ARTIS, sonrası ×MADEN_URETIM_DERIN
+const katMaliyetCarpani = (i) => Math.pow(MADEN_MALIYET_ARTIS, Math.min(i, DERIN_KAT)) * Math.pow(MADEN_MALIYET_DERIN, Math.max(0, i - DERIN_KAT))
+const katCarpani = (i) => Math.pow(MADEN_URETIM_ARTIS, Math.min(i, DERIN_KAT)) * Math.pow(MADEN_URETIM_DERIN, Math.max(0, i - DERIN_KAT))
+
 export function madenUretim(d, b, i, L) {
-  return MADEN_URETIM_TABAN * Math.pow(MADEN_URETIM_ARTIS, i) * guc(madenL(b, i, L), KADEME_MADEN) * bolgeBilgi(d, b).olcek
+  return MADEN_URETIM_TABAN * katCarpani(i) * guc(madenL(b, i, L), KADEME_MADEN) * bolgeBilgi(d, b).olcek
 }
 
 // L -> L+1 maliyeti (Pazarlık hariç; o istasyonMaliyet'te)
 export function madenMaliyet(d, b, i, L) {
   const bb = bolgeBilgi(d, b)
-  return MADEN_MALIYET_TABAN * Math.pow(MADEN_MALIYET_ARTIS, i) * Math.pow(MADEN_MALIYET_G, madenL(b, i, L) - 1) *
+  return MADEN_MALIYET_TABAN * katMaliyetCarpani(i) * Math.pow(MADEN_MALIYET_G, madenL(b, i, L) - 1) *
     bb.zorluk * bb.olcek * (1 - 0.05 * ar(d, 'usta')) * (1 - ortakEtki(d, 'maliyet'))
 }
 
