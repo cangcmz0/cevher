@@ -31,13 +31,14 @@ const LOJ = [
 
 export const ortakEtkiYazi = (o, L) => o.metin.replace('{p}', Math.round((o.taban + o.artis * (Math.max(1, L) - 1)) * 100))
 
-// Mühür, sahip olunanın yarısını (en az 5) geçince prestij önerilir
-export const prestijOnerilir = (d) => prestijUygun(d) && bekleyenMuhur(d) >= Math.max(5, Math.ceil(d.prestij.muhur / 2))
+// Mühür hakkı ömür boyu kazanca bağlı; bekleyen mühür sahip olunanın dörtte birini (en az 5) geçince prestij önerilir
+const onerilenMuhur = (d) => Math.max(5, Math.ceil(d.prestij.muhur / 4))
+export const prestijOnerilir = (d) => prestijUygun(d) && bekleyenMuhur(d) >= onerilenMuhur(d)
 function prestijIpucu(d, p) {
   if (!d.ogretici.bitti) return 'Öğretici bitince açılır.'
   if (p < 1) return 'Bu turda daha çok kazan: ilk Miras Mührü için ilerleme çubuğunu doldur.'
-  if (prestijOnerilir(d)) return 'Şimdi başlamak verimli: kazanacağın mühür, sahip olduğunun yarısını geçti.'
-  return `Mührünün yarısını (${tam(Math.max(5, Math.ceil(d.prestij.muhur / 2)))}) geçince baştan başlamak daha verimli olur.`
+  if (prestijOnerilir(d)) return 'Şimdi başlamak verimli: kazanacağın mühür, sahip olduğunun dörtte birini geçti.'
+  return `Mührünün dörtte birini (${tam(onerilenMuhur(d))}) geçince baştan başlamak daha verimli olur. Uzun turlar daha çok mühür getirir.`
 }
 
 export function kur(B, govde) {
@@ -131,11 +132,11 @@ export function kur(B, govde) {
       const bb = A.BOLGE[k.kod]
       const a = bolgeAcilis(d, k.kod)
       sinif(k.b, 'aktif', d.aktifBolge === k.kod)
-      sinif(k.b, 'kilitli', a.durum === 'seviye' || a.durum === 'sira')
+      sinif(k.b, 'kilitli', a.durum === 'sira')
       sinif(k.b, 'bedel', a.durum === 'para')
       sinif(k.b, 'yeni', a.durum === 'hazir')
       yaz(k.yazi, d.aktifBolge === k.kod ? 'Buradasın' : a.durum === 'acik' ? 'Geç'
-        : a.durum === 'seviye' ? 'Sv.' + bb.acilisLv : a.durum === 'sira' ? 'Önce ' + A.BOLGE[a.kasa].ad : bicim(a.bedel))
+        : a.durum === 'sira' ? 'Önce ' + A.BOLGE[a.kasa].ad : bicim(a.bedel))
     }
     let tanisilan = 0
     for (const r of el.ortaklar) {
@@ -184,7 +185,7 @@ export function kur(B, govde) {
     yaz(el.pMuhur, tam(m))
     yaz(el.pCarpan, 'Bütün satışlar ×' + carpanYazi(E.prestijCarpani(d)))
     yaz(el.pBekleyen, '+' + tam(p))
-    const e0 = p ? E.muhurEsigi(p) : 0, e1 = E.muhurEsigi(p + 1)
+    const e0 = p ? E.muhurEsigi(d, p) : 0, e1 = E.muhurEsigi(d, p + 1)
     cubuk(el.pCubuk, (tk - e0) / (e1 - e0))
     yaz(el.pCubukYazi, `Sonraki mühür: ${bicim(tk)} / ${bicim(e1)}`)
     yaz(el.pIpucu, prestijIpucu(d, p))
@@ -349,22 +350,23 @@ export function hazirla(B) {
 
   // Prestij (Yeni Nesil): bu turun mührü, yeni çarpan, neyin sıfırlanıp neyin kaldığı; iki adımlı onay
   P.kaydet('prestij', (g) => {
-    g.innerHTML = `<div class="ot-ust">${simge('madalya', '', 76)}<div><h2>Prestij: Yeni Nesil</h2><small>Her şey baştan başlar; bu turda kazandığın para kalıcı Miras Mührüne dönüşür.</small></div></div>
+    g.innerHTML = `<div class="ot-ust">${simge('madalya', '', 76)}<div><h2>Prestij: Yeni Nesil</h2><small>Her şey baştan başlar. Mühür hakkın bütün turlarda kazandığın paraya bağlıdır; bu tur hakkını büyüttükçe yeni mühür kazanırsın.</small></div></div>
       <div class="ps-kahraman"><small>Kazanacağın Miras Mührü</small><b class="sayi ps-bekleyen"></b><span class="ps-carpan sayi"></span></div>
       <div class="kt-cubuk ps-cubuk"><i></i><span class="sayi"></span></div>
       <div class="ot-satirlar">
         <div class="ot-satir"><span>Miras Mührün</span><b class="sayi ps-muhur"></b></div>
         <div class="ot-satir"><span>Mühür başına</span><b class="sayi ps-etki"></b></div>
         <div class="ot-satir"><span>Bu turun kazancı</span><b class="sayi ps-tur"></b></div>
+        <div class="ot-satir"><span>Ömür boyu kazanç</span><b class="sayi ps-omur"></b></div>
         <div class="ot-satir"><span>Yapılan prestij</span><b class="sayi ps-sv"></b></div></div>
       <p class="sayfa-not"><b>Sıfırlanır:</b> bütün bölgeler (Zonguldak tek katla yeniden başlar), para, katlar, istasyonlar, parayla tutulan ustabaşılar, görevler ve kontratlar.<br>
-      <b>Kalır:</b> oyuncu seviyesi, elmaslar, araştırmalar, ortaklar, hikâye, başarımlar ve elmasla ya da hediyeyle gelen ustabaşılar. Bölgeleri yeniden açarken seviye şartı aranmaz, yalnız açılış bedeli ödenir; görevlerin elması yalnız ilk seferde verilir.</p>
+      <b>Kalır:</b> elmaslar, araştırmalar, ortaklar, hikâye, başarımlar ve elmasla ya da hediyeyle gelen ustabaşılar. Bölgeler yeniden açılış bedeliyle açılır; görev, kat ve bölge elmasları yalnız ilk seferde verilir.</p>
       <p class="ps-ipucu"></p>
       <button class="btn btn-turuncu ot-al ps-al" data-eylem="prestij-yap"></button>`
     simgeleriCiz(g, B)
     const e = {
       bekleyen: g.querySelector('.ps-bekleyen'), carpan: g.querySelector('.ps-carpan'), cubuk: g.querySelector('.ps-cubuk i'), cubukYazi: g.querySelector('.ps-cubuk span'),
-      muhur: g.querySelector('.ps-muhur'), etki: g.querySelector('.ps-etki'), tur: g.querySelector('.ps-tur'), sv: g.querySelector('.ps-sv'),
+      muhur: g.querySelector('.ps-muhur'), etki: g.querySelector('.ps-etki'), tur: g.querySelector('.ps-tur'), omur: g.querySelector('.ps-omur'), sv: g.querySelector('.ps-sv'),
       ipucu: g.querySelector('.ps-ipucu'), al: g.querySelector('.ps-al'),
     }
     return (d) => {
@@ -372,12 +374,13 @@ export function hazirla(B) {
       const c0 = E.prestijCarpani(d), c1 = 1 + E.muhurEtki(d) * (m + p)
       yaz(e.bekleyen, '+' + tam(p))
       yaz(e.carpan, `Bütün satışlar ×${carpanYazi(c0)} → ×${carpanYazi(c1)}`)
-      const e0 = p ? E.muhurEsigi(p) : 0, e1 = E.muhurEsigi(p + 1)
+      const e0 = p ? E.muhurEsigi(d, p) : 0, e1 = E.muhurEsigi(d, p + 1)
       cubuk(e.cubuk, (tk - e0) / (e1 - e0))
       yaz(e.cubukYazi, `Sonraki mühür: ${bicim(tk)} / ${bicim(e1)}`)
       yaz(e.muhur, `${tam(m)} · ×${carpanYazi(c0)}`)
       yaz(e.etki, `+%${Math.round(E.muhurEtki(d) * 100)} satış`)
       yaz(e.tur, bicim(tk))
+      yaz(e.omur, bicim((d.prestij.omur || 0) + tk))
       yaz(e.sv, d.prestij.sv ? `${d.prestij.sv} (en çok +${tam(d.prestij.enIyi)} mühür)` : 'Henüz yok')
       yaz(e.ipucu, prestijIpucu(d, p))
       const uygun = prestijUygun(d)

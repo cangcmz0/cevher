@@ -174,14 +174,12 @@ function sesler(liste) {
         Ses.cal('usta'); Ses.titret(15); break
       case 'yetenek':
         Ses.cal('yetenek'); break
-      case 'seviyeAtladi':
-        Ses.cal('ocak'); Ses.titret([20, 40, 20]); break
       case 'takviye':
         Ses.cal('davul'); break
       case 'gorevTamam':
         Ses.cal('gorev'); break
       case 'bolgeAcildi':
-        Ses.cal('kervan'); break
+        Ses.cal('kervan'); Ses.titret([20, 40, 20]); break
       case 'hazineCikti':
         Ses.cal('hazine'); break
       case 'hazineAlindi':

@@ -52,9 +52,9 @@ export function kur(B, govde) {
   }
 
   function kare2(d) {
-    const kilitli = d.oyuncu.lv < 3
+    const kilitli = !d.ogretici.bitti
     const s = d.arastirma.suren
-    yaz(el.soz, kilitli ? 'Zeynep: "Laboratuvar Seviye 3\'te hazır olacak. Sabırlı ol, numuneler çok umut verici!"'
+    yaz(el.soz, kilitli ? 'Zeynep: "Laboratuvar, ocağın ilk düzeni kurulunca hazır olacak. Numuneler çok umut verici!"'
       : s ? 'Zeynep: "Deneyler sürüyor. Bitince haber vereceğim."' : 'Zeynep: "Bir araştırma seç, madenleri birlikte geliştirelim!"')
     gizle(el.suren, !s)
     if (s) {

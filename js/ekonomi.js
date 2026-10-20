@@ -7,7 +7,7 @@ import {
   MADEN_MALIYET_TABAN, MADEN_MALIYET_ARTIS, MADEN_MALIYET_G, YIGIN_SANIYE, MAKS_MADEN_SEVIYE,
   ASANSOR_KAP_TABAN, ASANSOR_HIZ_TABAN, DURAK, BOSALTMA, ISTASYON_MALIYET_TABAN, ISTASYON_MALIYET_G,
   MAKS_ISTASYON_SEVIYE, TASIYICI_ESIK, TASIYICI_YUK_TABAN, DEPO_YOL_TABAN, YUKLEME, SATIS, DEPO_KAP_SANIYE,
-  HIZ_TAVAN, HIZ_ARTIS, KIRALAMA_TABAN, KIRALAMA_ARTIS, NADIRLIKLER, XP, SATIS_SEVIYE_ARTIS, YETENEKLER,
+  HIZ_TAVAN, HIZ_ARTIS, KIRALAMA_TABAN, KIRALAMA_ARTIS, NADIRLIKLER, YETENEKLER,
   LIMAN, AMBAR, ETKINLIKLER, PRESTIJ, BOLGE_USTASI_SATIS, CEVRIMDISI_SINIR_SAAT, ORTAKLAR,
 } from './ayar.js'
 
@@ -299,14 +299,23 @@ export function cevrimdisiSinir(d, b) {
 // Miras Mührü: her mühür bütün satışları +%10 (Miras Bilgisi araştırması seviye başına +%1) artırır
 export const muhurEtki = (d) => PRESTIJ.etki + 0.01 * ar(d, 'miras')
 export const prestijCarpani = (d) => 1 + muhurEtki(d) * ((d && d.prestij && d.prestij.muhur) || 0)
-// Bu turun kazancı (açık bölgelerin toplamı) ve prestij yapılırsa kazanılacak mühür
+// Bu turun kazancı (açık bölgelerin toplamı)
 export const turKazanc = (d) => Object.keys(d.bolgeler).reduce((s, k) => s + (d.bolgeler[k].toplamKazanc || 0), 0)
-export function muhurKazanci(kazanc) {
+// Mühür hakkı ömür boyu kazanca bağlıdır (AdVenture Capitalist / Egg Inc gibi):
+// hak = ⌊(ömür kazancı / eşik)^us⌋, prestij hakla önceki turlardan gelen hak arasındaki farkı verir.
+// Böylece çok kısa turlar az getirir; tur uzadıkça ve gelir büyüdükçe mühür artar.
+export function muhurHakki(kazanc) {
   if (!(kazanc >= PRESTIJ.esik)) return 0
   return Math.floor(Math.pow(kazanc / PRESTIJ.esik, PRESTIJ.us) + 1e-9)
 }
-// n mühür için gereken tur kazancı
-export const muhurEsigi = (n) => PRESTIJ.esik * Math.pow(Math.max(1, n), 1 / PRESTIJ.us)
+const omur = (d) => (d && d.prestij && d.prestij.omur) || 0
+// Prestij yapılırsa kazanılacak mühür
+export const muhurKazanci = (d) => Math.max(0, muhurHakki(omur(d) + turKazanc(d)) - muhurHakki(omur(d)))
+// Bekleyen mührün n olması için gereken tur kazancı
+export function muhurEsigi(d, n) {
+  const o = omur(d)
+  return Math.max(0, PRESTIJ.esik * Math.pow(muhurHakki(o) + Math.max(1, n), 1 / PRESTIJ.us) - o)
+}
 
 // Bölgeye özgü satış çarpanı: Liman × Bölge Ustası × bölge etkinliği
 export function bolgeSatis(d, b) {
@@ -322,7 +331,7 @@ export function bolgeSatis(d, b) {
 // b verilmezse aktif bölge
 export function satisKalici(d, b) {
   if (b === undefined) b = d.bolgeler && d.bolgeler[d.aktifBolge]
-  return (1 + SATIS_SEVIYE_ARTIS * (d.oyuncu.lv - 1)) * (1 + 0.10 * ar(d, 'pazar')) *
+  return (1 + 0.10 * ar(d, 'pazar')) *
     (ar(d, 'ihracat') ? 1.5 : 1) * (d.satin && d.satin.altinKazma ? 2 : 1) * prestijCarpani(d) * bolgeSatis(d, b) *
     (1 + ortakEtki(d, 'gelir'))
 }
@@ -368,15 +377,7 @@ export function toplamUretim(d, b) {
   return P * satisKalici(d, b)
 }
 
-// ---- XP (§2.11) ----
-
-export const xpGerek = (L) => Math.round(100 * L * Math.pow(XP.egriTaban, Math.max(0, L - XP.egriBaslangic)))
-
+// Gelir referansı: görev ve kontrat ödülleri bölgenin en iyi gelirine göre ölçeklenir
 export function gelirRef(d, b) {
   return Math.max(b.enIyiGelir || 0, 0.5 * bolgeBilgi(d, b).olcek)
-}
-
-// Para harcamasından XP: max(1, round(12 * harcama / (60 * gelirRef)))
-export function harcamaXp(d, b, para) {
-  return Math.max(1, Math.round(XP.harcamaKatsayi * para / (XP.harcamaSaniye * gelirRef(d, b))))
 }

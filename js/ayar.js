@@ -19,20 +19,21 @@ const kademeListesi = (son) => {
 export const KADEME_MADEN = don(kademeListesi(400))       // 17 giriş
 export const KADEME_ISTASYON = don(kademeListesi(800))    // 33 giriş
 
-// Bölgeler (§2.3). bedel: bölgeyi açmak için bir önceki bölgenin kasasından ödenen para (her prestij turunda yeniden)
+// Bölgeler (§2.3). bedel: bölgeyi açmak için bir önceki bölgenin kasasından ödenen para (her prestij turunda yeniden).
+// Oyuncu seviyesi yok (Idle Miner gibi): ilerleme yalnız parayla.
 export const BOLGELER = don([
-  { kod: 'zonguldak', ad: 'Zonguldak', cevher: 'Kömür', acilisLv: 1, bedel: 0, olcek: 1, zorluk: 1, asama: 1, alt: 'Maden Şehri', renk: '#2B2B33', vurgu: '#6E7480' },
-  { kod: 'eregli', ad: 'Ereğli', cevher: 'Demir', acilisLv: 15, bedel: 2e11, olcek: 1e3, zorluk: 1.5, asama: 2, alt: 'Demir & Liman', renk: '#7A3E2A', vurgu: '#C0714E' },
-  { kod: 'karabuk', ad: 'Karabük', cevher: 'Taş', acilisLv: 30, bedel: 5e16, olcek: 1e6, zorluk: 2.25, asama: 2, alt: 'Taş Ocakları', renk: '#8C877C', vurgu: '#D2CCBE' },
-  { kod: 'kastamonu', ad: 'Kastamonu', cevher: 'Bakır', acilisLv: 45, bedel: 3e20, olcek: 1e9, zorluk: 3.4, asama: 2, alt: 'Bakır Madenleri', renk: '#A8552A', vurgu: '#E9935A' },
-  { kod: 'balya', ad: 'Balya', cevher: 'Kurşun', acilisLv: 60, bedel: 2e24, olcek: 1e12, zorluk: 5.1, asama: 2, alt: 'Kurşun & Çinko', renk: '#4A5560', vurgu: '#9AAAB8' },
-  { kod: 'afyon', ad: 'Afyon', cevher: 'Mermer', acilisLv: 75, bedel: 2e28, olcek: 1e15, zorluk: 7.6, asama: 2, alt: 'Mermer Ocakları', renk: '#CFC8BC', vurgu: '#FFFFFF' },
-  { kod: 'keciborlu', ad: 'Keçiborlu', cevher: 'Kükürt', acilisLv: 90, bedel: 2e32, olcek: 1e18, zorluk: 11.4, asama: 2, alt: 'Kükürt Madeni', renk: '#C9A21B', vurgu: '#FFE45A' },
-  { kod: 'bergama', ad: 'Bergama', cevher: 'Altın', acilisLv: 105, bedel: 2e36, olcek: 1e21, zorluk: 17, asama: 2, alt: 'Altın Damarları', renk: '#B8860B', vurgu: '#FFD84A' },
-  { kod: 'gumushane', ad: 'Gümüşhane', cevher: 'Gümüş', acilisLv: 120, bedel: 2e40, olcek: 1e24, zorluk: 25.6, asama: 2, alt: 'Gümüş Galerileri', renk: '#8A949E', vurgu: '#E8EEF4' },
-  { kod: 'elazig', ad: 'Elazığ', cevher: 'Krom', acilisLv: 135, bedel: 2e44, olcek: 1e27, zorluk: 38, asama: 2, alt: 'Krom Ocakları', renk: '#3E4A44', vurgu: '#8FB0A0' },
-  { kod: 'kirka', ad: 'Kırka', cevher: 'Bor', acilisLv: 150, bedel: 2e48, olcek: 1e30, zorluk: 57, asama: 2, alt: 'Bor Yatakları', renk: '#CFC4D8', vurgu: '#F6EEFC' },
-  { kod: 'beylikova', ad: 'Beylikova', cevher: 'Neodim', acilisLv: 170, bedel: 2e52, olcek: 1e33, zorluk: 86, asama: 2, alt: 'Nadir Toprak Elementleri', renk: '#5A3A7A', vurgu: '#C49AF0' },
+  { kod: 'zonguldak', ad: 'Zonguldak', cevher: 'Kömür', bedel: 0, olcek: 1, zorluk: 1, asama: 1, alt: 'Maden Şehri', renk: '#2B2B33', vurgu: '#6E7480' },
+  { kod: 'eregli', ad: 'Ereğli', cevher: 'Demir', bedel: 2e11, olcek: 1e3, zorluk: 1.5, asama: 2, alt: 'Demir & Liman', renk: '#7A3E2A', vurgu: '#C0714E' },
+  { kod: 'karabuk', ad: 'Karabük', cevher: 'Taş', bedel: 5e16, olcek: 1e6, zorluk: 2.25, asama: 2, alt: 'Taş Ocakları', renk: '#8C877C', vurgu: '#D2CCBE' },
+  { kod: 'kastamonu', ad: 'Kastamonu', cevher: 'Bakır', bedel: 3e20, olcek: 1e9, zorluk: 3.4, asama: 2, alt: 'Bakır Madenleri', renk: '#A8552A', vurgu: '#E9935A' },
+  { kod: 'balya', ad: 'Balya', cevher: 'Kurşun', bedel: 2e24, olcek: 1e12, zorluk: 5.1, asama: 2, alt: 'Kurşun & Çinko', renk: '#4A5560', vurgu: '#9AAAB8' },
+  { kod: 'afyon', ad: 'Afyon', cevher: 'Mermer', bedel: 2e28, olcek: 1e15, zorluk: 7.6, asama: 2, alt: 'Mermer Ocakları', renk: '#CFC8BC', vurgu: '#FFFFFF' },
+  { kod: 'keciborlu', ad: 'Keçiborlu', cevher: 'Kükürt', bedel: 2e32, olcek: 1e18, zorluk: 11.4, asama: 2, alt: 'Kükürt Madeni', renk: '#C9A21B', vurgu: '#FFE45A' },
+  { kod: 'bergama', ad: 'Bergama', cevher: 'Altın', bedel: 2e36, olcek: 1e21, zorluk: 17, asama: 2, alt: 'Altın Damarları', renk: '#B8860B', vurgu: '#FFD84A' },
+  { kod: 'gumushane', ad: 'Gümüşhane', cevher: 'Gümüş', bedel: 2e40, olcek: 1e24, zorluk: 25.6, asama: 2, alt: 'Gümüş Galerileri', renk: '#8A949E', vurgu: '#E8EEF4' },
+  { kod: 'elazig', ad: 'Elazığ', cevher: 'Krom', bedel: 2e44, olcek: 1e27, zorluk: 38, asama: 2, alt: 'Krom Ocakları', renk: '#3E4A44', vurgu: '#8FB0A0' },
+  { kod: 'kirka', ad: 'Kırka', cevher: 'Bor', bedel: 2e48, olcek: 1e30, zorluk: 57, asama: 2, alt: 'Bor Yatakları', renk: '#CFC4D8', vurgu: '#F6EEFC' },
+  { kod: 'beylikova', ad: 'Beylikova', cevher: 'Neodim', bedel: 2e52, olcek: 1e33, zorluk: 86, asama: 2, alt: 'Nadir Toprak Elementleri', renk: '#5A3A7A', vurgu: '#C49AF0' },
 ])
 export const BOLGE = don(Object.fromEntries(BOLGELER.map((b) => [b.kod, b])))
 export const BASLANGIC_PARA = 20                           // × olcek
@@ -121,32 +122,6 @@ export const GECMIS_UZUNLUK = 10
 // Alım modları (§2.10)
 export const ALIM_MODLARI = don([1, 10, 50, 'max'])
 
-// Oyuncu seviyesi ve XP (§2.11)
-export const MAKS_SEVIYE = 200
-export const XP = don({
-  harcamaKatsayi: 12,      // max(1, round(12 * harcama / (60 * gelirRef)))
-  harcamaSaniye: 60,
-  kademe: 25,
-  madenAcma: 40,           // × maden numarası
-  yonetici: 20,
-  yetenek: 5,
-  egriTaban: 1.03,
-  egriBaslangic: 12,
-})
-export const SATIS_SEVIYE_ARTIS = 0.02
-// Seviye açılımları. S1'de yalnızca etkin olanlar olayda bildirilir.
-export const ACILIMLAR = don({
-  2: ['takviye'], 3: ['arastirma'], 5: ['teklif'], 15: ['eregli'], 30: ['karabuk'], 45: ['kastamonu'], 60: ['balya'],
-  75: ['afyon'], 90: ['keciborlu'], 105: ['bergama'], 120: ['gumushane'], 135: ['elazig'], 150: ['kirka'], 170: ['beylikova'],
-})
-export const ACILIM_ADLARI = don({
-  takviye: 'Kazanç x2 düğmesi', arastirma: 'Araştırma laboratuvarı', teklif: 'Mağazada Özel Teklif',
-  eregli: 'Ereğli (Demir) açılabilir', karabuk: 'Karabük (Taş) açılabilir', kastamonu: 'Kastamonu (Bakır) açılabilir',
-  balya: 'Balya (Kurşun) açılabilir', afyon: 'Afyon (Mermer) açılabilir', keciborlu: 'Keçiborlu (Kükürt) açılabilir',
-  bergama: 'Bergama (Altın) açılabilir', gumushane: 'Gümüşhane (Gümüş) açılabilir', elazig: 'Elazığ (Krom) açılabilir',
-  kirka: 'Kırka (Bor) açılabilir', beylikova: 'Beylikova (Neodim) açılabilir',
-})
-
 // Takviye (§2.12)
 export const TAKVIYE_DAKIKA = 30
 export const TAKVIYE_SINIR_SAAT = 4
@@ -178,52 +153,54 @@ export const ARASTIRMA_SURELER = don([120, 900, 3600, 10800, 28800, 57600])
 export const ARASTIRMA_MALIYET = don({ 1: [5, 15, 40, 90, 180, 350], 2: [10, 30, 80, 180], 3: [300] })
 export const ARASTIRMA_T3_SURE = 86400
 export const ARASTIRMALAR = don([
-  { kod: 'kazma', dal: 'Madencilik', ad: 'Keskin Kazmalar', tier: 1, sv: 5, sart: { lv: 3 } },
+  { kod: 'kazma', dal: 'Madencilik', ad: 'Keskin Kazmalar', tier: 1, sv: 5, sart: {} },
   { kod: 'damar', dal: 'Madencilik', ad: 'Damar Haritası', tier: 2, sv: 3, sart: { kazma: 1 } },
-  { kod: 'usta', dal: 'Madencilik', ad: 'Usta Madenciler', tier: 2, sv: 4, sart: { kazma: 2, lv: 10 } },
-  { kod: 'matkap', dal: 'Madencilik', ad: 'Elmas Matkap', tier: 3, sv: 1, sart: { usta: 2, lv: 30 } },
-  { kod: 'halat', dal: 'Taşıma', ad: 'Çelik Halat', tier: 1, sv: 5, sart: { lv: 3 } },
+  { kod: 'usta', dal: 'Madencilik', ad: 'Usta Madenciler', tier: 2, sv: 4, sart: { kazma: 2 } },
+  { kod: 'matkap', dal: 'Madencilik', ad: 'Elmas Matkap', tier: 3, sv: 1, sart: { usta: 2, bolge: 'karabuk' } },
+  { kod: 'halat', dal: 'Taşıma', ad: 'Çelik Halat', tier: 1, sv: 5, sart: {} },
   { kod: 'motor', dal: 'Taşıma', ad: 'Güçlü Motor', tier: 2, sv: 4, sart: { halat: 1 } },
-  { kod: 'ray', dal: 'Taşıma', ad: 'Raylı Yol', tier: 1, sv: 5, sart: { lv: 4 } },
+  { kod: 'ray', dal: 'Taşıma', ad: 'Raylı Yol', tier: 1, sv: 5, sart: {} },
   { kod: 'depo', dal: 'Taşıma', ad: 'Geniş Depo', tier: 2, sv: 3, sart: { ray: 1 } },
-  { kod: 'pazar', dal: 'Ticaret', ad: 'Pazar Bilgisi', tier: 1, sv: 5, sart: { lv: 4 } },
-  { kod: 'gece', dal: 'Ticaret', ad: 'Gece Vardiyası', tier: 1, sv: 6, sart: { lv: 5 } },
-  { kod: 'ihracat', dal: 'Ticaret', ad: 'İhracat Anlaşması', tier: 3, sv: 1, sart: { pazar: 3, lv: 25 } },
-  { kod: 'okul', dal: 'Yönetim', ad: 'Yönetici Okulu', tier: 2, sv: 3, sart: { lv: 6 } },
+  { kod: 'pazar', dal: 'Ticaret', ad: 'Pazar Bilgisi', tier: 1, sv: 5, sart: {} },
+  { kod: 'gece', dal: 'Ticaret', ad: 'Gece Vardiyası', tier: 1, sv: 6, sart: {} },
+  { kod: 'ihracat', dal: 'Ticaret', ad: 'İhracat Anlaşması', tier: 3, sv: 1, sart: { pazar: 3, bolge: 'eregli' } },
+  { kod: 'okul', dal: 'Yönetim', ad: 'Yönetici Okulu', tier: 2, sv: 3, sart: {} },
   { kod: 'dinlenme', dal: 'Yönetim', ad: 'Dinlenme Odası', tier: 2, sv: 3, sart: { okul: 1 } },
-  { kod: 'ik', dal: 'Yönetim', ad: 'İnsan Kaynakları', tier: 2, sv: 3, sart: { lv: 8 } },
-  { kod: 'miras', dal: 'Yönetim', ad: 'Miras Bilgisi', tier: 2, sv: 4, sart: { lv: 15 } },
+  { kod: 'ik', dal: 'Yönetim', ad: 'İnsan Kaynakları', tier: 2, sv: 3, sart: { okul: 1 } },
+  { kod: 'miras', dal: 'Yönetim', ad: 'Miras Bilgisi', tier: 2, sv: 4, sart: { bolge: 'eregli' } },
 ])
 
 // Görevler (§2.14, genişletilmiş): her bölgede aynı 15 koşul; başlık, açıklama ve hikâye js/hikaye.js'de.
 // para: dakika cinsinden gelirRef. tur: seviye {i, L} | yonetici | ac {n} | yon {ist} | yetenek {n} | L {ist, L} | kontrat {n} | liman {n}
 export const GOREVLER = don([
-  { tur: 'seviye', i: 0, L: 5, xp: 30, elmas: 5, para: 0 },
-  { tur: 'yonetici', xp: 40, elmas: 5, para: 0 },
-  { tur: 'ac', n: 2, xp: 50, elmas: 10, para: 0 },
-  { tur: 'yon', ist: 'asansor', xp: 50, elmas: 5, para: 0 },
-  { tur: 'yon', ist: 'depo', xp: 60, elmas: 10, para: 0 },
-  { tur: 'seviye', i: 0, L: 25, xp: 80, elmas: 10, para: 5 },
-  { tur: 'yetenek', n: 1, xp: 80, elmas: 10, para: 0 },
-  { tur: 'ac', n: 4, xp: 120, elmas: 15, para: 10 },
-  { tur: 'L', ist: 'asansor', L: 50, xp: 150, elmas: 15, para: 10 },
-  { tur: 'kontrat', n: 1, xp: 180, elmas: 20, para: 15 },
-  { tur: 'ac', n: 6, xp: 200, elmas: 20, para: 15 },
-  { tur: 'L', ist: 'depo', L: 100, xp: 250, elmas: 25, para: 20 },
-  { tur: 'liman', n: 3, xp: 300, elmas: 25, para: 20 },
-  { tur: 'ac', n: 8, xp: 400, elmas: 30, para: 30 },
-  { tur: 'ac', n: 11, xp: 600, elmas: 75, para: 45 },
+  { tur: 'seviye', i: 0, L: 5, elmas: 5, para: 0 },
+  { tur: 'yonetici', elmas: 5, para: 0 },
+  { tur: 'ac', n: 2, elmas: 10, para: 0 },
+  { tur: 'yon', ist: 'asansor', elmas: 5, para: 0 },
+  { tur: 'yon', ist: 'depo', elmas: 10, para: 0 },
+  { tur: 'seviye', i: 0, L: 25, elmas: 10, para: 5 },
+  { tur: 'yetenek', n: 1, elmas: 10, para: 0 },
+  { tur: 'ac', n: 4, elmas: 15, para: 10 },
+  { tur: 'L', ist: 'asansor', L: 50, elmas: 15, para: 10 },
+  { tur: 'kontrat', n: 1, elmas: 20, para: 15 },
+  { tur: 'ac', n: 6, elmas: 20, para: 15 },
+  { tur: 'L', ist: 'depo', L: 100, elmas: 25, para: 20 },
+  { tur: 'liman', n: 3, elmas: 25, para: 20 },
+  { tur: 'ac', n: 8, elmas: 30, para: 30 },
+  { tur: 'ac', n: 11, elmas: 75, para: 45 },
 ])
 export const BOLGE_USTASI_SATIS = 0.10     // bütün görevler bitince bölge satışı +%10
 export const BOLGE_USTASI_ELMAS = 100
-export const BOLGE_ACMA_XP = 250
+// İlk kez açılan bölge ve ilk kez açılan kat elmas verir (prestijden sonra yeniden açmak vermez)
+export const BOLGE_ACMA_ELMAS = 50
+export const KAT_ACMA_ELMAS = 3
 
 // Lojistik ve Altyapı: Liman (bölge satışı) ve Ambar (çevrimdışı sınırı). Maliyet = taban × g^L × zorluk × ölçek
 export const LIMAN = don({ taban: 2000, g: 30, maks: 20, satis: 0.08 })
 export const AMBAR = don({ taban: 1000, g: 25, maks: 16, dakika: 15 })
 
 // Kontratlar: hedef = otomatik cevher akışı × dk; ödül = gelirRef × dk × 30 sn + elmas
-export const KONTRAT = don({ dkTaban: 10, dkArtis: 5, dkTavan: 60, elmasTaban: 5, elmasArtis: 2, elmasTavan: 25, xpTaban: 50, xpArtis: 10 })
+export const KONTRAT = don({ dkTaban: 10, dkArtis: 5, dkTavan: 60, elmasTaban: 5, elmasArtis: 2, elmasTavan: 25 })
 export const KONTRAT_MUSTERI = don({
   zonguldak: ['Ereğli Çelik Fabrikası', 'Çatalağzı Termik Santrali', 'Kozlu Isınma Kooperatifi', 'Karadeniz Gemi Yakıtı'],
   eregli: ['Ereğli Çelik Fabrikası', 'İstanbul Tersanesi', 'Samsun Makine Sanayi', 'Karadeniz Gemi İnşa'],
@@ -239,13 +216,13 @@ export const KONTRAT_MUSTERI = don({
   beylikova: ['Mıknatıs Fabrikası', 'Rüzgâr Türbini Üreticisi', 'Elektrikli Araç Fabrikası', 'Teknopark'],
 })
 
-// Günlük misyonlar: her gün 3 tane (tarihe göre seçilir). n: [kolay, orta, zor] (oyuncu seviyesine göre)
-// Başarımlar: kademeli; her kademe elmas ve XP verir. İlerleme benzetim.basarimDeger'den, en iyi değer (rekor) saklanır
+// Günlük misyonlar: her gün 3 tane (tarihe göre seçilir). n: [kolay, orta, zor] (açılmış bölge sayısına göre)
+// Başarımlar: kademeli; her kademe elmas verir. İlerleme benzetim.basarimDeger'den, en iyi değer (rekor) saklanır
 // ki prestij sıfırlaması kazanılmış ilerlemeyi geri almasın. buyuk: hedef sayısı kısa biçimle yazılır (1 mn).
 export const BASARIMLAR = don([
   { kod: 'kazanc', ad: 'Servet', metin: 'Toplam {n} kazan', esik: [1e4, 1e6, 1e8, 1e10, 1e12], buyuk: true },
-  { kod: 'seviye', ad: 'Tecrübe', metin: 'Seviye {n} ol', esik: [10, 25, 50, 75, 100] },
-  { kod: 'kat', ad: 'Derinlere', metin: 'Bir bölgede {n} maden katı aç', esik: [5, 10, 15] },
+  { kod: 'muhur', ad: 'Miras', metin: '{n} Miras Mührü topla', esik: [10, 100, 1000, 1e4, 1e5], buyuk: true },
+  { kod: 'kat', ad: 'Derinlere', metin: 'Bir bölgede {n} maden katı aç', esik: [5, 10, 15, 20, 30] },
   { kod: 'yukseltme', ad: 'Mühendis', metin: '{n} yükseltme yap', esik: [50, 250, 1000, 5000] },
   { kod: 'kademe', ad: 'Kademe Ustası', metin: '{n} kademe geç', esik: [10, 50, 200] },
   { kod: 'yonetici', ad: 'Ekip Lideri', metin: '{n} yönetici işe al', esik: [3, 10, 25] },
@@ -253,15 +230,15 @@ export const BASARIMLAR = don([
   { kod: 'satis', ad: 'Tüccar', metin: '{n} vagon cevher sat', esik: [500, 5000, 50000] },
   { kod: 'hazine', ad: 'Hazine Avcısı', metin: '{n} hazine damarı topla', esik: [5, 25, 100] },
   { kod: 'kontrat', ad: 'Sözünün Eri', metin: '{n} kontrat teslim et', esik: [3, 15, 50] },
-  { kod: 'bolge', ad: 'Kâşif', metin: '{n} bölge aç', esik: [2, 3, 4] },
+  { kod: 'bolge', ad: 'Kâşif', metin: '{n} bölge aç', esik: [2, 4, 6, 9, 12] },
   { kod: 'dokunus', ad: 'Çalışkan Eller', metin: 'Madene {n} kez dokun', esik: [100, 1000, 10000] },
   { kod: 'prestij', ad: 'Efsane', metin: '{n} kez prestij yap', esik: [1, 3, 5] },
 ])
-export const BASARIM_ODUL = don({ elmas: [5, 10, 20, 35, 50], xp: [20, 40, 80, 150, 250] })
+export const BASARIM_ODUL = don({ elmas: [5, 10, 20, 35, 50] })
 
 // Hazine damarı: ara ara rastgele bir katta parlayan damar belirir; dokununca ödül verir, süresi dolunca söner.
 // Altın damarı gelirin 'saniye' kadarını (en az 'taban') verir; elmas damarı elmasMin..elmasMaks elmas.
-export const HAZINE = don({ ilk: 40, araMin: 70, araMaks: 140, omur: 24, saniye: 45, taban: 60, elmasOlasilik: 0.15, elmasMin: 2, elmasMaks: 5, xp: 6, minMaden: 2 })
+export const HAZINE = don({ ilk: 40, araMin: 70, araMaks: 140, omur: 24, saniye: 45, taban: 60, elmasOlasilik: 0.15, elmasMin: 2, elmasMaks: 5, minMaden: 2 })
 
 export const MISYONLAR = don([
   { kod: 'dokun', metin: 'Madencilere {n} kez dokun', sayac: 'dokunus', n: [20, 40, 60] },
@@ -273,7 +250,7 @@ export const MISYONLAR = don([
   { kod: 'takviye', metin: "Kazanç x2'yi {n} kez başlat", sayac: 'takviye', n: [1, 1, 2] },
   { kod: 'hazine', metin: '{n} hazine damarı topla', sayac: 'hazine', n: [2, 4, 6] },
 ])
-export const MISYON_ODUL = don({ elmas: [5, 8, 12], xp: [30, 50, 80], bonusElmas: 15 })
+export const MISYON_ODUL = don({ elmas: [5, 8, 12], bonusElmas: 15 })
 
 // Haftalık etkinlikler (pazartesi başlar, hafta numarasına göre döner)
 export const ETKINLIKLER = don([

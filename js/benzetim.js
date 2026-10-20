@@ -6,22 +6,22 @@
 // - satis {miktar, para, k}: k = taşıyıcı indeksi
 // - yoneticiAtandi {id, istasyon, eski, cikarilan}: istasyon null ise çıkarıldı
 // - yetenekBitti/yetenekHazir {istasyon, yonetici}: yonetici = kimlik
-// - seviyeAtladi {lv, elmas, acilan}: acilan = açılan özellik kodları dizisi (S1: ['takviye'] Lv. 2'de, yoksa [])
+// - bolgeAcilabilir {bolge}: bir önceki bölgenin kasası açılış bedelini ilk kez karşıladı
 // - darbogaz {tur}: tur null ise uyarı kalktı
-// Hata ayıklama eylemleri (harness için): 'xp' {miktar}, 'para' {miktar}
+// Hata ayıklama eylemi (harness için): 'para' {miktar}
 
 import {
   KADEME_MADEN, KADEME_ISTASYON, MADEN_SAYISI, KAZI_SURESI, DURAK, BOSALTMA, YUKLEME, SATIS, TASIYICI_ARALIK,
   MAKS_YONETICI, ELMAS_KIRALAMA, NADIRLIK_ODDS, YONETICI_TIPLERI, TIP_YETENEKLERI, ISIMLER, DARBOGAZ_YUKSEL,
-  DARBOGAZ_TEMIZLE, DEPO_BOSTA_SURE, GELIR_EMA_SURE, GECMIS_ARALIK, GECMIS_UZUNLUK, ALIM_MODLARI, MAKS_SEVIYE,
-  XP, ACILIMLAR, TAKVIYE_DAKIKA, TAKVIYE_SINIR_SAAT, OGRETICI_SON_ADIM, DARBOGAZ_ARALIK, GOREVLER, BOLGELER,
-  BOLGE, BOLGE_USTASI_ELMAS, BOLGE_ACMA_XP, LIMAN, AMBAR, KONTRAT, KONTRAT_MUSTERI, MISYONLAR, MISYON_ODUL,
+  DARBOGAZ_TEMIZLE, DEPO_BOSTA_SURE, GELIR_EMA_SURE, GECMIS_ARALIK, GECMIS_UZUNLUK, ALIM_MODLARI,
+  TAKVIYE_DAKIKA, TAKVIYE_SINIR_SAAT, OGRETICI_SON_ADIM, DARBOGAZ_ARALIK, GOREVLER, BOLGELER,
+  BOLGE, BOLGE_USTASI_ELMAS, BOLGE_ACMA_ELMAS, KAT_ACMA_ELMAS, LIMAN, AMBAR, KONTRAT, KONTRAT_MUSTERI, MISYONLAR, MISYON_ODUL,
   ETKINLIKLER, ARASTIRMALAR, ARASTIRMA_MALIYET, ARASTIRMA_SURELER, ARASTIRMA_T3_SURE, GUNLUK_HEDIYE,
   ELMAS_HARCAMA, TAKVIYE_MAGAZA_SINIR_SAAT, ORTAKLAR, ORTAK_MAKS, ORTAK_MALIYET, HAZINE, BASARIMLAR, BASARIM_ODUL,
 } from './ayar.js'
 import {
   madenUretim, uretimCarpani, yiginKap, asansorKap, asansorHiz, tasiyiciSayisi, tasiyiciYuk, depoYol, depoKap,
-  satisCarpani, kapasiteler, otoGelir, toplamUretim, xpGerek, harcamaXp, teklif, madenAcilis, kiralamaMaliyeti,
+  satisCarpani, kapasiteler, otoGelir, toplamUretim, teklif, madenAcilis, kiralamaMaliyeti,
   yoneticiBul, yetenekDurum, yetenekSuresi, yetenekBekleme, gecilenKademeler, gelirRef, bolgeBilgi,
   bolgeKodu, etkinlik, otoAkis, ar, limanMaliyet, ambarMaliyet, cevrimdisiSinir, turKazanc, muhurKazanci,
 } from './ekonomi.js'
@@ -85,6 +85,7 @@ export function adim(durum, dt, olaylar) {
     if (!(b.kontrat.hedef > 0)) kontratKur(durum, b)
     arastirmaKontrol(durum, olaylar)
     prestijKontrol(durum, olaylar)
+    bolgeAcilabilirKontrol(durum, olaylar)
     hazineKontrol(durum, b, c, olaylar)
     basarimKontrol(durum, c, olaylar)
   }
@@ -336,7 +337,7 @@ export function basarimDeger(d, kod) {
   const ist = d.istatistik, bl = Object.values(d.bolgeler)
   switch (kod) {
     case 'kazanc': return (ist.prestijKazanc || 0) + bl.reduce((s, b) => s + (b.toplamKazanc || 0), 0)
-    case 'seviye': return d.oyuncu.lv
+    case 'muhur': return d.prestij.muhur
     case 'kat': return bl.reduce((m, b) => Math.max(m, b.madenler.length), 0)
     case 'bolge': return bl.length
     case 'prestij': return d.prestij.sv
@@ -473,16 +474,15 @@ export function gorevIlerleme(d, b, i) {
   return v(0, 1)
 }
 
-// Görev ödülü: XP × (1 + 0,5 r), elmas, para = N dakikalık gelirRef (en az 50 × ölçek)
+// Görev ödülü: elmas (yalnız ilk sefer), para = N dakikalık gelirRef (en az 50 × ölçek)
 export function gorevOdulu(d, b, i) {
   const g = GOREVLER[i]
   if (!g) return null
   const bb = bolgeBilgi(d, b)
-  const r = Math.max(0, BOLGELER.indexOf(bb))
   const para = g.para ? Math.max(gelirRef(d, b) * g.para * 60, 50 * bb.olcek) : 0
-  // Elmas yalnız ilk kez: önceki prestij turlarında alınmış görevler yalnız XP ve para verir
+  // Elmas yalnız ilk kez: önceki prestij turlarında alınmış görevler yalnız para verir
   const rekor = (d.prestij && d.prestij.gorevRekor && d.prestij.gorevRekor[bb.kod]) || 0
-  return { xp: Math.round(g.xp * (1 + 0.5 * r)), elmas: i < rekor ? 0 : g.elmas, para }
+  return { elmas: i < rekor ? 0 : g.elmas, para }
 }
 
 // Şimdiki görevin durumu ya da null (hepsi bitti)
@@ -566,7 +566,6 @@ export function kontratDurumu(d, b) {
     odul: {
       para: gelirRef(d, b) * dk * 30 * e,
       elmas: Math.round(Math.min(KONTRAT.elmasTavan, KONTRAT.elmasTaban + KONTRAT.elmasArtis * n) * e),
-      xp: KONTRAT.xpTaban + KONTRAT.xpArtis * Math.min(n, 30),
     },
   }
 }
@@ -597,13 +596,13 @@ export function arastirmaTeklif(d, kod) {
   return { elmas, sure, sv }
 }
 
-// Şartlar sağlanıyor mu: {ok, eksik: 'Lv. 10' | 'Keskin Kazmalar 2' ...}
+// Şartlar sağlanıyor mu: {ok, eksik: 'Ereğli bölgesi' | 'Keskin Kazmalar 2' ...}
 export function arastirmaSart(d, kod) {
   const a = arastirmaBilgi(kod)
   if (!a) return { ok: false, eksik: '' }
   for (const k of Object.keys(a.sart)) {
     const gerek = a.sart[k]
-    if (k === 'lv') { if (d.oyuncu.lv < gerek) return { ok: false, eksik: 'Seviye ' + gerek } }
+    if (k === 'bolge') { if (!d.prestij.acilan.includes(gerek)) return { ok: false, eksik: BOLGE[gerek].ad + ' bölgesi' } }
     else if (ar(d, k) < gerek) return { ok: false, eksik: (arastirmaBilgi(k) || { ad: k }).ad + ' ' + gerek }
   }
   return { ok: true, eksik: '' }
@@ -621,7 +620,6 @@ function arastirmaBitir(d, olaylar) {
   d.arastirma.sv[s.kod] = (d.arastirma.sv[s.kod] || 0) + 1
   d.arastirma.suren = null
   yay(olaylar, { tip: 'arastirmaBitti', kod: s.kod, sv: d.arastirma.sv[s.kod] })
-  if (a) xpVer(d, 60 * a.tier, 'arastirma', olaylar)
   for (const k of Object.keys(d.bolgeler)) enIyiGuncelle(d, d.bolgeler[k])
   isaretle(d, true)
 }
@@ -649,20 +647,19 @@ export function oncekiBolge(kod) {
   const i = BOLGELER.findIndex((x) => x.kod === kod)
   return i > 0 ? BOLGELER[i - 1] : null
 }
-// Bölge açılabilir mi: { durum: 'acik' | 'seviye' | 'sira' | 'para' | 'hazir', bedel, kasa }
+// Bölge açılabilir mi: { durum: 'acik' | 'sira' | 'para' | 'hazir', bedel, kasa }
 export function bolgeAcilis(d, kod) {
   const bb = BOLGE[kod]
   if (d.bolgeler[kod]) return { durum: 'acik', bedel: 0, kasa: null }
   const ob = oncekiBolge(kod)
   const kasa = ob ? d.bolgeler[ob.kod] : null
-  if (d.oyuncu.lv < bb.acilisLv) return { durum: 'seviye', bedel: bb.bedel, kasa: ob && ob.kod }
   if (ob && !kasa) return { durum: 'sira', bedel: bb.bedel, kasa: ob.kod }
   if (kasa && kasa.para < bb.bedel) return { durum: 'para', bedel: bb.bedel, kasa: ob.kod, oran: kasa.para / bb.bedel }
   return { durum: 'hazir', bedel: bb.bedel, kasa: ob && ob.kod }
 }
 
 // Bu tur prestij yapılırsa kazanılacak Miras Mührü
-export const bekleyenMuhur = (d) => muhurKazanci(turKazanc(d))
+export const bekleyenMuhur = (d) => muhurKazanci(d)
 
 // Prestij her an yapılabilir; öğretici bitmiş ve en az bir mühür kazanılacak olmalı
 export function prestijUygun(d) {
@@ -684,22 +681,19 @@ export function uretimArtisi(durum) {
   return toplamUretim(durum, b) / eski - 1
 }
 
-// ---- XP ve seviye ----
+// ---- Bölge açılabilir duyurusu ----
 
-function xpVer(d, miktar, kaynak, olaylar) {
-  if (!(miktar > 0)) return
-  const o = d.oyuncu
-  o.xp += miktar
-  o.toplamXp += miktar
-  yay(olaylar, { tip: 'xp', miktar, kaynak })
-  while (o.lv < MAKS_SEVIYE && o.xp >= xpGerek(o.lv)) {
-    o.xp -= xpGerek(o.lv)
-    o.lv++
-    const elmas = 5 + o.lv
-    o.elmas += elmas
-    const acilan = (ACILIMLAR[o.lv] || []).slice()
-    yay(olaylar, { tip: 'seviyeAtladi', lv: o.lv, elmas, acilan })
-    for (const k of acilan) if (BOLGE[k]) hikayeEkle(d, k + '-acik', olaylar)
+// Bir önceki bölgenin kasası açılış bedelini ilk kez karşılayınca bölgenin hikâyesi oynar ("ruhsat bizde")
+function bolgeAcilabilirKontrol(d, olaylar) {
+  for (let i = 1; i < BOLGELER.length; i++) {
+    const bb = BOLGELER[i]
+    if (d.bolgeler[bb.kod]) continue
+    const kasa = d.bolgeler[BOLGELER[i - 1].kod]
+    if (!kasa || kasa.para < bb.bedel) continue
+    const id = bb.kod + '-acik'
+    if (d.hikaye.goruldu.includes(id) || d.hikaye.bekleyen.includes(id)) continue
+    yay(olaylar, { tip: 'bolgeAcilabilir', bolge: bb.kod })
+    hikayeEkle(d, id, olaylar)
   }
 }
 
@@ -735,7 +729,6 @@ const EYLEMLER = {
     const tk = teklif(d, b, ist, mod)
     if (tk.maks) return RED('maks')
     if (!tk.yetiyor) return RED('para')
-    const xp = harcamaXp(d, b, tk.maliyet)
     b.para -= tk.maliyet
     let eskiL, liste
     if (ist === 'asansor') { eskiL = b.asansor.L; b.asansor.L = tk.yeniL; liste = KADEME_ISTASYON }
@@ -745,8 +738,6 @@ const EYLEMLER = {
     d.istatistik.yukseltme++
     d.istatistik.kademe += kademeler.length
     yay(olaylar, { tip: 'yukseltildi', istasyon: ist, eskiL, yeniL: tk.yeniL, kademeler })
-    xpVer(d, xp, 'harcama', olaylar)
-    if (kademeler.length) xpVer(d, XP.kademe * kademeler.length, 'kademe', olaylar)
     enIyiGuncelle(d, b)
     yay(olaylar, { tip: 'paraDegisti' })
     isaretle(d, true)
@@ -762,17 +753,23 @@ const EYLEMLER = {
     if (i > n) return RED('kilit')
     const maliyet = madenAcilis(d, b, i)
     if (b.para < maliyet) return RED('para')
-    const xp = harcamaXp(d, b, maliyet)
     b.para -= maliyet
     b.madenler.push({ L: 1, yigin: 0, kalan: 0 })
     d.calisma.madenler[i] = { calisiyor: false, dolu: false }
     yay(olaylar, { tip: 'madenAcildi', i })
-    xpVer(d, xp, 'harcama', olaylar)
-    xpVer(d, XP.madenAcma * (i + 1), 'madenAcma', olaylar)
+    // Katı bu bölgede ilk kez açmak elmas verir (prestijden sonra yeniden açmak vermez)
+    const kod = bolgeKodu(d, b)
+    let elmas = 0
+    if ((d.prestij.katRekor[kod] || 1) <= i) {
+      d.prestij.katRekor[kod] = i + 1
+      elmas = KAT_ACMA_ELMAS
+      d.oyuncu.elmas += elmas
+    }
+    if (elmas) yay(olaylar, { tip: 'katElmasi', i, elmas })
     enIyiGuncelle(d, b)
     yay(olaylar, { tip: 'paraDegisti' })
     isaretle(d, true)
-    return { ok: true, maliyet }
+    return { ok: true, maliyet, elmas }
   },
 
   dokun(d, b, v, olaylar) {
@@ -849,7 +846,6 @@ const EYLEMLER = {
     y.atanan = hedef
     d.calisma.yetenekler[y.id] = 'hazir'
     yay(olaylar, { tip: 'yoneticiTutuldu', yonetici: y, istasyon: hedef })
-    xpVer(d, XP.yonetici, 'yonetici', olaylar)
     enIyiGuncelle(d, b)
     if (odeme === 'para') yay(olaylar, { tip: 'paraDegisti' })
     isaretle(d, true)
@@ -891,7 +887,6 @@ const EYLEMLER = {
     d.istatistik.yetenek++
     b.yetenekSay = (b.yetenekSay || 0) + 1
     yay(olaylar, { tip: 'yetenek', istasyon: v.istasyon, yonetici: y })
-    xpVer(d, XP.yetenek, 'yetenek', olaylar)
     isaretle(d, true)
     return TAMAM()
   },
@@ -988,7 +983,6 @@ const EYLEMLER = {
     gv.sira++
     gv.hazir = false
     yay(olaylar, { tip: 'gorevTamam', sira, ...odul })
-    xpVer(d, odul.xp, 'gorev', olaylar)
     const kod = bolgeKodu(d, b)
     const rekor = d.prestij.gorevRekor[kod] || 0
     d.prestij.gorevRekor[kod] = Math.max(rekor, gv.sira)
@@ -1026,7 +1020,6 @@ const EYLEMLER = {
     d.oyuncu.elmas -= maliyet
     d.ortak[o.kod] = L + 1
     yay(olaylar, { tip: 'ortakYukseldi', kod: o.kod, L: L + 1 })
-    xpVer(d, 20 * L, 'ortak', olaylar)
     for (const k of Object.keys(d.bolgeler)) enIyiGuncelle(d, d.bolgeler[k])
     isaretle(d, true)
     return { ok: true, L: L + 1, maliyet }
@@ -1049,9 +1042,8 @@ const EYLEMLER = {
     const bb = BOLGE[kod]
     if (!bb) return RED('gecersiz')
     if (kod === d.aktifBolge) return TAMAM()
-    let yeni = false
+    let yeni = false, elmasKazanc = 0
     if (!d.bolgeler[kod]) {
-      if (d.oyuncu.lv < bb.acilisLv) return RED('kilit')
       // Açılış bedeli bir önceki bölgenin kasasından ödenir (her prestij turunda yeniden)
       const ob = oncekiBolge(kod)
       if (ob) {
@@ -1078,7 +1070,12 @@ const EYLEMLER = {
     yay(olaylar, { tip: 'bolgeDegisti', bolge: kod, yeni, kazanc, sure })
     if (yeni) {
       yay(olaylar, { tip: 'bolgeAcildi', bolge: kod })
-      xpVer(d, BOLGE_ACMA_XP, 'bolge', olaylar)
+      // İlk kez açılan bölge elmas verir
+      if (!d.prestij.acilan.includes(kod)) {
+        d.prestij.acilan.push(kod)
+        d.oyuncu.elmas += BOLGE_ACMA_ELMAS
+        elmasKazanc = BOLGE_ACMA_ELMAS
+      }
     }
     if (!nb.giris) {
       nb.giris = true
@@ -1086,7 +1083,7 @@ const EYLEMLER = {
     }
     yay(olaylar, { tip: 'paraDegisti' })
     isaretle(d, true)
-    return { ok: true, yeni, kazanc, sure }
+    return { ok: true, yeni, kazanc, sure, elmas: elmasKazanc }
   },
 
   // Lojistik: {tur: 'liman' | 'ambar'}
@@ -1102,7 +1099,6 @@ const EYLEMLER = {
     b[tur] = L + 1
     d.istatistik.yukseltme++
     yay(olaylar, { tip: 'lojistik', tur, L: L + 1 })
-    xpVer(d, harcamaXp(d, b, maliyet), 'harcama', olaylar)
     enIyiGuncelle(d, b)
     yay(olaylar, { tip: 'paraDegisti' })
     isaretle(d, true)
@@ -1125,7 +1121,6 @@ const EYLEMLER = {
     k.hazir = false
     d.istatistik.kontrat++
     yay(olaylar, { tip: 'kontratTamam', ...o, musteri: kd.musteri })
-    xpVer(d, o.xp, 'kontrat', olaylar)
     kontratKur(d, b)
     gorevKontrol(d, b, olaylar)
     yay(olaylar, { tip: 'paraDegisti' })
@@ -1135,7 +1130,7 @@ const EYLEMLER = {
 
   // Araştırma başlat {kod}
   arastirmaBaslat(d, b, v, olaylar) {
-    if (d.oyuncu.lv < 3) return RED('kilit')
+    if (!d.ogretici.bitti) return RED('kilit')
     if (d.arastirma.suren) return RED('mesgul')
     const tk = arastirmaTeklif(d, v.kod)
     if (!tk) return RED('maks')
@@ -1194,7 +1189,6 @@ const EYLEMLER = {
     d.gunluk.son = gun
     d.gunluk.seri++
     yay(olaylar, { tip: 'gunlukAlindi', ...sonuc })
-    xpVer(d, 25, 'gunluk', olaylar)
     isaretle(d, true)
     return sonuc
   },
@@ -1253,13 +1247,12 @@ const EYLEMLER = {
     const n = il.kademe
     d.basarim.al[t.kod] = n + 1
     if (il.deger > (d.basarim.rekor[t.kod] || 0)) d.basarim.rekor[t.kod] = il.deger
-    const elmas = BASARIM_ODUL.elmas[n], xp = BASARIM_ODUL.xp[n]
+    const elmas = BASARIM_ODUL.elmas[n]
     d.oyuncu.elmas += elmas
     if (d.calisma.basarimHazir) d.calisma.basarimHazir[t.kod] = basarimIlerleme(d, t).alinabilir
-    yay(olaylar, { tip: 'basarimAlindi', kod: t.kod, kademe: n + 1, elmas, xp })
-    xpVer(d, xp, 'basarim', olaylar)
+    yay(olaylar, { tip: 'basarimAlindi', kod: t.kod, kademe: n + 1, elmas })
     isaretle(d, true)
-    return { ok: true, kademe: n + 1, elmas, xp }
+    return { ok: true, kademe: n + 1, elmas }
   },
 
   // Hazine damarına dokunuldu: ödül verilir, damar söner
@@ -1280,7 +1273,6 @@ const EYLEMLER = {
     }
     d.istatistik.hazine = (d.istatistik.hazine || 0) + 1
     yay(olaylar, { tip: 'hazineAlindi', kat: h.kat, tur: h.tur, yer: h.yer, para, elmas })
-    xpVer(d, HAZINE.xp, 'hazine', olaylar)
     isaretle(d, true)
     return { ok: true, tur: h.tur, kat: h.kat, para, elmas }
   },
@@ -1291,7 +1283,7 @@ const EYLEMLER = {
     if (!gun) return RED('gecersiz')
     const m = d.misyon
     if (m.gun === gun && m.liste.length) return TAMAM()
-    const zor = d.oyuncu.lv < 10 ? 0 : d.oyuncu.lv < 30 ? 1 : 2
+    const zor = d.prestij.acilan.length < 2 ? 0 : d.prestij.acilan.length < 4 ? 1 : 2
     const havuz = MISYONLAR.slice()
     let h = ozet(gun)
     const liste = []
@@ -1323,12 +1315,11 @@ const EYLEMLER = {
     const il = misyonIlerleme(d, x)
     if (il.simdi < il.hedef) return RED('kilit')
     x.alindi = true
-    const elmas = MISYON_ODUL.elmas[x.zor], xp = MISYON_ODUL.xp[x.zor]
+    const elmas = MISYON_ODUL.elmas[x.zor]
     d.oyuncu.elmas += elmas
-    yay(olaylar, { tip: 'misyonTamam', i: v.i, elmas, xp })
-    xpVer(d, xp, 'misyon', olaylar)
+    yay(olaylar, { tip: 'misyonTamam', i: v.i, elmas })
     isaretle(d, true)
-    return { ok: true, elmas, xp }
+    return { ok: true, elmas }
   },
 
   // Haftalık etkinliği ayarlar (arayüz takvime göre çağırır) {kod, bitis}
@@ -1343,11 +1334,12 @@ const EYLEMLER = {
     return TAMAM()
   },
 
-  // Prestij: her şey baştan (yalnız Zonguldak, tek kat); tur kazancına göre kalıcı Miras Mührü.
+  // Prestij: her şey baştan (yalnız Zonguldak, tek kat); ömür boyu kazanca göre kalıcı Miras Mührü.
   // Elmasla/hediyeyle gelen ustabaşılar yeni Zonguldak'a boşta geçer (ilk kat, asansör ve depoya kendiliğinden atanır).
   prestij(d, b, v, olaylar) {
     if (!prestijUygun(d)) return RED('kilit')
     const muhur = bekleyenMuhur(d)
+    d.prestij.omur = (d.prestij.omur || 0) + turKazanc(d)
     const tasinan = []
     for (const kod of Object.keys(d.bolgeler)) {
       const eski = d.bolgeler[kod]
@@ -1384,14 +1376,6 @@ const EYLEMLER = {
     return { ok: true, sv: d.prestij.sv, muhur, toplam: d.prestij.muhur }
   },
 
-  // Hata ayıklama / test düzeneği: XP ver (seviye atlama modalı için)
-  xp(d, b, v, olaylar) {
-    const m = +v.miktar
-    if (!(m > 0)) return RED('gecersiz')
-    xpVer(d, m, v.kaynak || 'hata', olaylar)
-    isaretle(d, true)
-    return TAMAM()
-  },
 
   // Hata ayıklama / test düzeneği: aktif bölgeye para ekle
   para(d, b, v, olaylar) {

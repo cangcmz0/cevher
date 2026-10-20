@@ -179,9 +179,9 @@ export const Arayuz = {
           B.sayfa.kapat()
           B.pencere.kapatSayfa()
           B.kaydirKonumu(1e9, { anim: false })
-          if (r.yeni) B.bildir('basari', `${bb.ad} bölgesi açıldı! +${A.BOLGE_ACMA_XP} XP`)
+          if (r.yeni) B.bildir('basari', `${bb.ad} bölgesi açıldı!${r.elmas ? ` +${r.elmas} elmas` : ''}`)
           else if (r.kazanc > 0) B.bildir('basari', `${bb.ad} sen yokken +${bicim(r.kazanc)} kazandı (${sure(Math.min(r.sure, 864000))})`)
-        } else if (r && r.sebep === 'kilit') B.bildir('bilgi', `${bb.ad} Seviye ${bb.acilisLv}'te açılır.`)
+        } else if (r && !r.ok) B.bildir('bilgi', bolgeKilitYazi(B.durumAl(), kod) || `${bb.ad} henüz açılamıyor.`)
         setTimeout(() => { gecis.classList.remove('acik'); gecisVar = false }, 450)
       }, 420)
     }

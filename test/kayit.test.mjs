@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import * as K from '../js/kayit.js'
 import * as B from '../js/benzetim.js'
 import { yeniDurum, dogrula } from '../js/durum.js'
-import { MADEN_SAYISI, MAKS_SEVIYE } from '../js/ayar.js'
+import { MADEN_SAYISI } from '../js/ayar.js'
 
 function bellekDepo(ilk = {}) {
   const m = new Map(Object.entries(ilk))
@@ -69,7 +69,9 @@ test('dogrula NaN ve aralık dışı değerleri düzeltir', () => {
   assert.equal(b.madenler[0].L, 400)
   assert.equal(b.madenler[0].yigin, 0)
   assert.equal(b.asansor.L, 1)
-  assert.equal(s.oyuncu.lv, MAKS_SEVIYE)
+  // eski seviye alanı kaldırılır; en çok 100. seviye sayılıp mühüre çevrilir
+  assert.equal(s.oyuncu.lv, undefined)
+  assert.equal(s.prestij.muhur, 19)
   assert.equal(b.yoneticiler.length, 0)
 })
 

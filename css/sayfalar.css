@@ -31,17 +31,44 @@
 .sayfa-govde { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; padding: 0 0 16px; }
 .sayfa-not { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .28); border: 1px solid var(--cerceve); font: 500 12px/16px var(--f-govde); color: var(--acik-soluk); }
 
-/* ── Harita: kodla çizilmiş kıyı haritası, üstünde bölge kartları ve hareketli öğeler ── */
+/* ── Harita: kodla çizilmiş üç bölgesel harita, üstünde bölge kartları ve hareketli öğeler ── */
 .hr { padding-top: 0 !important; }
+/* Harita sekmeleri: ahşap şerit üstünde üç levha */
+.hr-sekmeler {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px;
+  margin: 0 -10px; padding: 6px 8px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .25), rgba(0, 0, 0, .45)), var(--doku-tahta, #4A2E18);
+  background-size: auto, 160px;
+  border-bottom: 2px solid #2A1A0E;
+}
+.hr-sekme {
+  position: relative; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 4px 4px 5px; border-radius: 10px;
+  border: 2px solid transparent;
+  background: var(--pano-zemin) padding-box, linear-gradient(180deg, #6A5640, #3A2A1A) border-box;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .45);
+  color: var(--acik-soluk);
+  transition: transform .14s var(--yay);
+}
+.hr-sekme b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 12.5px/15px var(--f-baslik); }
+.hr-sekme small { display: inline-flex; align-items: center; gap: 2px; font: 700 10.5px/12px var(--f-govde); color: #FFD36B; }
+.hr-sekme small .ik { width: 10px; height: 10px; }
+.hr-sekme.secili { background: var(--pano-zemin) padding-box, var(--pano-cerceve) border-box; color: #FFF4DE; box-shadow: 0 0 0 2px rgba(246, 196, 83, .25), 0 3px 6px rgba(0, 0, 0, .5); }
+.hr-sekme.kilitli small { color: var(--acik-soluk); }
+.hr-sekme.kilitli:not(.secili) b { opacity: .75; }
+.hr-sekme:active { transform: scale(.96); }
 .hr-harita {
   position: relative;
   margin: 0 -10px;
   aspect-ratio: 360 / 440;
+  container-type: inline-size;
   overflow: hidden;
   background: #2A86BC;
   box-shadow: 0 4px 0 #3E2A16, 0 6px 14px rgba(0, 0, 0, .55);
 }
 .hr-tuval { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hr-katman { position: absolute; inset: 0; }
 .hr-bas { position: absolute; left: 12px; top: 10px; pointer-events: none; }
 .hr-bas h2 { font: 800 22px/25px var(--f-baslik); color: #FFF4DE; text-shadow: 0 2px 0 rgba(10, 40, 70, .8), 0 0 10px rgba(0, 30, 60, .6); }
 .hr-bas small { font: 600 12px/15px var(--f-govde); color: #E6F4FF; text-shadow: 0 1px 2px rgba(0, 30, 60, .9); }
@@ -74,7 +101,7 @@
 }
 .hr-bolge .simge { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6)); }
 .hr-b-yazi { display: flex; flex-direction: column; min-width: 0; }
-.hr-b-yazi b { font: 800 13.5px/15px var(--f-baslik); }
+.hr-b-yazi b { overflow: hidden; text-overflow: ellipsis; font: 800 13.5px/15px var(--f-baslik); }
 .hr-b-yazi small { font: 500 10px/12px var(--f-govde); color: var(--acik-soluk); overflow: hidden; text-overflow: ellipsis; }
 .hr-b-durum { display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; padding: 3px 6px; border-radius: 8px; background: rgba(0, 0, 0, .45); font: 800 11px/1 var(--f-govde); color: #FFD36B; }
 .hr-b-durum .ik { width: 11px; height: 11px; }
@@ -93,9 +120,9 @@
 .hr-hale.acilabilir { box-shadow: 0 0 0 2px rgba(246, 196, 83, .95), 0 0 16px rgba(246, 196, 83, .6); }
 @keyframes hr-hale { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
 /* Gemi, bulut, duman */
-.hr-gemi { position: absolute; left: 0; margin-top: -26px; pointer-events: none; animation: hr-gemi 38s linear infinite; }
-.hr-gemi .simge { width: 34px; height: 34px; animation: hr-salin 2.6s ease-in-out infinite; }
-@keyframes hr-gemi { 0% { transform: translateX(-40px); opacity: 0; } 4% { opacity: 1; } 46% { opacity: 1; } 52% { transform: translateX(min(52vw, 230px)); opacity: 0; } 100% { transform: translateX(min(52vw, 230px)); opacity: 0; } }
+.hr-gemi { position: absolute; left: 0; margin-top: calc(var(--boy, 34px) * -.76); pointer-events: none; animation: hr-gemi 38s linear infinite; }
+.hr-gemi .simge { width: var(--boy, 34px); height: var(--boy, 34px); animation: hr-salin 2.6s ease-in-out infinite; }
+@keyframes hr-gemi { 0% { transform: translateX(0); opacity: 0; } 4% { opacity: 1; } 46% { opacity: 1; } 52% { transform: translateX(var(--yol, min(52vw, 230px))); opacity: 0; } 100% { transform: translateX(var(--yol, min(52vw, 230px))); opacity: 0; } }
 @keyframes hr-salin { 50% { transform: translateY(1.5px) rotate(-2deg); } }
 .hr-bulut {
   position: absolute; left: 0; width: 120px; height: 34px; pointer-events: none;
@@ -111,6 +138,7 @@
 @keyframes hr-bulut { from { transform: translateX(-140px); } to { transform: translateX(min(110vw, 520px)); } }
 .hr-duman { position: absolute; width: 0; height: 0; pointer-events: none; font-style: normal; }
 .hr-duman > i { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: rgba(230, 236, 240, .75); animation: hr-duman 2.7s ease-out infinite; animation-delay: var(--g, 0s); opacity: 0; }
+.hr-duman.sari > i { background: rgba(246, 232, 150, .8); }
 .hr-duman > i:nth-child(2) { animation-delay: calc(var(--g, 0s) - .9s); }
 .hr-duman > i:nth-child(3) { animation-delay: calc(var(--g, 0s) - 1.8s); }
 @keyframes hr-duman { 0% { transform: translate(0, 0) scale(.5); opacity: .85; } 100% { transform: translate(10px, -26px) scale(2.2); opacity: 0; } }

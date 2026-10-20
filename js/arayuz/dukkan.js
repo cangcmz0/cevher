@@ -78,7 +78,7 @@ export function kur(B, govde) {
     for (const u of el.urunler) {
       const ur = urunler.find((x) => x.id === u.id)
       const sahip = Magaza.sahip(ur)
-      const gizli = u.id === 'baslangic' && d.oyuncu.lv < 5
+      const gizli = u.id === 'baslangic' && !d.ogretici.bitti
       gizle(u.el, gizli)
       u.btn.disabled = sahip
       if (sahip) yaz(u.btn.firstElementChild, 'Alındı')

@@ -3,7 +3,7 @@
 
 import {
   SURUM, BOLGE, BOLGELER, BASLANGIC_PARA, MADEN_SAYISI, MAKS_MADEN_SEVIYE, MAKS_ISTASYON_SEVIYE,
-  MAKS_SEVIYE, YONETICI_TIPLERI, TIP_YETENEKLERI, NADIRLIKLER, ALIM_MODLARI, GECMIS_UZUNLUK, OGRETICI_SON_ADIM,
+  YONETICI_TIPLERI, TIP_YETENEKLERI, NADIRLIKLER, ALIM_MODLARI, GECMIS_UZUNLUK, OGRETICI_SON_ADIM,
   LIMAN, AMBAR, GOREVLER, ORTAKLAR, ORTAK_MAKS, BASARIMLAR, PRESTIJ,
 } from './ayar.js'
 import { tasiyiciSayisi } from './ekonomi.js'
@@ -52,7 +52,7 @@ export function yeniDurum(simdiMs = Date.now(), tohum) {
     son: simdiMs,
     enGec: simdiMs,
     zaman: 0,
-    oyuncu: { lv: 1, xp: 0, toplamXp: 0, elmas: 0 },
+    oyuncu: { elmas: 0 },
     aktifBolge: 'zonguldak',
     bolgeler: { zonguldak: yeniBolge('zonguldak') },
     takviye: { bitis: 0 },
@@ -72,8 +72,10 @@ export function yeniDurum(simdiMs = Date.now(), tohum) {
     misyon: { gun: '', liste: [], bonus: false },
     etkinlik: { kod: '', bitis: 0 },
     // Prestij: sv = yapılan prestij sayısı, muhur = Miras Mührü (kalıcı satış bonusu), enIyi = bir turda en çok mühür,
-    // gorevRekor = bölge görevlerinin şimdiye dek alınan en ileri sırası (elmas ödülü yalnız ilk kez)
-    prestij: { sv: 0, muhur: 0, enIyi: 0, hazirGoruldu: false, gorevRekor: {} },
+    // gorevRekor = bölge görevlerinin şimdiye dek alınan en ileri sırası, katRekor = bölgede şimdiye dek açılan kat
+    // sayısı, acilan = şimdiye dek açılmış bölgeler (elmas ödülleri yalnız ilk sefer; araştırma şartları)
+    // omur = önceki turların toplam kazancı (mühür hakkı buna bağlı)
+    prestij: { sv: 0, muhur: 0, omur: 0, enIyi: 0, hazirGoruldu: false, gorevRekor: {}, katRekor: {}, acilan: ['zonguldak'] },
     ortak: { ahmet: 1, elif: 0, mehmet: 0, zeynep: 0 },
   }
   d.calisma = yeniCalisma(d)
@@ -223,10 +225,16 @@ export function dogrula(d) {
   const tohum = d.tohum
   // Miras Mührü öncesi kayıt: eski prestijler (her biri ×0,5) mühüre çevrilir
   const eskiPrestij = !duzObje(d.prestij) || !('muhur' in d.prestij)
+  // Ömür kazancı öncesi kayıt: önceki turların kazancı istatistikten alınır
+  const omurYok = !duzObje(d.prestij) || !('omur' in d.prestij)
+  // Seviye sistemi öncesi kayıt: seviye başına +%2 satış bonusu mühüre çevrilir (5 seviye = 1 mühür)
+  const eskiLv = duzObje(d.oyuncu) && typeof d.oyuncu.lv === 'number' && Number.isFinite(d.oyuncu.lv) ? Math.min(100, Math.max(1, Math.floor(d.oyuncu.lv))) : 1
   birlestir(d, v)
+  delete d.oyuncu.lv
+  delete d.oyuncu.xp
+  delete d.oyuncu.toplamXp
   d.surum = SURUM
   d.tohum = typeof tohum === 'number' && Number.isFinite(tohum) ? tohum >>> 0 : (Date.now() >>> 0)
-  d.oyuncu.lv = sinirla(d.oyuncu.lv, 1, MAKS_SEVIYE, 1)
   // bölgeler
   const bolgeler = {}
   for (const kod of Object.keys(duzObje(d.bolgeler) ? d.bolgeler : {})) {
@@ -256,6 +264,8 @@ export function dogrula(d) {
   d.prestij.sv = Math.floor(sayi(d.prestij.sv))
   d.prestij.muhur = Math.floor(sayi(d.prestij.muhur))
   if (eskiPrestij) d.prestij.muhur = d.prestij.sv * PRESTIJ.eskiSv
+  if (eskiLv > 1) d.prestij.muhur += Math.floor((eskiLv - 1) / 5)
+  d.prestij.omur = sayi(omurYok ? d.istatistik.prestijKazanc : d.prestij.omur)
   d.prestij.enIyi = Math.floor(sayi(d.prestij.enIyi))
   const gr = {}
   for (const kod of Object.keys(BOLGE)) {
@@ -263,6 +273,15 @@ export function dogrula(d) {
     if (r > 0) gr[kod] = r
   }
   d.prestij.gorevRekor = gr
+  const kr = {}
+  for (const kod of Object.keys(BOLGE)) {
+    const n = Math.max(sinirla(duzObje(d.prestij.katRekor) ? d.prestij.katRekor[kod] : 0, 0, MADEN_SAYISI, 0), bolgeler[kod] ? bolgeler[kod].madenler.length : 0)
+    if (n > 1) kr[kod] = n
+  }
+  d.prestij.katRekor = kr
+  const acilan = new Set(['zonguldak', ...Object.keys(bolgeler)])
+  for (const k of Array.isArray(d.prestij.acilan) ? d.prestij.acilan : []) if (BOLGE[k]) acilan.add(k)
+  d.prestij.acilan = BOLGELER.map((b) => b.kod).filter((k) => acilan.has(k))
   // başarımlar: tanınan kodlar, kademe 0..esik sayısı, rekor sonlu ve negatif değil
   const al = {}, rekor = {}
   for (const t of BASARIMLAR) {

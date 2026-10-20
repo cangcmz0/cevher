@@ -1,13 +1,14 @@
 // Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
-//  ÜST (görsel yön 2) — HUD (madenci portresi, "Seviye 12", XP çubuğu,
-//  para ve elmas hapları, dişli) ve üç sütunlu istatistik şeridi
-//  (Günlük Üretim, Depo Doluluğu, Gelir).
+//  ÜST (görsel yön 2) — HUD (madenci portresi, bölge adı, görev
+//  ilerleme çubuğu, para ve elmas hapları, dişli) ve üç sütunlu
+//  istatistik şeridi (Günlük Üretim, Depo Doluluğu, Gelir).
+//  • Oyuncu seviyesi yok: ilerleme bölge görevleri ve parayla ölçülür.
 //  • Para sayacı gerçek değere 250 ms zaman sabitiyle yaklaşır;
 //    harcamada hemen düşer. Metin en çok 10/sn ve yalnız değişince yazılır.
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
-import { E, yaz, sinif, cubuk, bicim, oranYazi, tam, yuzde, artiYuzde, bolgeAl, canlandir, PARLA, ozellik } from './ortak.js'
+import { A, E, yaz, sinif, cubuk, bicim, oranYazi, tam, yuzde, artiYuzde, bolgeAl, bolgeAdi, canlandir, PARLA, ozellik } from './ortak.js'
 import { uretimArtisi } from '../benzetim.js'
 
 
@@ -15,8 +16,8 @@ export function kur(B) {
   const ust = B.kok.querySelector('#ust')
   ust.innerHTML = `
     <button class="ust-avatar" data-eylem="avatar" aria-label="Oyuncu"><img src="img/ref/avatar.png" alt="" draggable="false"></button>
-    <b class="ust-seviye sayi">Seviye 1</b>
-    <span class="ust-xp" role="progressbar" aria-label="Deneyim"><i></i><span class="sayi">0 / 100</span></span>
+    <b class="ust-seviye">Zonguldak</b>
+    <button class="ust-xp" data-eylem="harita-gorevler" role="progressbar" aria-label="Bölge görevleri"><i></i><span class="sayi">Görev 0 / 15</span></button>
     <div class="ust-para hap"><img class="hud-ikon" src="img/ref/hud-para.png" alt="" draggable="false"><b class="sayi">0</b><button class="arti-btn" data-eylem="magaza-yakinda" aria-label="Para al">${ikon('arti')}</button></div>
     <div class="ust-elmas hap"><img class="hud-ikon" src="img/ref/hud-elmas.png" alt="" draggable="false"><b class="sayi">0</b><button class="arti-btn" data-eylem="magaza-yakinda" aria-label="Elmas al">${ikon('arti')}</button></div>
     <button class="ust-ayar" data-eylem="ayarlar" aria-label="Ayarlar">${ikon('ayar')}</button>`
@@ -52,7 +53,7 @@ export function kur(B) {
   let istBolge = B.durumAl().aktifBolge
 
   let gosterilenPara = null
-  let sonLv = 0
+  let sonGorev = -1, sonGorevBolge = ''
 
   const BILGI = ['Bütün katların saniyelik üretimi.', 'Depodaki cevherin doluluk oranı.', 'Satıştan gelen saniyelik kazanç.']
   B.eylemler.istatistik = (b) => B.bildir('bilgi', BILGI[+b.dataset.k] || BILGI[0])
@@ -66,13 +67,13 @@ export function kur(B) {
     if (Math.abs(gercek - gosterilenPara) < Math.max(0.5, gercek * 1e-4)) gosterilenPara = gercek
     yaz(el.para, bicim(gosterilenPara))
     yaz(el.elmas, tam(d.oyuncu.elmas))
-    const o = d.oyuncu
-    const gerek = E.xpGerek(o.lv)
-    yaz(el.seviye, 'Seviye ' + o.lv)
-    yaz(el.xpYazi, o.lv >= 100 ? 'MAKS' : tam(o.xp) + ' / ' + tam(gerek))
-    cubuk(el.xp, o.lv >= 100 ? 1 : o.xp / gerek)
-    if (sonLv && o.lv > sonLv) canlandir(el.xp.firstElementChild, PARLA, 500)
-    sonLv = o.lv
+    // Bölge adı ve görev ilerlemesi (Idle Miner'daki gibi seviye yerine)
+    const n = A.GOREVLER.length, g = Math.min(n, b.gorev.sira)
+    yaz(el.seviye, bolgeAdi(d.aktifBolge))
+    yaz(el.xpYazi, g >= n ? 'Bölge Ustası' : 'Görev ' + g + ' / ' + n)
+    cubuk(el.xp, g / n)
+    if (sonGorevBolge === d.aktifBolge && g > sonGorev) canlandir(el.xp.firstElementChild, PARLA, 500)
+    sonGorev = g; sonGorevBolge = d.aktifBolge
   }
 
   function kare4(d) {

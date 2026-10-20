@@ -1077,7 +1077,7 @@ export const Sahne = {
           if (!satisToplam) satisSon = Math.max(satisSon, simdi - SATIS_TOPLA_MS + 120)
           satisToplam += o.para
           break
-        case 'seviyeAtladi':
+        case 'bolgeAcildi':
           this.efekt.patlat(efW / 2, -10, 'konfeti', 60, { genislik: efW })
           break
         case 'hazineCikti': {
@@ -1167,7 +1167,7 @@ export const Sahne = {
   // Sayfalardaki çizim simgeleri (cevher, vagon, kabin, gemi...) ve arayüz dokuları
   simge(ad, kod, canvas, boyut, ek) { simgeCiz(canvas, ad, kod, boyut, ek) },
   simgeAdres(ad, kod, boyut, ek) { try { return simgeAdresi(ad, kod, boyut, ek) } catch { return '' } },
-  harita(canvas, gen) { haritaCiz(canvas, gen) },
+  harita(canvas, gen, kod) { haritaCiz(canvas, gen, kod) },
   dokular(kod) { try { arayuzDokulari(kod || 'zonguldak') } catch (h) { console.warn('Doku üretilemedi', h) } },
 
   portre(tohum, nadirlik, canvas, boyut) {

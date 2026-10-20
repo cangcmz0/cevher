@@ -5,7 +5,7 @@ import * as B from '../js/benzetim.js'
 import * as E from '../js/ekonomi.js'
 import { yeniDurum } from '../js/durum.js'
 import { serilestir } from '../js/kayit.js'
-import { KAZI_SURESI, HAZINE, BASARIMLAR, BASARIM_ODUL, BOLGE, PRESTIJ, GOREVLER, MAKS_YONETICI } from '../js/ayar.js'
+import { KAZI_SURESI, HAZINE, BASARIMLAR, BASARIM_ODUL, BOLGE, PRESTIJ, GOREVLER, MAKS_YONETICI, BOLGE_ACMA_ELMAS, KAT_ACMA_ELMAS } from '../js/ayar.js'
 
 const ADIM = B.ADIM
 function kos(d, sn, olaylar = null) {
@@ -227,20 +227,24 @@ test('görev metinleri bölgeye göre: başlık, koşul ve 15 görev', () => {
   assert.equal(g.metin, '2. Katı 5. seviyeye çıkar')
 })
 
-test('bölge: seviye yetmezse kilitli; bedel önceki bölgenin kasasından; açılınca geçilir, dönüşte yöneticili gelir eklenir', () => {
+test('bölge: sırayla ve önceki bölgenin kasasından açılır; ilk açılış elmas verir, dönüşte yöneticili gelir eklenir', () => {
   const d = zenginDurum(34)
-  assert.equal(B.eylem(d, 'bolgeGit', { kod: 'eregli' }).sebep, 'kilit')
-  d.oyuncu.lv = 15
   assert.equal(B.eylem(d, 'bolgeGit', { kod: 'eregli' }).sebep, 'para')
   assert.equal(B.bolgeAcilis(d, 'eregli').durum, 'para')
-  assert.equal(B.eylem(d, 'bolgeGit', { kod: 'karabuk' }).sebep, 'kilit')
-  d.oyuncu.lv = 30
+  assert.equal(B.eylem(d, 'bolgeGit', { kod: 'karabuk' }).sebep, 'sira')
   assert.equal(B.bolgeAcilis(d, 'karabuk').durum, 'sira')
+  // kasa bedele yetişince bir kez haber verilir
   d.bolgeler.zonguldak.para += BOLGE.eregli.bedel
+  const once = []
+  kos(d, 1, once)
+  assert.equal(once.filter((o) => o.tip === 'bolgeAcilabilir' && o.bolge === 'eregli').length, 1)
   const kasa = d.bolgeler.zonguldak.para
-  const olaylar = []
+  const olaylar = [], e0 = d.oyuncu.elmas
   const r = B.eylem(d, 'bolgeGit', { kod: 'eregli' }, olaylar)
   assert.ok(r.ok && r.yeni)
+  assert.equal(r.elmas, BOLGE_ACMA_ELMAS)
+  assert.equal(d.oyuncu.elmas - e0, BOLGE_ACMA_ELMAS)
+  assert.ok(d.prestij.acilan.includes('eregli'))
   assert.equal(d.aktifBolge, 'eregli')
   assert.equal(d.calisma.bolge, 'eregli')
   assert.equal(d.bolgeler.eregli.para, 20 * 1e3)
@@ -290,9 +294,9 @@ test('lojistik: liman satışı artırır, ambar çevrimdışı sınırını uza
 
 test('araştırma: elmasla başlar, süre dolunca seviye artar', () => {
   const d = zenginDurum(37)
-  d.oyuncu.lv = 1
+  d.ogretici.bitti = false
   assert.equal(B.eylem(d, 'arastirmaBaslat', { kod: 'kazma' }).sebep, 'kilit')
-  d.oyuncu.lv = 3
+  d.ogretici.bitti = true
   const e0 = d.oyuncu.elmas
   assert.ok(B.eylem(d, 'arastirmaBaslat', { kod: 'kazma' }).ok)
   assert.equal(e0 - d.oyuncu.elmas, 5)
@@ -326,15 +330,14 @@ test('prestij: tur kazancına göre mühür; her şey baştan başlar, kalıcıl
   d.ogretici.bitti = true
   assert.equal(B.eylem(d, 'prestij', {}).sebep, 'kilit')
   // mühür formülü: eşikte 1, eşiğin altında 0, kazançla artar
-  assert.equal(E.muhurKazanci(PRESTIJ.esik * 0.99), 0)
-  assert.equal(E.muhurKazanci(PRESTIJ.esik), 1)
-  assert.ok(E.muhurKazanci(PRESTIJ.esik * 1e6) > E.muhurKazanci(PRESTIJ.esik * 1e3))
-  for (const n of [1, 7, 50, 1234]) assert.equal(E.muhurKazanci(E.muhurEsigi(n)), n)
+  assert.equal(E.muhurHakki(PRESTIJ.esik * 0.99), 0)
+  assert.equal(E.muhurHakki(PRESTIJ.esik), 1)
+  assert.ok(E.muhurHakki(PRESTIJ.esik * 1e6) > E.muhurHakki(PRESTIJ.esik * 1e3))
+  for (const n of [1, 7, 50, 1234]) assert.equal(E.muhurHakki(E.muhurEsigi(d, n)), n)
   // iki bölgelik bir tur: Ereğli açık, elmasla tutulan ustabaşılar kalıcı
-  d.oyuncu.lv = 40
   d.bolgeler.zonguldak.usta = true
   d.bolgeler.eregli = JSON.parse(JSON.stringify(d.bolgeler.zonguldak))
-  d.bolgeler.zonguldak.toplamKazanc = E.muhurEsigi(30)
+  d.bolgeler.zonguldak.toplamKazanc = E.muhurEsigi(d, 30)
   d.bolgeler.eregli.toplamKazanc = 0
   d.bolgeler.eregli.yoneticiler[0].kalici = false
   d.aktifBolge = 'eregli'
@@ -344,7 +347,7 @@ test('prestij: tur kazancına göre mühür; her şey baştan başlar, kalıcıl
   assert.ok(olaylar.some((o) => o.tip === 'hikaye' && o.id === 'prestij-hazir'))
   const bekleyen = B.bekleyenMuhur(d)
   assert.ok(bekleyen >= 30)
-  const elmas0 = d.oyuncu.elmas, ar0 = JSON.stringify(d.arastirma), lv0 = d.oyuncu.lv
+  const elmas0 = d.oyuncu.elmas, ar0 = JSON.stringify(d.arastirma)
   const kalicilar = d.bolgeler.zonguldak.yoneticiler.length + d.bolgeler.eregli.yoneticiler.length - 1
   const r = B.eylem(d, 'prestij', {})
   assert.ok(r.ok)
@@ -359,8 +362,7 @@ test('prestij: tur kazancına göre mühür; her şey baştan başlar, kalıcıl
   assert.equal(d.bolgeler.zonguldak.para, 20)
   assert.equal(d.bolgeler.zonguldak.gorev.sira, 0)
   assert.equal(E.turKazanc(d), 0)
-  // kalanlar: seviye, elmas, araştırma; kalıcı ustabaşılar en çok MAKS_YONETICI, ilk kat/asansör/depo atanmış
-  assert.equal(d.oyuncu.lv, lv0)
+  // kalanlar: elmas, araştırma; kalıcı ustabaşılar en çok MAKS_YONETICI, ilk kat/asansör/depo atanmış
   assert.equal(d.oyuncu.elmas, elmas0)
   assert.equal(JSON.stringify(d.arastirma), ar0)
   const yl = d.bolgeler.zonguldak.yoneticiler
@@ -371,7 +373,8 @@ test('prestij: tur kazancına göre mühür; her şey baştan başlar, kalıcıl
   // yeni turda mühür yok, prestij yeniden kilitli
   assert.equal(B.bekleyenMuhur(d), 0)
   assert.equal(B.eylem(d, 'prestij', {}).sebep, 'kilit')
-  assert.ok(d.istatistik.prestijKazanc >= E.muhurEsigi(30))
+  assert.ok(d.istatistik.prestijKazanc >= E.muhurEsigi(yeniDurum(0, 1), 30))
+  assert.equal(d.prestij.omur, d.istatistik.prestijKazanc)
 })
 
 test('prestij: görev elması yalnız ilk kez, bölge ustası elması yalnız ilk kez', () => {
@@ -547,4 +550,52 @@ test('başarımlar: prestij ilerlemeyi geri almaz, kayıtta korunur ve onarılı
   assert.equal(o.basarim.al.seviye, undefined)
   assert.equal(o.basarim.rekor.kat, undefined)
   assert.equal(o.basarim.rekor.satis, 12)
+})
+
+test('seviye yok: kat ve görev elmasları yalnız ilk kez verilir, prestijden sonra tekrarlanmaz', () => {
+  const d = yeniDurum(0, 52)
+  const b = d.bolgeler.zonguldak
+  B.hazirla(d)
+  b.para = 1e6
+  const e0 = d.oyuncu.elmas
+  const r = B.eylem(d, 'madenAc', { i: 1 })
+  assert.ok(r.ok)
+  assert.equal(r.elmas, KAT_ACMA_ELMAS)
+  assert.equal(d.oyuncu.elmas - e0, KAT_ACMA_ELMAS)
+  assert.equal(d.prestij.katRekor.zonguldak, 2)
+  assert.ok(B.gorevOdulu(d, b, 0).elmas > 0)
+  // Bir tur sonra aynı kat ve aynı görev elmas vermez
+  d.prestij.gorevRekor.zonguldak = 1
+  d.ogretici.bitti = true
+  b.toplamKazanc = E.muhurEsigi(d, 1)
+  assert.ok(B.eylem(d, 'prestij', {}).ok)
+  const z = d.bolgeler.zonguldak
+  z.para = 1e6
+  const e1 = d.oyuncu.elmas
+  const r2 = B.eylem(d, 'madenAc', { i: 1 })
+  assert.ok(r2.ok)
+  assert.equal(r2.elmas, 0)
+  assert.equal(d.oyuncu.elmas, e1)
+  assert.equal(B.gorevOdulu(d, z, 0).elmas, 0)
+  assert.ok(B.gorevOdulu(d, z, 1).elmas > 0)
+  assert.equal(d.oyuncu.lv, undefined)
+})
+
+test('mühür ömür boyu kazanca bağlı: aynı tur kazancı sonraki turlarda daha az mühür verir', () => {
+  const d = yeniDurum(0, 53)
+  B.hazirla(d)
+  d.ogretici.bitti = true
+  const K = E.muhurEsigi(d, 20)
+  d.bolgeler.zonguldak.toplamKazanc = K
+  assert.equal(B.bekleyenMuhur(d), 20)
+  assert.ok(B.eylem(d, 'prestij', {}).ok)
+  assert.equal(d.prestij.muhur, 20)
+  assert.equal(d.prestij.omur, K)
+  // Aynı kazanç ikinci turda: hak (2K)^us − K^us < 20
+  d.bolgeler.zonguldak.toplamKazanc = K
+  const p2 = B.bekleyenMuhur(d)
+  assert.ok(p2 >= 1 && p2 < 20, String(p2))
+  assert.equal(p2, E.muhurHakki(2 * K) - 20)
+  // Sonraki mühür eşiği bu turun kazancıyla tutarlı
+  assert.equal(E.muhurHakki(K + E.muhurEsigi(d, p2 + 1)), 20 + p2 + 1)
 })

@@ -251,7 +251,7 @@ async function senaryo2(tarayici, profil) {
   const s = await sayfaAc(tarayici, profil, { kayit: 'zengin.json' })
   const { sayfa } = s
   const eksik = []
-  for (const m of ['Seviye 12', '482 / 1.200', '420', 'Günlük Üretim', 'Depo Doluluğu', 'Gelir', 'Çevrimdışı Kazanç', 'Topla', '1. Kat', 'Yükleme']) {
+  for (const m of ['Zonguldak', 'Görev 0 / 15', '420', 'Günlük Üretim', 'Depo Doluluğu', 'Gelir', 'Çevrimdışı Kazanç', 'Topla', '1. Kat', 'Yükleme']) {
     if (!(await metinVar(sayfa, m))) eksik.push(m)
   }
   // Para HUD'u: başlangıçta 318,6 bin (gelirle birkaç saniyede artar)
@@ -278,7 +278,7 @@ async function senaryo2(tarayici, profil) {
   await kapat(s, profil, '2 Zengin kayıt')
 }
 
-// 3. Her düğme: sekmeler, ayarlar, yükseltme, yönetici, seviye penceresi
+// 3. Her düğme: sekmeler, ayarlar, yükseltme, yönetici, görev çubuğu
 async function senaryo3(tarayici, profil) {
   const notlar = []
   let ok = true
@@ -313,14 +313,8 @@ async function senaryo3(tarayici, profil) {
     })),
     { ad: 'pencere-ortak', ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('ortak', { kod: 'ahmet' })) },
     { ad: 'pencere-lojistik', ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('lojistik', { tur: 'liman' })) },
-    { ad: 'modal-seviye', ac: async (s) => {
-      await s.sayfa.evaluate(async () => {
-        const E = await import('/js/ekonomi.js')
-        const o = __cevher.durum.oyuncu
-        __cevher.eylem('xp', { miktar: E.xpGerek(o.lv) - o.xp + 1 })
-      })
-      await bekle(600)
-    }, tekSefer: true },
+    // Üstteki görev çubuğu bölge görevlerini açar (seviye çubuğunun yerine)
+    { ad: 'hud-gorev', ac: (s) => s.sayfa.evaluate(() => document.querySelector('#ust .ust-xp').click()) },
   ]
   for (const y of yuzeyler) {
     const s = await sayfaAc(tarayici, profil, { kayit: 'zengin.json' })

@@ -63,12 +63,12 @@ export function kur(B) {
     }
     // Harita sekmesinde nokta: görev ya da kontrat hazır
     sinif(el.sekmeler[1], 'rozetli', !!(b.gorev.hazir || b.kontrat.hazir))
-    // Yöneticiler sekmesinde nokta: prestij verimli (kazanılacak mühür, sahip olunanın yarısını geçti)
+    // Yöneticiler sekmesinde nokta: prestij verimli (kazanılacak mühür, sahip olunanın dörtte birini geçti)
     sinif(el.sekmeler[2], 'rozetli', prestijOnerilir(d))
-    sinif(el.sekmeler[3], 'rozetli', d.oyuncu.lv >= 3 && !d.arastirma.suren)
+    sinif(el.sekmeler[3], 'rozetli', d.ogretici.bitti && !d.arastirma.suren)
     sinif(el.sekmeler[4], 'rozetli', d.gunluk.son !== gunKodu())
     sinif(el.topla, 'aktif', !bc && kalan > 0)
-    sinif(el.topla, 'kilitli', !bc && d.oyuncu.lv < 2)
+    sinif(el.topla, 'kilitli', !bc && !d.ogretici.bitti)
     gizle(el.reklam, !!d.satin.reklamsiz || (!bc && kalan > 0))
   }
 
@@ -104,7 +104,7 @@ export function kur(B) {
       if (await reklamla('cevrimdisi')) topla(2, b)
       return
     }
-    if (d.oyuncu.lv < 2) { B.bildir('bilgi', "2x Topla, Seviye 2'de açılır.") ; return }
+    if (!d.ogretici.bitti) { B.bildir('bilgi', '2x Topla öğretici bitince açılır.'); return }
     if (d.takviye.bitis >= d.zaman + A.TAKVIYE_SINIR_SAAT * 3600 - 1) {
       B.bildir('bilgi', 'Kazanç x2 en fazla 4 saat birikir.')
       return

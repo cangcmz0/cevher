@@ -4,7 +4,7 @@
 // Sahne kimlikleri:
 //   giris, ogretici            oyunun açılışı ve öğretici sonu
 //   <bolge>-<n>                bölgenin n. görevi (1 tabanlı) alındıktan sonra (varsa)
-//   <bolge>-acik, <bolge>-giris bölge seviyeyle açıldığında / ilk girişte
+//   <bolge>-acik, <bolge>-giris bölgenin açılış bedeli ilk kez biriktiğinde / ilk girişte
 //   prestij-hazir, prestij     prestij açıldığında / her prestijden sonra
 // Bölümler: 1–4 Karadeniz (Zonguldak, Ereğli, Karabük, Kastamonu), 5–12 Anadolu (Balya, Afyon,
 // Keçiborlu, Bergama, Gümüşhane, Elazığ, Kırka, Beylikova).
@@ -310,7 +310,7 @@ export const SAHNELER = Object.freeze({
   ),
   'zonguldak-14': S('Numunelerin Sırrı',
     ['zeynep', 'Numunelerin sonucu geldi: Ereğli kıyısında yüksek tenörlü demir cevheri var! Ama oranın ruhsatını Demirhan da istiyor.'],
-    ['mehmet', 'O zaman acele etmeliyiz. Seviyen 15 olunca Ereğli ruhsatını alabiliriz.'],
+    ['mehmet', 'O zaman acele etmeliyiz. Zonguldak kasasında açılış bedeli birikince Ereğli ruhsatını alabiliriz.'],
   ),
   'zonguldak-15': S('Zonguldak Bayramı',
     ['ahmet', 'Zonguldak\'ın bütün damarları işliyor. Kasabada bayram havası var!'],
@@ -851,7 +851,7 @@ export const SAHNELER = Object.freeze({
   'prestij-hazir': S('Yeni Nesil',
     ['ahmet', 'Bir fikrim var: Yeni Nesil! Ocakları gençlere devredip her şeyi baştan, daha güçlü kuralım. Deneyimimiz bizimle kalır.'],
     ['mehmet', 'Prestij yaparsan bütün bölgeler kapanır, Zonguldak\'ta tek katla yeniden başlarız. Ama bu turda ne kadar kazandıysak o kadar Miras Mührü alırız; her mühür bütün satışları kalıcı olarak %10 artırır.'],
-    ['ahmet', 'Seviyen, elmasların, araştırmaların ve elmasla tuttuğun ustabaşıları seninle gelir. Ne kadar ileri gidersek mühür o kadar çok olur; her turda bir öncekinden hızlı büyürüz.'],
+    ['ahmet', 'Elmasların, araştırmaların ve elmasla tuttuğun ustabaşıları seninle gelir. Ne kadar ileri gidersek mühür o kadar çok olur; her turda bir öncekinden hızlı büyürüz.'],
   ),
   prestij: S('Yeniden Başlangıç',
     ['ahmet', 'Yeni nesil madenciler hazır! Ocakları ilk günkü gibi açıyoruz ama Miras Mühürlerimiz sayesinde her şey çok daha hızlı olacak.'],

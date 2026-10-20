@@ -34,7 +34,7 @@ export function kur(B) {
     let imza = ''
     return (d) => {
       const o = d.oyuncu
-      yaz(alt, `Seviye ${o.lv} · ${Object.keys(d.bolgeler).length} bölge${d.prestij.sv ? ' · ' + (d.prestij.sv + 1) + '. nesil' : ''}`)
+      yaz(alt, `${A.BOLGE[d.aktifBolge].ad} · ${Object.keys(d.bolgeler).length} bölge · ${d.prestij.sv + 1}. nesil`)
       const s = d.istatistik
       const satirlar = [
         ['para', 'Toplam kazanç', bicim(basarimDeger(d, 'kazanc'))],
@@ -78,7 +78,7 @@ export function kur(B) {
     if (!(s && s.ok)) return
     const r = btn.getBoundingClientRect(), k = B.kok.getBoundingClientRect()
     B.ucanSikke(r.left - k.left + r.width / 2, r.top - k.top + r.height / 2, Math.min(8, 3 + s.kademe), 'elmas')
-    B.bildir('basari', `Başarım ödülü: +${s.elmas} elmas · +${s.xp} XP`)
+    B.bildir('basari', `Başarım ödülü: +${s.elmas} elmas`)
   }
 
   function kare4(d) {

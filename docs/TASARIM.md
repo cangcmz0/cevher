@@ -1413,10 +1413,10 @@ Each S2 package follows the same ownership, interfaces and acceptance rules as s
 
 | System | Where | Summary |
 |---|---|---|
-| Regions | `ayar.js BOLGELER`, `bolgeGit` | Zonguldak/Kömür (Lv.1), Ereğli/Demir (Lv.15), Karabük/Taş (Lv.30), Kastamonu/Bakır (Lv.45); one ore per region. Leaving a region stores `ayrilis`; returning adds managed income for the elapsed time, capped by `cevrimdisiSinir`. Opening gives +250 XP. |
-| Floors | `MADEN_SAYISI = 15` | `ACILIS` extended to 15 entries (×20 per step after floor 12). |
+| Regions | `ayar.js BOLGELER`, `bolgeGit` | 12 regions on three maps (§10.5), one ore each: Zonguldak/Kömür, Ereğli/Demir, Karabük/Taş, Kastamonu/Bakır, Balya/Kurşun, Afyon/Mermer, Keçiborlu/Kükürt, Bergama/Altın, Gümüşhane/Gümüş, Elazığ/Krom, Kırka/Bor, Beylikova/Neodim. Each opens in order with a cost paid from the previous region's cash. Leaving a region stores `ayrilis`; returning adds managed income for the elapsed time, capped by `cevrimdisiSinir`. The first opening ever gives 50 elmas. |
+| Floors | `MADEN_SAYISI = 30` | `ACILIS` has 30 entries (×20 per step after floor 15). Opening a floor for the first time in a region gives 3 elmas (`prestij.katRekor`). |
 | Quests | `GOREVLER` (15 conditions), `hikaye.js GOREV_YAZI` | The same 15 conditions in every region (level, manager, open floor, elevator/depot level, ability, contract, harbour), with region-specific titles. Finishing all 15 makes the region `Bölge Ustası` (+10% sales there, +100 elmas). |
-| Story | `js/hikaye.js` | 4 chapters + `Yeni Nesil`, 54 scenes. Triggers: start, tutorial end, quest claims, region unlock and first visit, prestige. The queue (`hikaye.bekleyen`) survives reloads. Visual-novel modal with typewriter text; `Hikâye Defteri` replays seen scenes. |
+| Story | `js/hikaye.js` | 12 chapters + `Yeni Nesil`, 154 scenes. Triggers: start, tutorial end, quest claims, region unlock and first visit, prestige. The queue (`hikaye.bekleyen`) survives reloads. Visual-novel modal with typewriter text; `Hikâye Defteri` replays seen scenes. |
 | Partners | `ORTAKLAR`, `ortakYukselt` | Ahmet (+%25 production), Elif (+%40 elevator/carrier load), Mehmet (+%15 sales), Zeynep (−%20 upgrade cost). Each joins at their story scene and levels 1–10 with elmas. They are the four screen-3 manager cards. |
 | Contracts | `KONTRAT`, `kontratAl` | Per region, sequential and growing: target = automated ore flow × (10 + 5n) min. Sales in the active region count. |
 | Logistics | `LIMAN`, `AMBAR`, `lojistik` | Liman: region sales +8%/level (max 20). Ambar (`Depo` tile): offline and inactive-region cap +15 min/level (max 16). |
@@ -1426,7 +1426,7 @@ Each S2 package follows the same ownership, interfaces and acceptance rules as s
 | Prestige (Yeni Nesil) | `PRESTIJ`, `prestij`, `bekleyenMuhur`, `muhurKazanci`, `bolgeAcilis` | Egg Inc / Idle Miner style restart, see §10.3. |
 
 | Treasure vein | `HAZINE`, `hazineKontrol`, `hazineAl`; `js/arayuz/hazine.js` | After the tutorial, with at least 2 floors open, a glowing vein shows up on a random floor every 70–140 s for 24 s (seeded by `durum.tohum`). Gold gives 45 s of income (minimum 60); elmas (15%) gives 2–5 elmas. It lives in `calisma`, so it is never saved. When the vein is off-screen, a `Hazine!` ↑/↓ pill scrolls to it. Collecting it flies the reward to the HUD counter. There is a daily mission for it. |
-| Achievements | `BASARIMLAR`, `BASARIM_ODUL`, `basarimDeger/basarimIlerleme`, `basarimAl`; `js/arayuz/profil.js` | 13 tiered achievements (44 tiers), each tier paying elmas + XP. Progress is the best value seen (`basarim.rekor`), so prestige never takes it back. Lifetime earnings carry over through `istatistik.prestijKazanc`. Newly claimable tiers raise a toast (tiers already claimable at load are not re-announced). The avatar opens the profile sheet, which shows stats and the achievement list, and carries a red dot while something can be claimed. |
+| Achievements | `BASARIMLAR`, `BASARIM_ODUL`, `basarimDeger/basarimIlerleme`, `basarimAl`; `js/arayuz/profil.js` | 13 tiered achievements, each tier paying elmas. The old level achievement is now `Miras` (seals collected). Progress is the best value seen (`basarim.rekor`), so prestige never takes it back. Lifetime earnings carry over through `istatistik.prestijKazanc`. Newly claimable tiers raise a toast (tiers already claimable at load are not re-announced). The avatar opens the profile sheet, which shows stats and the achievement list, and carries a red dot while something can be claimed. |
 
 Scene v4 (`js/sahne/sahne.js`, `dekor.js`, `karakter.js`): the scene no longer uses textures cut from the reference.
 It is drawn procedurally in a detailed, painterly style:
@@ -1472,8 +1472,8 @@ frames are baked lazily. Each frame only issues drawImage calls. Floors cycle th
 - **Pages and windows (same visual language as the mine):** no reference crops are used on the tab pages any more.
   - Theme: the page and sheet backgrounds are the active region's rock, drawn as a seamless tile by `dekor.kayaDokusu` and handed to CSS as `--doku-kaya` (blob URL, regenerated on region change). Panels (`.pano`) use the floor-card frame (gold → teal border); section titles are nailed wooden plates (`.plaka`, `--doku-tahta`); inner slots are inset (`.yuva`).
   - Illustrations (`sahne/simge.js`): ore pile, mine cart, cabin, ship, warehouse, contract board, medal, gift, coins, gems, pickaxe, flask, helmet, hourglass, bolt. They are drawn with the scene helpers, cached per size, and placed with `<canvas data-simge>` (`ortak.simge` / `simgeleriCiz`).
-  - Map (`sahne/harita.js`): a 360×440 drawn coast with sea, beach, fields, forests, hills, snowy mountains, the Filyos river, roads and a railway. Each region has its own scene: a headframe in Zonguldak, a pier and steel works in Ereğli, a stepped quarry in Karabük, a copper adit in Kastamonu. Region cards, a passing ship, drifting clouds, chimney smoke and the active-region pulse are DOM layers on top.
-  - Yöneticiler, Araştırma and Mağaza are rebuilt with these parts; the sheets (upgrade, partner, logistics, prestige, regions, quests, contracts, missions, events, settings, profile) and the level-up modal share the theme.
+  - Map (`sahne/harita.js`): three drawn 360×440 maps, see §10.5. Region cards, a passing ship, drifting clouds, chimney smoke and the active-region pulse are DOM layers on top.
+  - Yöneticiler, Araştırma and Mağaza are rebuilt with these parts; the sheets (upgrade, partner, logistics, prestige, regions, quests, contracts, missions, events, settings, profile) share the theme.
 
 ### 10.3 Prestige: Yeni Nesil and Miras Mührü
 
@@ -1492,4 +1492,25 @@ Prestige is a full restart in the style of Egg Inc and Idle Miner Tycoon:
 All new state is in the save whitelist (`kayit.js`) and repaired by `dogrula`. Older saves get the new fields with
 defaults, and their partners unlock from tutorial/quest progress. Tests: `npm test` (48) and
 `node test/oyna.mjs` (scenarios 1–6, two profiles; story scenes are skipped with `Atla`).
+
+### 10.4 No player level (Idle Miner style)
+
+The player level and XP are gone; progress is measured only in money, regions, floors and seals, as in Idle Miner Tycoon.
+
+- **HUD:** the portrait is followed by the active region's name and its quest bar (`Görev 3 / 15`, `Bölge Ustası` when done). The bar opens the quest list. It flashes when a quest is claimed.
+- **Gates that used the level:** regions open only by order and cost. Research needs the tutorial to be finished, and some items need a region (`sart.bolge`, e.g. `Elmas Matkap` after Karabük, `İhracat Anlaşması` and `Miras Bilgisi` after Ereğli). The `Topla x2` button and the shop offer open when the tutorial ends. Daily missions scale with the number of regions ever opened.
+- **Elmas that came from levelling** now comes from first-time progress: 50 per region opened for the first time, 3 per floor opened for the first time in a region, plus quests, contracts, missions, achievements and the daily gift. Prestige cannot farm any of these (`prestij.acilan`, `katRekor`, `gorevRekor`).
+- **Old saves:** `oyuncu.lv`, `xp` and `toplamXp` are removed by `dogrula`; every 5 levels (counted up to 100) become one seal, so the old +2% per level sales bonus is kept as seals.
+
+### 10.5 Three regional maps
+
+`Harita` has three tabs, each a separate drawn map (`HARITALAR`, `haritaCiz(canvas, w, kod)`, cached per map and size). The tab shows `açık / 4` or a lock, and a dot when a region on that map can be opened. The page opens on the map of the active region.
+
+| Map | Regions | Drawing |
+|---|---|---|
+| Karadeniz | Zonguldak, Ereğli, Karabük, Kastamonu | Black Sea coast, beach, forests, Filyos river; headframe, steel works and pier, stepped quarry, copper adit. A ship crosses the sea. |
+| Batı Anadolu | Balya, Afyon, Keçiborlu, Bergama | Aegean coast with islands, olive groves, poppy fields, Kaz Dağları, Bakırçay, Burdur and Eber lakes; Balya's lead smelter with its tall brick chimney and slag heaps, Afyon's white marble steps under the castle rock, Keçiborlu's yellow sulphur cones and refinery (yellow smoke), Bergama's acropolis above gold leach ponds. A ship sails the gulf. |
+| İç ve Doğu Anadolu | Gümüşhane, Elazığ, Kırka, Beylikova | Steppe with wheat fields and poplars, snowy eastern ranges, Sakarya and Fırat, Keban and Hazar lakes; Gümüşhane's arched silver galleries, Elazığ's terraced chrome pit and ferrochrome plant, Kırka's borax ponds and tanks, Beylikova's rare-earth plant with purple tanks and crystals. A boat crosses Hazar. |
+
+Locked regions show only a lock on their card (the card explains the order when tapped); the next region shows its opening cost, and an affordable one pulses.
 

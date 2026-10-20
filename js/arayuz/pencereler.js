@@ -2,8 +2,8 @@
 // ════════════════════════════════════════════════════════════════
 //  PENCERELER (Paket C, §4.9–4.10) — alt sayfalar ve modallar.
 //  • Alt sayfalar: yukseltme, ayarlar, istasyonSec (aynı anda bir tane).
-//  • Modallar: yonetici, seviye, aktarim. Kuyruk: bir seferde bir modal,
-//    öncelik seviye > diğerleri, sonra sıra.
+//  • Modallar: yonetici, aktarim, hikaye. Kuyruk: bir seferde bir modal,
+//    öncelik hikâye > diğerleri, sonra sıra.
 //  • İçerik açılışta bir kez kurulur; değerler 4 Hz yerinde güncellenir.
 //    Yönetici modalı yalnız yapısı değişince (imza) yeniden kurulur.
 // ════════════════════════════════════════════════════════════════
@@ -16,7 +16,7 @@ import { DURAK, BOSALTMA } from '../ayar.js'
 import { KISILER, SAHNELER, BOLUMLER, sahneBolumu } from '../hikaye.js'
 
 const SAYFALAR = new Set(['yukseltme', 'ayarlar', 'istasyonSec', 'defter'])
-const ONCELIK = { seviye: 2, hikaye: 1 }
+const ONCELIK = { hikaye: 1 }
 const MODLAR = [[1, 'x1'], [10, 'x10'], [50, 'x50'], ['max', 'Max']]
 const katAdi = (ist) => (ist === 'asansor' ? 'Asansör' : ist === 'depo' ? '1. Kat · Depo' : (+ist.slice(1) + 2) + '. Kat')
 // İstasyon simgesi; katlarda etkin bölgenin cevheri (sahnedeki yığınla aynı çizim)
@@ -420,21 +420,6 @@ export function kur(B) {
   }
 
   // ════════ Seviye atlama ════════
-  function seviyeKur(g, veri) {
-    const acilimlar = (veri.acilan || []).map((k) => A.ACILIM_ADLARI && A.ACILIM_ADLARI[k]).filter(Boolean)
-    g.innerHTML = `<i class="isinlar"></i>
-      <h2>Seviye Atladın!</h2>
-      <div class="madalya">${simge('madalya', '', 104)}</div><b class="madalya-yazi sayi">Lv. ${veri.lv}</b>
-      <div class="odul-satirlar">
-        <div class="odul-satir">${ikon('elmas')}<span class="sayi">+${veri.elmas} elmas</span></div>
-        <div class="odul-satir">${ikon('para')}<span>Bütün satışlar +%${2 * (veri.adet || 1)}</span></div>
-        ${acilimlar.map((m) => `<div class="odul-satir acilim">${ikon('kilit-acik')}<span>${m} açıldı!</span></div>`).join('')}
-      </div>
-      <div class="modal-dugmeler"><button class="btn btn-turuncu" data-eylem="modal-kapat" data-ogretici-modal>Harika!</button></div>`
-    simgeleriCiz(g, B)
-    return null
-  }
-
   // ════════ Eski oyundan aktarım ════════
   function aktarimKur(g) {
     g.innerHTML = `<i class="isinlar"></i><h2>Cevher Madenci yenilendi!</h2>
@@ -556,7 +541,7 @@ export function kur(B) {
   }
 
   const SAYFA_KUR = { yukseltme: yukseltmeKur, ayarlar: ayarlarKur, istasyonSec: istasyonSecKur, defter: defterKur }
-  const MODAL_KUR = { yonetici: yoneticiKur, seviye: seviyeKur, aktarim: aktarimKur, hikaye: hikayeKur }
+  const MODAL_KUR = { yonetici: yoneticiKur, aktarim: aktarimKur, hikaye: hikayeKur }
 
   // Başka modüllerin alt sayfa / modal kurucusu kaydetmesi
   function kaydet(ad, kurucu, tur = 'sayfa') {
@@ -570,7 +555,6 @@ export function kur(B) {
     else modalAc(ad, veri || {})
   }
 
-  // Arka arkaya seviye atlamaları tek pencerede birleşir (kuyruktaki seviye penceresi güncellenir)
   // Hikâye kuyruğu: aynı sahne iki kez sıraya girmez
   function hikayeSirala(id) {
     if ((modal && modal.ad === 'hikaye' && modal.veri.id === id) || kuyruk.some((k) => k.ad === 'hikaye' && k.veri.id === id)) return
@@ -578,14 +562,7 @@ export function kur(B) {
   }
 
   function olay(o) {
-    if (o.tip === 'hikaye') { hikayeSirala(o.id); return }
-    if (o.tip !== 'seviyeAtladi') return
-    const k = kuyruk.find((x) => x.ad === 'seviye')
-    if (k) {
-      k.veri = { lv: Math.max(k.veri.lv, o.lv), elmas: k.veri.elmas + o.elmas, acilan: [...(k.veri.acilan || []), ...(o.acilan || [])], adet: (k.veri.adet || 1) + 1 }
-      return
-    }
-    modalAc('seviye', { lv: o.lv, elmas: o.elmas, acilan: (o.acilan || []).slice(), adet: 1 })
+    if (o.tip === 'hikaye') hikayeSirala(o.id)
   }
 
   function kare4(d) {

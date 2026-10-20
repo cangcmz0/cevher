@@ -48,15 +48,10 @@ test('alinabilir bütçeyi aşmaz ve en büyüktür', () => {
   assert.equal(E.alinabilir(4, 1.1, 1e30, 10), 10)
 })
 
-test('xpGerek', () => {
-  assert.equal(E.xpGerek(12), 1200)
-  assert.equal(E.xpGerek(20), Math.round(2000 * Math.pow(1.03, 8)))
-})
-
 test('formüller seviyeyle monoton', () => {
   let onceki = null
   for (let L = 1; L <= 400; L++) {
-    const s = [E.madenUretim(d, b, 2, L), E.madenMaliyet(d, b, 2, L), E.asansorKap(d, b, L), E.asansorHiz(d, b, L), E.tasiyiciYuk(d, b, L), E.depoKap(d, b, L), E.xpGerek(Math.min(L, 100))]
+    const s = [E.madenUretim(d, b, 2, L), E.madenMaliyet(d, b, 2, L), E.asansorKap(d, b, L), E.asansorHiz(d, b, L), E.tasiyiciYuk(d, b, L), E.depoKap(d, b, L)]
     if (onceki) s.forEach((v, j) => assert.ok(v >= onceki[j], `L=${L} j=${j}`))
     onceki = s
   }

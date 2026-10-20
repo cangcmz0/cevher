@@ -176,7 +176,6 @@ export function simgeleriCiz(kap, B) {
 // Kilitli bölgenin nedeni (seviye, sıra ya da açılış bedeli)
 export function bolgeKilitYazi(d, kod) {
   const bb = Ayar.BOLGE[kod], a = Benzetim.bolgeAcilis(d, kod)
-  if (a.durum === 'seviye') return `${bb.ad} (${bb.cevher}) Seviye ${bb.acilisLv}'te açılır. Şu an Seviye ${d.oyuncu.lv}.`
   if (a.durum === 'sira') return `${bb.ad} için önce ${Ayar.BOLGE[a.kasa].ad} bölgesini aç.`
   if (a.durum === 'para') return `${bb.ad} bölgesini açmak için ${Ayar.BOLGE[a.kasa].ad} kasasında ${bicim(a.bedel)} gerekli (şu an ${bicim(d.bolgeler[a.kasa].para)}).`
   return ''
