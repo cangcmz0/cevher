@@ -175,11 +175,13 @@
 /* Kilitli (sonraki kat) */
 .kart.kilitli { background: linear-gradient(180deg, #23201C, #14110E) padding-box, linear-gradient(140deg, #8A7A5A, #4A4234) border-box; }
 .kart.kilitli::after { display: none; }
-.kart.kilitli .kart-ikon { left: auto; right: 6px; top: 6px; width: 34px; height: 34px; background: rgba(0, 0, 0, .35); display: grid; place-items: center; }
-.kart.kilitli .kart-ikon .ik { margin: 0; }
+.kart.kilitli .kart-ikon { left: auto; right: 5px; top: 6px; width: 24px; height: 24px; background: rgba(0, 0, 0, .35); display: grid; place-items: center; }
+.kart.kilitli .kart-ikon .ik { margin: 0; width: 15px; height: 15px; }
+.kart.kilitli .kart-cevher { font-size: 12.5px; }
 .kart.kilitli .kart-cevher { color: rgba(255, 255, 255, .7); }
 .kart-ac { position: absolute; left: 7px; right: 7px; top: 50px; height: 30px !important; padding: 0 4px !important; font-size: 14px !important; gap: 4px !important; }
-.kart-ac .ik { width: 14px; height: 14px; }
+.kart-ac .ik { width: 14px; height: 14px; flex: none; }
+.kart-ac .etiket { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Yükseltme oku: boyalı yeşil plakanın üstünde saydam dokunma alanı */
 .yukselt-ok { position: absolute; z-index: 1; border-radius: 8px; }

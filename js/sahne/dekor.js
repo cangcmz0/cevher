@@ -7,7 +7,7 @@
 // • Şeritler bölge ve ekran boyutuna göre bir kez fırınlanır; kare başına yalnız drawImage.
 
 import { rastgele, acik, koyu, rgba } from './cizim.js'
-import { BOLGE } from '../ayar.js'
+import { BOLGE, DERIN_KAT } from '../ayar.js'
 
 const CIZGI = '#160E08'
 
@@ -636,13 +636,64 @@ function esyalar(c, X, Y, v, kod) {
 // ════════ Kat şeridi ════════
 // Kat aşaması: seviye arttıkça iskelet ve ışıklar gelişir (0 ahşap, 1 güçlendirilmiş, 2 çelik)
 export const katAsamasi = (L) => (L >= 100 ? 2 : L >= 25 ? 1 : 0)
+// Derinlik: DERIN_KAT'tan sonra kaya koyulaşır ve duvarda parlayan cevher yuvaları çıkar; 8 kat daha aşağıda kızgın çatlaklar
+export const katDerinligi = (i) => (i >= DERIN_KAT + 8 ? 2 : i >= DERIN_KAT ? 1 : 0)
 
-export function katCiz(c, W, H, y, kod, v, asama = 0) {
+// Parlayan cevher yuvası (jeot): koyu oyuk, içinde kristal kümesi, çevresinde ışıltı
+function jeot(c, x, y, s, kod, r) {
+  const cv = cevherVurgu(kod)
+  c.save()
+  c.globalCompositeOperation = 'lighter'
+  const g = c.createRadialGradient(x, y, 0, x, y, s * 3.2)
+  g.addColorStop(0, rgba(cv, 0.42)); g.addColorStop(0.45, rgba(cv, 0.12)); g.addColorStop(1, rgba(cv, 0))
+  c.fillStyle = g
+  c.fillRect(x - s * 3.2, y - s * 3.2, s * 6.4, s * 6.4)
+  c.restore()
+  c.fillStyle = 'rgba(6,4,10,.7)'
+  c.beginPath(); c.ellipse(x, y + s * 0.1, s * 1.25, s * 0.9, 0, 0, TAU); c.fill()
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * TAU + r() * 0.5
+    kristal(c, x + Math.cos(a) * s * 0.55, y + Math.sin(a) * s * 0.4, s * (0.45 + r() * 0.25), a + Math.PI / 2, kod, r)
+  }
+  kristal(c, x, y, s * 0.6, r() * TAU, kod, r)
+}
+
+// Kızgın çatlak: koyu yarık, turuncu ışıltı
+function kizginCatlak(c, noktalar, kalinlik) {
+  const p = new Path2D()
+  noktalar.forEach(([px, py], i) => (i ? p.lineTo(px, py) : p.moveTo(px, py)))
+  c.save()
+  c.lineCap = 'round'
+  c.lineJoin = 'round'
+  c.globalCompositeOperation = 'lighter'
+  c.strokeStyle = 'rgba(255,110,30,.22)'
+  c.lineWidth = kalinlik * 4
+  c.stroke(p)
+  c.restore()
+  c.lineCap = 'round'
+  c.lineJoin = 'round'
+  c.strokeStyle = '#2A0E06'
+  c.lineWidth = kalinlik * 1.6
+  c.stroke(p)
+  c.strokeStyle = '#FF8A2A'
+  c.lineWidth = kalinlik * 0.8
+  c.stroke(p)
+  c.strokeStyle = '#FFE08A'
+  c.lineWidth = kalinlik * 0.3
+  c.stroke(p)
+  c.lineCap = 'butt'
+}
+
+export function katCiz(c, W, H, y, kod, v, asama = 0, derin = 0) {
   const k = y.k, ky = H / 107
   const X = (r) => r * k, Y = (r) => r * ky
   const kp = kaya(kod)
-  // 1. Kaya kütlesi
+  // 1. Kaya kütlesi (derinde soğuk ve koyu)
   kayaKutle(c, 0, 0, W, H, kp, 77 + v * 31, 0.8, 1)
+  if (derin) {
+    c.fillStyle = derin === 2 ? 'rgba(30,6,4,.32)' : 'rgba(6,10,26,.3)'
+    c.fillRect(0, 0, W, H)
+  }
   // 2. Tünel boşluğu (yuvarlatılmış tavan köşeleri)
   const tx0 = X(100), tx1 = X(290), ty0 = Y(4), ty1 = Y(78)
   const tunel = new Path2D()
@@ -668,7 +719,31 @@ export function katCiz(c, W, H, y, kod, v, asama = 0) {
     if (px > X(165) && px < X(214) && py < Y(48)) continue
     kristal(c, px, py, X(1.4 + r3() * 1.6), r3() * TAU, kod, r3)
   }
-  for (const [fx, fy] of KAT.fener) isikHavuzu(c, X(fx), Y(fy + 20), X(64), 0.75)
+  if (derin) {
+    // Derin kat: duvar koyulaşır, soğuk bir pus; üç parlayan cevher yuvası
+    c.fillStyle = 'rgba(8,10,24,.36)'
+    c.fillRect(tx0, ty0, tx1 - tx0, ty1 - ty0)
+    const rj = rastgele(951 + v * 17)
+    for (const [jx, jy, js] of [[140 + v * 6, 26 + (v % 2) * 8, 7], [214 + v * 4, 18 + ((v + 1) % 2) * 6, 5], [262 - v * 5, 34 + (v % 2) * 6, 6.5]]) jeot(c, X(jx), Y(jy), X(js + rj() * 1.5), kod, rj)
+  }
+  if (derin === 2) {
+    // Çok derin: tabana yakın dallanan kızgın çatlaklar ve yerden yükselen sıcak ışık
+    c.save()
+    c.globalCompositeOperation = 'lighter'
+    c.fillStyle = dG(c, Y(50), ty1, ['rgba(255,90,20,0)', 'rgba(255,90,20,.16)'])
+    c.fillRect(tx0, Y(50), tx1 - tx0, ty1 - Y(50))
+    c.restore()
+    const rc = rastgele(733 + v * 5)
+    for (let n = 0; n < 3; n++) {
+      let px = X(118 + n * 58 + rc() * 18), py = Y(69 - rc() * 4)
+      const pts = [[px, py]]
+      for (let s = 0; s < 5; s++) { px += X(5 + rc() * 6); py += Y((rc() - 0.6) * 7); pts.push([px, py]) }
+      kizginCatlak(c, pts, X(1.1))
+      const [bx, by] = pts[2]
+      kizginCatlak(c, [[bx, by], [bx + X(3 + rc() * 3), by - Y(6 + rc() * 5)], [bx + X(6 + rc() * 3), by - Y(11 + rc() * 4)]], X(0.7))
+    }
+  }
+  for (const [fx, fy] of KAT.fener) isikHavuzu(c, X(fx), Y(fy + 20), X(64), derin === 2 ? 0.9 : 0.75)
   // Tavan kaplaması: ahşapta dikine tahtalar, çelikte oluklu sac ve havalandırma borusu
   if (asama < 2) {
     for (let x = tx0 + X(8), q = 0; x < tx1 - X(8); x += X(12), q++) {

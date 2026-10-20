@@ -113,6 +113,7 @@ export function kur(B) {
     }
     kilitli.style.left = y.kenar + 'px'
     kilitli.style.width = y.kartG + 'px'
+    kilitli.style.height = y.KART_H + 'px'
     yk.style.cssText = `left:${y.yKart.x}px;top:${y.yuklemeY + y.yKart.y}px;width:${y.yKart.w}px;height:${y.yKart.h}px`
     rozetD.style.cssText = `left:${y.depo.x + y.r(6)}px;top:${y.yuklemeY + y.r(8)}px`
     // Görünüme sabit etiketler kuyunun gerçek konumuna göre (genişlik değişince kaymasın)
@@ -174,7 +175,9 @@ export function kur(B) {
     }
     if (n < MAKS) {
       const mal = E.madenAcilis(d, b, n)
-      yaz(kil.etiket, 'Aç · ' + bicim(mal))
+      // Uzun tutarlarda "Aç ·" atılır, düğmeye sığsın
+      const m = bicim(mal)
+      yaz(kil.etiket, m.length > 4 ? m : 'Aç · ' + m)
       const yetiyor = b.para >= mal
       sinif(kil.btn, 'btn-yesil', yetiyor)
       sinif(kil.btn, 'pasif', !yetiyor)

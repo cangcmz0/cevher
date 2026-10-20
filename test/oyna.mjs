@@ -251,7 +251,7 @@ async function senaryo2(tarayici, profil) {
   const s = await sayfaAc(tarayici, profil, { kayit: 'zengin.json' })
   const { sayfa } = s
   const eksik = []
-  for (const m of ['Zonguldak', 'Görev 0 / 15', '420', 'Günlük Üretim', 'Depo Doluluğu', 'Gelir', 'Çevrimdışı Kazanç', 'Topla', '1. Kat', 'Yükleme']) {
+  for (const m of ['Zonguldak', 'Görev hazır · Al', '420', 'Günlük Üretim', 'Depo Doluluğu', 'Gelir', 'Çevrimdışı Kazanç', 'Topla', '1. Kat', 'Yükleme']) {
     if (!(await metinVar(sayfa, m))) eksik.push(m)
   }
   // Para HUD'u: başlangıçta 318,6 bin (gelirle birkaç saniyede artar)

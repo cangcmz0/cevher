@@ -66,7 +66,7 @@ function seritAl(kod, ad, h, ciz) {
   serit.set(ad, c)
   return c
 }
-const katSerit = (kod, v, asama = 0) => seritAl(kod, 'kat' + v + '|' + asama, yer.SATIR_H, (g) => D.katCiz(g, W, yer.SATIR_H, yer, kod, v, asama))
+const katSerit = (kod, v, asama = 0, derin = 0) => seritAl(kod, 'kat' + v + '|' + asama + '|' + derin, yer.SATIR_H, (g) => D.katCiz(g, W, yer.SATIR_H, yer, kod, v, asama, derin))
 const yuklemeSerit = (kod) => seritAl(kod, 'yukleme', yer.YUKLEME_H, (g) => D.yuklemeCiz(g, W, yer.YUKLEME_H, yer, kod))
 const kayaSerit = (kod, v, h) => seritAl(kod, 'kaya' + v + '|' + h, h, (g) => D.kayaSerit(g, W, h, kod, 401 + v * 97))
 let kabinOnbellek = null, kabinAnahtar = ''
@@ -830,10 +830,10 @@ export const Sahne = {
     const kod = (durum && durum.aktifBolge) || 'zonguldak'
     const isler = [() => yuklemeSerit(kod), () => kayaSerit(kod, 2, yer.TEPE_H)]
     for (let v = 0; v < D.KAT_DUZEN; v++) isler.push(() => kayaSerit(kod, v, yer.SATIR_H))
-    // Açık katların düzen/aşama birleşimleri (en çok 9 şerit)
+    // Açık katların düzen/aşama/derinlik birleşimleri
     const b0 = durum && durum.bolgeler && durum.bolgeler[kod]
-    const gerekli = new Set((b0 ? b0.madenler : [{ L: 1 }]).map((m, i) => (i % D.KAT_DUZEN) + '|' + D.katAsamasi(m.L)))
-    for (const a of gerekli) { const [v, as] = a.split('|').map(Number); isler.push(() => katSerit(kod, v, as)) }
+    const gerekli = new Set((b0 ? b0.madenler : [{ L: 1 }]).map((m, i) => (i % D.KAT_DUZEN) + '|' + D.katAsamasi(m.L) + '|' + D.katDerinligi(i)))
+    for (const a of gerekli) { const [v, as, dr] = a.split('|').map(Number); isler.push(() => katSerit(kod, v, as, dr)) }
     for (let i = 0; i < isler.length; i++) {
       isler[i]()
       try { ilerleme && ilerleme(0.7 + 0.3 * (i + 1) / isler.length) } catch {}
@@ -896,7 +896,7 @@ export const Sahne = {
       if (i > son) son = i
       const syP = Math.round(sy * oran) / oran
       if (i < n) {
-        ctx.drawImage(katSerit(kod, i % D.KAT_DUZEN, D.katAsamasi(b.madenler[i].L)), 0, syP, W, y.SATIR_H)
+        ctx.drawImage(katSerit(kod, i % D.KAT_DUZEN, D.katAsamasi(b.madenler[i].L), D.katDerinligi(i)), 0, syP, W, y.SATIR_H)
         const kap = E.yiginKap(durum, b, i)
         const doluluk = kap > 0 ? Math.min(1, b.madenler[i].yigin / kap) : 0
         yiginCiz(yigin(kod, 'bunker', X(D.KAT.bunkerX1 - D.KAT.bunkerX0 - 2), Yk(20), doluluk, 17 + i % 3), X((D.KAT.bunkerX0 + D.KAT.bunkerX1) / 2), sy + Yk(D.KAT.bunkerUst) + 1)
