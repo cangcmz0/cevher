@@ -7,9 +7,10 @@
 //  • Düğmeler data-eylem ile yönlendirilir: B.eylemler[ad](el, olay).
 // ════════════════════════════════════════════════════════════════
 import { DEFS, ikon } from './ikonlar.js'
-import { ogeYap, yayinla, Veriyolu, ses, bolgeAl, A, E, madenMi, bicim, sure, bolgeKilitYazi, carpanYazi } from './ortak.js'
+import { ogeYap, yayinla, Veriyolu, ses, bolgeAl, A, E, madenMi, bicim, sure, tam, bolgeKilitYazi, carpanYazi, simge, simgeleriCiz } from './ortak.js'
 import { gunKodu, haftaEtkinligi } from './harita.js'
 import { bolgeAcilis } from '../benzetim.js'
+import { BOLUMLER } from '../hikaye.js'
 import * as Bildirim from './bildirim.js'
 import * as Ust from './ust.js'
 import * as Kartlar from './kartlar.js'
@@ -150,12 +151,18 @@ export const Arayuz = {
           B.bildir('basari', `Araştırma bitti: ${a ? a.ad : o.kod} ${o.sv}. seviye`)
         } else if (o.tip === 'bolgeUstasi') B.bildir('basari', `Bölge Ustası! ${A.BOLGE[o.bolge].ad} satışları kalıcı +%10 · +${o.elmas} elmas`)
         else if (o.tip === 'prestijYapildi') {
-          B.bildir('basari', `${o.sv}. nesil başladı! +${o.muhur.toLocaleString('tr-TR')} Miras Mührü · bütün satışlar ×${carpanYazi(E.prestijCarpani(B.durumAl()))}`)
+          const d = B.durumAl(), etki = E.muhurEtki(d)
+          B.kutla({
+            simgeAd: 'madalya', baslik: `${o.sv}. Nesil`, alt: 'Her şey baştan; Miras Mührü kalıcı',
+            satirlar: [`${simge('madalya', '', 22)}+${tam(o.muhur)} Miras Mührü`, `Satışlar ×${carpanYazi(1 + etki * (o.toplam - o.muhur))} → ×${carpanYazi(E.prestijCarpani(d))}`],
+          })
           try { B.sahne.dokular('zonguldak') } catch {}
         }
       },
     }
     moduller = [B.ust, B.kartlar, B.alt, B.pencere, B.sayfa, B.ogretici, B.hazine, B.profil, haberler]
+
+    B.kutla = kutlamaKur(B)
 
     // Bölge geçişi: perde iner, bölge değişir, katlar yeniden kurulur, perde kalkar
     const gecis = kok.querySelector('#gecis')
@@ -179,7 +186,13 @@ export const Arayuz = {
           B.sayfa.kapat()
           B.pencere.kapatSayfa()
           B.kaydirKonumu(1e9, { anim: false })
-          if (r.yeni) B.bildir('basari', `${bb.ad} bölgesi açıldı!${r.elmas ? ` +${r.elmas} elmas` : ''}`)
+          if (r.yeni) {
+            const bolum = BOLUMLER.find((x) => x.bolge === kod)
+            setTimeout(() => B.kutla({
+              simgeAd: 'cevher', kod, baslik: `${bb.ad} açıldı!`, alt: `${bb.cevher} · ${bb.alt}`,
+              satirlar: [...(bolum ? [`Bölüm ${bolum.no}: ${bolum.ad}`] : []), ...(r.elmas ? [`<img src="img/ref/hud-elmas.png" alt="">+${r.elmas} elmas`] : [])],
+            }), 500)
+          }
           else if (r.kazanc > 0) B.bildir('basari', `${bb.ad} sen yokken +${bicim(r.kazanc)} kazandı (${sure(Math.min(r.sure, 864000))})`)
         } else if (r && !r.ok) B.bildir('bilgi', bolgeKilitYazi(B.durumAl(), kod) || `${bb.ad} henüz açılamıyor.`)
         setTimeout(() => { gecis.classList.remove('acik'); gecisVar = false }, 450)
@@ -272,4 +285,36 @@ export const Arayuz = {
     if (B.sayfa.acik()) { B.sayfa.kapat(); return true }
     return false
   },
+}
+
+// Kutlama: ortada ışınlı kart (simge, başlık, ödül satırları); dokununca ya da 3,6 sn sonra kapanır
+function kutlamaKur(B) {
+  const el = ogeYap(`<div class="kutlama" hidden aria-live="polite"><i class="ktl-isin"></i>
+    <div class="ktl-kart"><div class="ktl-simge"></div><b class="ktl-baslik"></b><small class="ktl-alt"></small>
+    <div class="ktl-satirlar"></div><span class="ktl-dokun">Devam etmek için dokun</span></div></div>`)
+  B.kok.appendChild(el)
+  const q = (s) => el.querySelector(s)
+  let zaman = 0
+  const kapat = () => {
+    clearTimeout(zaman)
+    el.classList.remove('acik')
+    B.kok.classList.remove('kutlama-acik')
+    setTimeout(() => { if (!el.classList.contains('acik')) el.hidden = true }, 280)
+  }
+  el.addEventListener('click', (e) => { e.stopPropagation(); kapat() })
+  return ({ simgeAd, kod = '', baslik, alt = '', satirlar = [] }) => {
+    q('.ktl-simge').innerHTML = simge(simgeAd, kod, 96)
+    q('.ktl-baslik').textContent = baslik
+    q('.ktl-alt').textContent = alt
+    q('.ktl-satirlar').innerHTML = satirlar.map((x) => `<span>${x}</span>`).join('')
+    simgeleriCiz(el, B)
+    el.hidden = false
+    void el.offsetWidth
+    el.classList.add('acik')
+    // Kutlama sürerken hikâye ve diğer pencereler geride bekler
+    B.kok.classList.add('kutlama-acik')
+    ses('odul')
+    clearTimeout(zaman)
+    zaman = setTimeout(kapat, 3600)
+  }
 }

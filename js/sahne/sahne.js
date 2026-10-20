@@ -1098,8 +1098,13 @@ export const Sahne = {
           dunyaP.patlat(p.x, p.y, 'toz', 4)
           break
         }
-        case 'bolgeDegisti':
         case 'prestijYapildi':
+          this.efekt.patlat(efW / 2, -10, 'konfeti', 80, { genislik: efW })
+          faz.fill(0)
+          sonVurus.fill(-1)
+          bostaSure.fill(0)
+          break
+        case 'bolgeDegisti':
           faz.fill(0)
           sonVurus.fill(-1)
           bostaSure.fill(0)

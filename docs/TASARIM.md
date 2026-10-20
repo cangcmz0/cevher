@@ -1545,3 +1545,12 @@ hour pass their peak (but not when the next region is close). It never sleeps, s
   as it is affordable; the last region reaches about 17 floors by 600 hours, so floors 18–30 are the completionist goal.
   The `Derinlere` achievement tiers are 5/10/14/17/20 floors.
 - Knobs: `BOLGELER[].bedel`, `PRESTIJ.us`, `ACILIS`, `DERIN_KAT`, `ACILIS_DERIN`, `MADEN_URETIM_DERIN`, `MADEN_MALIYET_DERIN`.
+
+### 10.7 Visual additions
+
+- **Deep floors** (`katDerinligi`): from floor 14 the rock and back wall darken and three glowing ore geodes appear; from
+  floor 22 branching hot cracks run along the floor with a warm glow. Strips are cached per layout, stage and depth.
+- **Celebration** (`B.kutla`): prestige and the first opening of a region show a centred card with rotating rays, a
+  bouncing illustration (medal or the region's ore), a title and reward lines (seals and the multiplier before → after;
+  the story chapter and +50 elmas), with confetti on top. Story dialogs wait behind it; it closes on tap or after 3.6 s.
+- **HUD quest bar**: glows and reads `Görev hazır · Al` when the current quest is done; tapping claims it.
