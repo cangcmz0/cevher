@@ -68,6 +68,7 @@ function seritAl(kod, ad, h, ciz) {
 }
 const katSerit = (kod, v, asama = 0, derin = 0) => seritAl(kod, 'kat' + v + '|' + asama + '|' + derin, yer.SATIR_H, (g) => D.katCiz(g, W, yer.SATIR_H, yer, kod, v, asama, derin))
 const yuklemeSerit = (kod) => seritAl(kod, 'yukleme', yer.YUKLEME_H, (g) => D.yuklemeCiz(g, W, yer.YUKLEME_H, yer, kod))
+const yuzeySerit = (kod) => seritAl(kod, 'yuzey', yer.YUZEY_H, (g) => D.yuzeyCiz(g, W, yer.YUZEY_H, yer, kod))
 const kayaSerit = (kod, v, h) => seritAl(kod, 'kaya' + v + '|' + h, h, (g) => D.kayaSerit(g, W, h, kod, 401 + v * 97))
 let kabinOnbellek = null, kabinAnahtar = ''
 function kabinC() {
@@ -437,7 +438,7 @@ function kamyonGuncelle(dt) {
 function kamyonCiz(kod) {
   const K2 = D.KAMYON, ky = yer.YUKLEME_H / 107, yy = yer.yuklemeY
   const sp = kamyonGorsel()
-  const dx = kamyon.x * yer.k
+  const dx = (kamyon.x + K2.dx) * yer.k
   const x0 = K2.x0 * yer.k + dx
   if (x0 + sp.width / oran < -4) return
   // Gölge, gövde, yük, dönen tekerlekler
@@ -516,7 +517,7 @@ function yuklemeIscileri(d, alfa, simdiMs, dt) {
   const yolda = kamyon.durum === 'gidiyor' || kamyon.durum === 'geliyor'
   if (kamyon.durum !== 'yok' && simdiMs - sonDuman > (yolda ? 110 : isler ? 520 : 1700)) {
     sonDuman = simdiMs
-    dunyaP.patlat(X(D.YUKLEME.egzoz[0] + kamyon.x), yy + Yy(D.YUKLEME.egzoz[1]), 'duman', yolda ? 2 : isler ? 2 : 1)
+    dunyaP.patlat(X(D.YUKLEME.egzoz[0] + kamyon.x + D.KAMYON.dx), yy + Yy(D.YUKLEME.egzoz[1]), 'duman', yolda ? 2 : isler ? 2 : 1)
   }
 }
 
@@ -724,18 +725,20 @@ function cevherAkisi(d, a, alt, simdiMs) {
     const hx = cx + (karma(simdiMs * 0.3) - 0.5) * yer.tupG * 0.4
     dunyaP.firlat(x0, y0, hx, alt - yer.KABIN_H * (0.16 + karma(simdiMs * 0.7) * 0.12), 0.3, tas, { boy, g: 520 })
   } else if (a.durum === 'bosaltiyor' && a.yuk > 0) {
-    const x0 = cx + (karma(simdiMs * 0.3) - 0.5) * yer.tupG * 0.45
+    // Kabin oluğa döker: cevher sola, depo bunkerinin ağzına kayar
+    const x0 = yer.tupX + yer.tupG * (0.2 + karma(simdiMs * 0.3) * 0.2), y0 = alt - yer.KABIN_H * (0.2 + karma(simdiMs * 0.5) * 0.15)
     const hy = yer.yuklemeY + Yy(D.YUKLEME.bunkerUst + 4 + karma(simdiMs * 1.3) * 6)
-    dunyaP.firlat(x0, alt - 3, x0 + (karma(simdiMs * 0.9) - 0.5) * X(26), hy, 0.36, tas, { boy, g: 300, kal: 0.2, zemin: hy })
+    const hx = X((D.YUKLEME.bunkerX0 + D.YUKLEME.bunkerX1) / 2) + (karma(simdiMs * 0.9) - 0.5) * X(30)
+    dunyaP.firlat(x0, y0, hx, hy, 0.36, tas, { boy, g: 300, kal: 0.2, zemin: hy })
   }
 }
 function kabinCiz(d, b, alfa, simdiMs, dt) {
   const a = d.calisma.asansor
   const konum = kabinYay(a.onceki + (a.konum - a.onceki) * alfa, dt)
-  const alt = konum >= 0 ? yer.kabinAltY(konum) : yer.kabinAltY(0) - konum * yer.SATIR_H * 0.5
+  const alt = yer.kabinAltY(konum)
   const hareket = Math.min(1, Math.abs(kabinV) / 2)
   const t = simdiMs / 1000
-  const ust = yer.satirY(Math.max(0, b.madenler.length - 1)) + Yk(9)
+  const ust = yer.makaraY
   const tepe = alt - yer.KABIN_H - 1
   const R = Math.max(5, yer.tupG * 0.14 + 0.8)
   const cx = yer.tupX + yer.tupG / 2
@@ -828,7 +831,7 @@ export const Sahne = {
     // Açılış perdesi sürerken etkin bölgenin şeritlerini önceden çiz (ilk karede takılma olmasın)
     oran = Math.min(dpr, dpTavan())
     const kod = (durum && durum.aktifBolge) || 'zonguldak'
-    const isler = [() => yuklemeSerit(kod), () => kayaSerit(kod, 2, yer.TEPE_H)]
+    const isler = [() => yuzeySerit(kod), () => yuklemeSerit(kod), () => kayaSerit(kod, 2, yer.TEPE_H)]
     for (let v = 0; v < D.KAT_DUZEN; v++) isler.push(() => kayaSerit(kod, v, yer.SATIR_H))
     // Açık katların düzen/aşama/derinlik birleşimleri
     const b0 = durum && durum.bolgeler && durum.bolgeler[kod]
@@ -881,9 +884,12 @@ export const Sahne = {
     ctx.imageSmoothingQuality = 'high'
 
     // Dünya dışı (kaydırma lastiği)
-    if (ust < 0) { ctx.fillStyle = '#041A2A'; ctx.fillRect(0, ust, W, -ust) }
+    if (ust < 0) { ctx.fillStyle = '#58AEE2'; ctx.fillRect(0, ust, W, -ust) }
     if (alt > y.DUNYA_H) { ctx.fillStyle = '#041A2A'; ctx.fillRect(0, y.DUNYA_H, W, alt - y.DUNYA_H) }
-    if (ust < y.TEPE_H) ctx.drawImage(kayaSerit(kod, 2, y.TEPE_H), 0, 0, W, y.TEPE_H)
+    // Yüzey (gökyüzü, kuyu kulesi) en üstte; dipte taş şeridi
+    if (ust < y.yuklemeY) ctx.drawImage(yuzeySerit(kod), 0, 0, W, y.YUZEY_H)
+    const dipY = y.satirY(MAKS_MADEN)
+    if (alt > dipY) ctx.drawImage(kayaSerit(kod, 2, y.TEPE_H), 0, dipY, W, y.TEPE_H)
     yetAktif.clear()
     for (const yo of b.yoneticiler) if (yo.atanan && durum.zaman < yo.aktifBitis) yetAktif.add(yo.atanan)
 

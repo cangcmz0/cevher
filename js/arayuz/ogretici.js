@@ -153,8 +153,10 @@ export function kur(B) {
     // Hedef görünüm dışındaysa bir kez kaydır
     if (kaydirildi !== a && (h.y < 140 || h.y + h.h > B.kok.clientHeight - 140)) {
       kaydirildi = a
-      if (a === 5 || a === 2) B.istasyonaKaydir('m0')
-      else B.kaydirKonumu(1e9, { anim: true })
+      // Katlar aşağı doğru: kat adımları o kata, asansör ve depo adımları en üste
+      if (a === 1 || a === 2 || a === 5) B.istasyonaKaydir('m0')
+      else if (a === 6) B.istasyonaKaydir('m1')
+      else B.kaydirKonumu(0, { anim: true })
     }
     if (kap.hidden) kap.hidden = false
     kap.classList.toggle('serbest', !zorunlu())

@@ -234,9 +234,9 @@ export function kur(B) {
     }
     rozetBagla(rA, atanan.asansor, d, 20)
     if (B.yer.yuklemeY < alt) rozetBagla(rD, atanan.depo, d, 24)
-    // Asansör etiketi kuyunun tepesinden yukarıda (boş kayada) kalmasın
-    const kuyuUst = B.yer.satirY(Math.max(0, b.madenler.length - 1)) - B.kaydirY
-    const ust2 = Math.round(Math.max(181, kuyuUst + 8))
+    // Asansör etiketi kuyunun dibinden aşağıda (boş kayada) kalmasın
+    const kuyuAlt = B.yer.satirY(Math.max(0, b.madenler.length - 1)) + B.yer.SATIR_H - B.kaydirY
+    const ust2 = Math.round(Math.min(181, kuyuAlt - 46))
     if (ust2 !== asansorUst) { asansorUst = ust2; asansorKap.style.top = ust2 + 'px' }
   }
 

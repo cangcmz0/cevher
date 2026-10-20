@@ -127,7 +127,7 @@ function eylem(ad, veri = {}) {
     else if (ERTELI.has(ad)) kayitIste(1000)
     if (ad === 'ayar' && veri && veri.anahtar === 'kalite') boyutla()
     if (ad === 'cevrimdisiTopla') Ses.cal('para')
-    if (ad === 'sifirla') kaydirma?.kaydirKonumu(1e9, { anim: false })
+    if (ad === 'sifirla') kaydirma?.kaydirKonumu(0, { anim: false })
   } else if (s && (s.sebep === 'para' || s.sebep === 'elmas')) {
     Ses.cal('hata')
   }
@@ -434,8 +434,8 @@ async function basla() {
   }
   boyutla()
   try { new ResizeObserver(() => boyutla()).observe(alan) } catch { window.addEventListener('resize', boyutla) }
-  // Görünüm alttaki yükleme katından başlar
-  kaydirma.kaydirKonumu(1e9, { anim: false })
+  // Görünüm en üstteki yüzeyden ve yükleme katından başlar
+  kaydirma.kaydirKonumu(0, { anim: false })
 
   // Yükleme uyarıları ve eski oyundan aktarım
   if (yuklenen.kaynak === 'aktarim') Arayuz.modalAc('aktarim', {})

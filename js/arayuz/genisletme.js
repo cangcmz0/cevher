@@ -391,6 +391,6 @@ export function hazirla(B) {
   B.eylemler['prestij-yap'] = (btn) => {
     if (!btn.dataset.onay) { btn.dataset.onay = '1'; P.kare4(B.durumAl()); return }
     const s = B.eylem('prestij', {})
-    if (s && s.ok) { P.kapatSayfa(); B.sayfa.kapat(); B.kaydirKonumu(1e9, { anim: false }) }
+    if (s && s.ok) { P.kapatSayfa(); B.sayfa.kapat(); B.kaydirKonumu(0, { anim: false }) }
   }
 }

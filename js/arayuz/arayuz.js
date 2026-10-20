@@ -185,7 +185,7 @@ export const Arayuz = {
           try { B.sahne.dokular(kod) } catch {}
           B.sayfa.kapat()
           B.pencere.kapatSayfa()
-          B.kaydirKonumu(1e9, { anim: false })
+          B.kaydirKonumu(0, { anim: false })
           if (r.yeni) {
             const bolum = BOLUMLER.find((x) => x.bolge === kod)
             setTimeout(() => B.kutla({

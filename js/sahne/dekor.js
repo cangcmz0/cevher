@@ -57,10 +57,11 @@ export const KAT = Object.freeze({
 })
 export const YUKLEME = Object.freeze({
   zemin: 95,
-  bunkerX0: 286, bunkerX1: 360, bunkerUst: 52,   // depo bunkeri (kabin buraya boşaltır)
-  kapiX: 272,       // vagonların yüklendiği yer (bunkerin solu)
-  satisX: 192,      // kamyon kasası
-  fener: [[150, 14], [226, 14]],
+  bunkerX0: 232, bunkerX1: 286, bunkerUst: 52,   // depo bunkeri (kuyunun solunda; kabin oluktan boşaltır)
+  kuyuX: 290,       // yükleme katında kuyu sütunu buradan başlar
+  kapiX: 220,       // vagonların yüklendiği yer (bunkerin solu)
+  satisX: 178,      // kamyon kasası
+  fener: [[146, 14], [206, 14]],
   egzoz: [121, 44],
 })
 
@@ -995,23 +996,23 @@ export function yuklemeCiz(c, W, H, y, kod) {
   const X = (r) => r * k, Y = (r) => r * ky
   const kp = kaya(kod)
   kayaKutle(c, 0, 0, W, H, kp, 501, 0.8, 1)
-  const tx0 = X(94), ty0 = Y(4), ty1 = Y(100)
+  const tx0 = X(94), ty0 = Y(4), ty1 = Y(100), kx = X(YUKLEME.kuyuX)
   const galeri = new Path2D()
   galeri.moveTo(tx0, ty1)
   galeri.lineTo(tx0, ty0 + Y(8))
   galeri.quadraticCurveTo(tx0, ty0, tx0 + X(10), ty0)
-  galeri.lineTo(W, ty0)
-  galeri.lineTo(W, ty1)
+  galeri.lineTo(kx, ty0)
+  galeri.lineTo(kx, ty1)
   galeri.closePath()
   c.save()
   c.clip(galeri)
   const duvar = { koyu: kp.duvar[2], orta: kp.duvar[1], acik: kp.duvar[0], tas: kp.tas.map((t) => acik(t, 0.08)) }
-  kayaKutle(c, tx0, ty0, W - tx0, ty1 - ty0, duvar, 611, 0.75, 1.5)
+  kayaKutle(c, tx0, ty0, kx - tx0, ty1 - ty0, duvar, 611, 0.75, 1.5)
   c.fillStyle = 'rgba(18,10,5,.32)'
-  c.fillRect(tx0, ty0, W - tx0, ty1 - ty0)
+  c.fillRect(tx0, ty0, kx - tx0, ty1 - ty0)
   for (const [fx, fy] of YUKLEME.fener) isikHavuzu(c, X(fx), Y(fy + 24), X(72), 0.75)
   c.fillStyle = dG(c, ty0, ty0 + Y(24), ['rgba(8,5,3,.6)', 'rgba(8,5,3,0)'])
-  c.fillRect(tx0, ty0, W - tx0, Y(24))
+  c.fillRect(tx0, ty0, kx - tx0, Y(24))
   c.fillStyle = yG(c, tx0, tx0 + X(30), ['rgba(8,5,3,.55)', 'rgba(8,5,3,0)'])
   c.fillRect(tx0, ty0, X(30), ty1 - ty0)
   c.restore()
@@ -1019,32 +1020,35 @@ export function yuklemeCiz(c, W, H, y, kod) {
   c.lineWidth = 1.4
   c.stroke(galeri)
 
-  kalas(c, X(94), Y(2.5), W - X(94), Y(7), true, 701, '#9A6334')
-  for (const [x, t] of [[X(95), 702], [X(176), 703], [X(250), 704]]) kalas(c, x, Y(9), X(7), Y(83), false, t, '#8E5A30')
+  kalas(c, X(94), Y(2.5), kx - X(94), Y(7), true, 701, '#9A6334')
+  for (const [x, t] of [[X(95), 702], [X(170), 703], [X(222), 704]]) kalas(c, x, Y(9), X(7), Y(83), false, t, '#8E5A30')
   for (const [fx, fy] of YUKLEME.fener) fenerGovde(c, X(fx), Y(fy), Y(fy) - Y(9.5))
 
   c.fillStyle = dG(c, Y(90), Y(107), [koyu(kp.duvar[1], 0.15), kp.orta, kp.koyu])
-  c.fillRect(X(94), Y(90), W - X(94), Y(17))
+  c.fillRect(X(94), Y(90), kx - X(94), Y(17))
   c.fillStyle = 'rgba(255,226,180,.25)'
-  c.fillRect(X(94), Y(90), W - X(94), 0.7)
+  c.fillRect(X(94), Y(90), kx - X(94), 0.7)
   const r5 = rastgele(808)
   for (let i = 0; i < 40; i++) {
     c.fillStyle = r5() < 0.5 ? rgba(kp.tas[1], 0.9) : rgba('#000000', 0.35)
-    c.beginPath(); c.ellipse(X(96 + r5() * 268), Y(91 + r5() * 14), X(0.6 + r5() * 1.2), Y(0.4 + r5() * 0.7), 0, 0, TAU); c.fill()
+    c.beginPath(); c.ellipse(X(96 + r5() * 192), Y(91 + r5() * 14), X(0.6 + r5() * 1.2), Y(0.4 + r5() * 0.7), 0, 0, TAU); c.fill()
   }
-  rayCiz(c, X(150), X(300), Y(YUKLEME.zemin + 1), 909)
+  rayCiz(c, X(140), X(232), Y(YUKLEME.zemin + 1), 909)
 
-  // Depo sundurması: tahta arka duvar, oluklu sac çatı
-  const dx0 = X(256)
-  for (let x = dx0, i = 0; x < W; x += X(9.2), i++) kalas(c, x, Y(22), X(9.2), Y(68), false, 720 + i, i % 2 ? '#7A4E2A' : '#6E4424')
+  // Kuyu sütunu sağda: kabin aşağıdan çıkar, sahanlık bunkerin ağzı hizasında
+  kuyuSutun(c, kx, W, 0, H, Y(YUKLEME.bunkerUst - 2), kp, y, 977)
+
+  // Depo sundurması: tahta arka duvar, oluklu sac çatı (bunkerin arkasında, kuyuya kadar)
+  const dx0 = X(226)
+  for (let x = dx0, i = 0; x < kx; x += X(9.2), i++) kalas(c, x, Y(22), Math.min(X(9.2), kx - x), Y(68), false, 720 + i, i % 2 ? '#7A4E2A' : '#6E4424')
   c.fillStyle = dG(c, Y(22), Y(40), ['rgba(0,0,0,.5)', 'rgba(0,0,0,0)'])
-  c.fillRect(dx0, Y(22), W - dx0, Y(18))
-  const cati = yolCiz([[dx0 - X(9), Y(27)], [dx0 + X(4), Y(11)], [W, Y(11)], [W, Y(22)], [dx0 + X(8), Y(22)], [dx0 - X(2), Y(31)]])
+  c.fillRect(dx0, Y(22), kx - dx0, Y(18))
+  const cati = yolCiz([[dx0 - X(9), Y(27)], [dx0 + X(4), Y(11)], [kx, Y(11)], [kx, Y(22)], [dx0 + X(8), Y(22)], [dx0 - X(2), Y(31)]])
   c.save()
   c.clip(cati)
   c.fillStyle = dG(c, Y(11), Y(31), ['#A9B9C8', '#6E8296', '#4A5A6C'])
-  c.fillRect(dx0 - X(10), Y(10), W - dx0 + X(10), Y(22))
-  for (let x = dx0 - X(12); x < W; x += X(4)) {
+  c.fillRect(dx0 - X(10), Y(10), kx - dx0 + X(10), Y(22))
+  for (let x = dx0 - X(12); x < kx; x += X(4)) {
     c.fillStyle = 'rgba(255,255,255,.28)'
     c.fillRect(x, Y(10), X(1.2), Y(22))
     c.fillStyle = 'rgba(0,0,0,.22)'
@@ -1054,15 +1058,14 @@ export function yuklemeCiz(c, W, H, y, kod) {
   c.strokeStyle = CIZGI
   c.lineWidth = 0.9
   c.stroke(cati)
-  // Kabin kuyusu çatıdan iner: perçinli huni
-  const hx0 = y.tupX - X(4), hx1 = y.tupX + y.tupG + X(4)
-  const huni = yolCiz([[hx0, Y(4)], [hx1, Y(4)], [hx1 - X(8), Y(20)], [hx0 + X(8), Y(20)]])
-  c.fillStyle = yG(c, hx0, hx1, ['#3E474F', '#9AA6B2', '#5E6A76', '#2E353B'])
-  c.fill(huni)
+  // Besleme oluğu: kabinden bunkerin ağzına eğimli sac oluk
+  const bs = X(YUKLEME.bunkerX1)
+  const besle = yolCiz([[y.tupX + X(2), Y(YUKLEME.bunkerUst - 9)], [y.tupX + X(2), Y(YUKLEME.bunkerUst - 4)], [bs - X(10), Y(YUKLEME.bunkerUst + 2)], [bs - X(12), Y(YUKLEME.bunkerUst - 2)]])
+  c.fillStyle = dG(c, Y(YUKLEME.bunkerUst - 9), Y(YUKLEME.bunkerUst + 2), ['#B8C4CE', '#5E6A76'])
+  c.fill(besle)
   c.strokeStyle = CIZGI
-  c.lineWidth = 0.9
-  c.stroke(huni)
-  for (let x = hx0 + X(6); x < hx1 - X(4); x += X(7)) percin(c, x, Y(6.5), 0.75)
+  c.lineWidth = 0.8
+  c.stroke(besle)
 
   // Depo bunkeri (ön yüz): kalın kalaslar, köşe demirleri, tabela
   const bx0 = X(YUKLEME.bunkerX0), bx1 = X(YUKLEME.bunkerX1), bu = Y(YUKLEME.bunkerUst)
@@ -1099,6 +1102,115 @@ export function yuklemeCiz(c, W, H, y, kod) {
   c.lineWidth = 0.8
   c.stroke(oluk)
 
+}
+
+// ════════ Yüzey şeridi (en üstte) ════════
+// Gökyüzü, bulut, uzak tepeler, çimen ve toprak; solda bölge tabelası, sağda kuyu kulesi (makara sahnede döner)
+export function yuzeyCiz(c, W, H, y, kod) {
+  const X = (r) => r * y.k
+  const kp = kaya(kod)
+  const zem = H - y.rd(13)
+  const r = rastgele(4242)
+  // Gökyüzü ve bulutlar
+  c.fillStyle = dG(c, 0, zem, ['#58AEE2', '#96D0F0', '#D8EEF8'])
+  c.fillRect(0, 0, W, zem)
+  for (const [bx, by, bs] of [[X(70), H * 0.22, X(16)], [X(205), H * 0.14, X(12)]]) {
+    c.fillStyle = 'rgba(255,255,255,.85)'
+    for (const [ox, oy, rr] of [[0, 0, 1], [0.9, 0.15, 0.75], [-0.85, 0.2, 0.7], [0.3, -0.35, 0.65]]) {
+      c.beginPath(); c.ellipse(bx + ox * bs, by + oy * bs, bs * rr, bs * rr * 0.62, 0, 0, TAU); c.fill()
+    }
+  }
+  // Uzak tepeler
+  for (const [ton, taban, gen, faz] of [['#93BE7E', zem - y.rd(4), y.rd(16), 0.4], ['#73A262', zem + 1, y.rd(10), 1.7]]) {
+    const p = new Path2D()
+    p.moveTo(0, zem + 2)
+    for (let x = 0; x <= W + 6; x += 6) p.lineTo(x, taban - gen * (0.55 + 0.45 * Math.sin(x / X(46) + faz)) * (0.7 + 0.3 * Math.sin(x / X(17) + faz * 2)))
+    p.lineTo(W, zem + 2)
+    p.closePath()
+    c.fillStyle = ton
+    c.fill(p)
+  }
+  // Toprak ve çimen
+  c.fillStyle = dG(c, zem, H, [koyu(kp.orta, 0.05), kp.koyu])
+  c.fillRect(0, zem, W, H - zem)
+  c.fillStyle = dG(c, zem - 3, zem + 4, ['#7CC25A', '#4E9A3A'])
+  c.beginPath()
+  c.moveTo(0, zem + 4)
+  for (let x = 0; x <= W; x += 3) c.lineTo(x, zem - 1.5 - r() * 2.5)
+  c.lineTo(W, zem + 4)
+  c.closePath()
+  c.fill()
+  for (let i = 0; i < 26; i++) {
+    c.fillStyle = r() < 0.5 ? rgba(kp.tas[1], 0.8) : 'rgba(0,0,0,.25)'
+    c.beginPath(); c.ellipse(r() * W, zem + 5 + r() * (H - zem - 6), X(0.8 + r()), X(0.5 + r() * 0.6), 0, 0, TAU); c.fill()
+  }
+  // Çam ağaçları
+  for (const [ax, s] of [[X(112), 1], [X(124), 0.8], [X(196), 0.9], [X(268), 0.75]]) {
+    const h = y.rd(17) * s, w = X(6.5) * s
+    c.fillStyle = '#4E3220'
+    c.fillRect(ax - 0.7, zem - h * 0.25, 1.4, h * 0.27)
+    const p = yolCiz([[ax, zem - h], [ax + w, zem - h * 0.2], [ax - w, zem - h * 0.2]])
+    c.fillStyle = yG(c, ax - w, ax + w, ['#3E8A4A', '#2A6A38', '#1C4A28'])
+    c.fill(p)
+    c.strokeStyle = rgba(CIZGI, 0.6)
+    c.lineWidth = 0.5
+    c.stroke(p)
+  }
+  // Bölge tabelası (tahta, iki direk üstünde)
+  const tx = X(14), tw = X(84), th = y.rd(17), ty = zem - y.rd(27)
+  for (const px of [tx + X(10), tx + tw - X(12)]) kalas(c, px, ty + th - 2, X(3.4), zem - ty - th + 4, false, 4300 + px, '#6A4424')
+  kalas(c, tx, ty, tw, th, true, 4310, '#9A6334')
+  c.strokeStyle = CIZGI
+  c.lineWidth = 0.8
+  c.strokeRect(tx, ty, tw, th)
+  const ad = ((BOLGE[kod] && BOLGE[kod].ad) || '').toLocaleUpperCase('tr')
+  c.fillStyle = '#FFF2D0'
+  c.font = `800 ${Math.round(Math.min(th * 0.62, (tw - X(8)) / Math.max(1, ad.length) * 1.75))}px "Baloo 2", "Trebuchet MS", system-ui, sans-serif`
+  c.textAlign = 'center'
+  c.textBaseline = 'middle'
+  c.shadowColor = 'rgba(0,0,0,.55)'
+  c.shadowOffsetY = 1
+  c.fillText(ad, tx + tw / 2, ty + th / 2 + 0.5)
+  c.shadowColor = 'transparent'
+  c.shadowOffsetY = 0
+  // Kuyu kulesi: kuyu ağzı, raylar, iki çelik ayak, çaprazlar, makara platformu (makara sahnede döner)
+  const sol = y.tupX - 3, sag = y.tupX + y.tupG, cx = y.tupX + y.tupG / 2, my = y.makaraY
+  c.fillStyle = yG(c, sol, sag + 3, ['#0B0E11', '#18202A', '#10161C'])
+  c.fillRect(sol, my + y.rd(4), sag + 3 - sol, H - my - y.rd(4))
+  for (const x of [sol, sag]) {
+    c.fillStyle = yG(c, x, x + 3.2, ['#2A3036', '#8C98A4', '#3E474F'])
+    c.fillRect(x, my + y.rd(2), 3.2, H - my - y.rd(2))
+  }
+  const ayak = (x0, x1) => {
+    c.strokeStyle = '#2E4A66'
+    c.lineWidth = X(3)
+    c.lineCap = 'round'
+    c.beginPath(); c.moveTo(x0, zem + 2); c.lineTo(x1, my - y.rd(3)); c.stroke()
+    c.strokeStyle = '#7FA6CC'
+    c.lineWidth = X(0.9)
+    c.beginPath(); c.moveTo(x0 - 0.6, zem + 2); c.lineTo(x1 - 0.6, my - y.rd(3)); c.stroke()
+    c.lineCap = 'butt'
+  }
+  const sx0 = sol - X(9), sx1 = sag + X(12)
+  ayak(sx0, cx - X(6))
+  ayak(sx1, cx + X(6))
+  c.strokeStyle = '#3A5E82'
+  c.lineWidth = X(1.1)
+  c.beginPath()
+  for (const t of [0.35, 0.7]) {
+    const ya = zem + 2 + (my - y.rd(3) - zem - 2) * t
+    const xl = sx0 + (cx - X(6) - sx0) * t, xr = sx1 + (cx + X(6) - sx1) * t
+    c.moveTo(xl, ya); c.lineTo(xr, ya)
+  }
+  c.stroke()
+  // Platform ve ikaz ışığı
+  c.fillStyle = dG(c, my - y.rd(7), my - y.rd(3), ['#7FA6CC', '#2E4A66'])
+  c.fillRect(cx - X(14), my - y.rd(7), X(28), y.rd(4))
+  c.strokeStyle = CIZGI
+  c.lineWidth = 0.7
+  c.strokeRect(cx - X(14), my - y.rd(7), X(28), y.rd(4))
+  c.fillStyle = '#E8452E'
+  c.beginPath(); c.arc(cx, my - y.rd(9), X(1.6), 0, TAU); c.fill()
 }
 
 // Kamyon: tırtıklı lastikler, camında yansıma olan kabin, far, damper kasası, egzoz, merdiven
@@ -1167,7 +1279,8 @@ export function kamyonGovde(c, X, Y) {
   }
 }
 // Kamyon ölçüleri (referans): gövde kutusu, teker merkezleri, teker yarıçapı (dikey birim)
-export const KAMYON = Object.freeze({ x0: 104, y0: 40, x1: 228, y1: 99, teker: [128, 172, 205], tekerY: 89, tekerR: 7.6 })
+// dx: kamyonun yükleme katındaki kayması (bunker kuyunun soluna taşındığı için sola)
+export const KAMYON = Object.freeze({ x0: 104, y0: 40, x1: 228, y1: 99, teker: [128, 172, 205], tekerY: 89, tekerR: 7.6, dx: -14 })
 export function lastikCiz(c, x, y, r) { lastik(c, x, y, r) }
 function lastik(c, x, y, r) {
   c.fillStyle = '#141619'

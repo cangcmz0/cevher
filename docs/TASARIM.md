@@ -1402,7 +1402,8 @@ Each S2 package follows the same ownership, interfaces and acceptance rules as s
   (`img/ref/*.png`, cut by a Playwright canvas script) and drawn as they are. Changing text is printed on a
   same-colour patch over the painted text. Touch targets are transparent buttons placed in crop pixels and
   converted to percentages. Text sizes use `cqw` so they scale with the width.
-- Mine screen: floors stack bottom-up (`1. Kat Yükleme` at the bottom, mine i = `(i+2). Kat`), geometry in
+- Mine screen: the mine goes down (§10.8): a surface strip at the top, `1. Kat Yükleme` under it, mine i =
+  `(i+2). Kat` below that, geometry in
   `js/yerlesim.js` (reference width 367 px, vertical squeeze 0.95). Each region tints the painted ore piles
   (`CEVHER_TON` in `js/sahne/sahne.js`), and the card and stats icons come from the screen-3 resource tiles.
 - Tabs: `Harita` = screen 2 (`js/arayuz/harita.js`); `Yöneticiler` = screen 3 (`js/arayuz/genisletme.js`);
@@ -1554,3 +1555,23 @@ hour pass their peak (but not when the next region is close). It never sleeps, s
   bouncing illustration (medal or the region's ore), a title and reward lines (seals and the multiplier before → after;
   the story chapter and +50 elmas), with confetti on top. Story dialogs wait behind it; it closes on tap or after 3.6 s.
 - **HUD quest bar**: glows and reads `Görev hazır · Al` when the current quest is done; tapping claims it.
+
+### 10.8 The mine goes down
+
+The mine reads like a real mine: from the surface down. The look of every strip, card and character is unchanged.
+
+- **Order (top to bottom, `js/yerlesim.js`):** surface strip `YUZEY_H = rd(64)` (sky, hills, a wooden region sign and
+  the steel headframe with its sheave, `dekor.yuzeyCiz`), then `1. Kat Yükleme` (`yuklemeY = YUZEY_H`), then mine i at
+  `satirY(i) = yuklemeY + YUKLEME_H + i × SATIR_H`, then a rock cap `TEPE_H` at the bottom. A new floor opens below the
+  last one.
+- **Loading floor:** the shaft column runs down its right edge (`YUKLEME.kuyuX = 290`). The depot bunker sits left of the
+  shaft (`bunkerX0..X1 = 232..286`) and the cabin tips into it through a sloped chute. The shed, rails and truck
+  moved left to make room (`KAMYON.dx = −14`).
+- **Elevator:** position 0 is the bunker mouth at the top (`KABIN_YUKLEME_ALT = yuklemeY + rd(50)`), and position k is
+  floor k going down. The sheave sits on the headframe (`makaraY`), so the ropes hang down to the cabin. A negative
+  spring overshoot moves the cabin up.
+- **Scroll:** the view starts at the top (`kaydirKonumu(0)`) and scrolls down. The top limit is 0. The bottom limit is
+  `dunyaH(open)`: the locked next floor plus a 24 px margin, or the rock cap when all 30 floors are open. Overscroll
+  above the top shows sky blue.
+- **DOM:** the `Asansör (Sv.N)` label stays at 181 px but never drops below the bottom of the shaft
+  (`kartlar.js kare10`).
