@@ -1,15 +1,16 @@
 // Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
 //  MAĞAZA (§2.16) — günlük hediye (7 günlük döngü), ücretsiz elmas
-//  (ödüllü reklam, günde 3), elmasla güçlendirmeler, özel teklif ve
+//  (ödüllü reklam, günde 3), elmas kumbarası, elmasla güçlendirmeler, özel teklif ve
 //  elmas paketleri. Tarayıcıda paketler deneme olarak verilir (ödeme
 //  alınmaz); uygulamada Google Play ödemesi açılır (magaza.js).
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
-import { A, yaz, sinif, gizle, bicim, sayac, bolgeAl, simge, simgeleriCiz } from './ortak.js'
+import { A, yaz, sinif, gizle, cubuk, bicim, sayac, bolgeAl, simge, simgeleriCiz } from './ortak.js'
 import { Magaza } from '../magaza.js'
 import { gunKodu, kalanKisa } from './harita.js'
 import { otoGelir } from '../ekonomi.js'
+import { kumbaraTavan, kumbaraBonus } from '../benzetim.js'
 
 const HEDIYE_SIMGE = { para: 'sikke', elmas: 'elmas', takviye: 'sikke', yonetici: 'kask' }
 const GUC = [
@@ -21,7 +22,8 @@ const GUC = [
 const urunSimge = (u) => (u.tur === 'elmas' ? 'elmas' : u.id === 'altin_kazma' ? 'kazma' : u.id === 'reklamsiz' ? 'yildirim' : 'hediye')
 
 export function kur(B, govde) {
-  const urunler = Magaza.URUNLER
+  const urunler = Magaza.URUNLER.filter((u) => u.tur !== 'kumbara')
+  const kumbaraUrun = Magaza.URUNLER.find((u) => u.tur === 'kumbara')
   const kod0 = B.durumAl().aktifBolge
   govde.innerHTML = `<div class="dk sy">
     <header class="sy-bas">${simge('hediye', '', 54)}<div><h2>Mağaza</h2><small>Günlük hediyeler, güçlendirmeler ve elmas paketleri</small></div></header>
@@ -31,6 +33,10 @@ export function kur(B, govde) {
     <section class="pano"><h3 class="plaka">${ikon('elmas')}<span>Ücretsiz Elmas</span></h3>
       <div class="dk-satir">${simge('elmas', '', 46)}<div><b>Reklam izle, 5 elmas kazan</b><small class="dk-reklam-kalan"></small></div>
       <button class="btn btn-mavi" data-eylem="dk-reklam">${ikon('oynat')}<span>İzle</span></button></div></section>
+    <section class="pano dk-kumbara"><h3 class="plaka">${ikon('elmas')}<span>Elmas Kumbarası</span><small class="dk-kb-bonus"></small></h3>
+      <div class="dk-satir">${simge('kumbara', '', 52)}<div><b>Oynadıkça dolar</b><small>Yükseltme, kat açma, kontrat ve hazine kumbaraya elmas atar. Kırınca hepsi senin.</small>
+        <span class="cubuk-ince"><i></i></span><span class="dk-kumbara-sayi sayi"></span></div>
+      <button class="btn btn-yesil" data-eylem="dk-urun" data-id="${kumbaraUrun.id}"><span class="sayi">Kır · ${Magaza.fiyat(kumbaraUrun)}</span></button></div></section>
     <section class="pano"><h3 class="plaka">${ikon('yildirim')}<span>Güçlendirmeler</span></h3>
       ${GUC.map((g) => `<div class="dk-satir" data-guc="${g.kod}"><span class="dk-simge">${simge(g.simge, kod0, 46)}${g.rozet ? `<em>${g.rozet}</em>` : ''}</span><div><b>${A.ELMAS_HARCAMA[g.kod].metin}</b><small>${g.aciklama}</small><small class="dk-ek sayi"></small></div>
         <button class="btn btn-turuncu" data-eylem="dk-guc" data-kod="${g.kod}">${ikon('elmas')}<span class="sayi">${A.ELMAS_HARCAMA[g.kod].elmas}</span></button></div>`).join('')}</section>
@@ -48,6 +54,7 @@ export function kur(B, govde) {
     guc: [...govde.querySelectorAll('[data-guc]')].map((x) => ({ el: x, kod: x.dataset.guc, btn: x.querySelector('button'), ek: x.querySelector('.dk-ek') })),
     urunler: [...govde.querySelectorAll('[data-urun]')].map((x) => ({ el: x, id: x.dataset.urun, btn: x.querySelector('button') })),
     not: q('.dk-not'),
+    kbCubuk: q('.dk-kumbara .cubuk-ince'), kbSayi: q('.dk-kumbara-sayi'), kbBonus: q('.dk-kb-bonus'), kbBtn: q('.dk-kumbara button'),
   }
 
   function kare2(d) {
@@ -83,6 +90,14 @@ export function kur(B, govde) {
       u.btn.disabled = sahip
       if (sahip) yaz(u.btn.firstElementChild, 'Alındı')
     }
+    // Kumbara: içindeki elmas, tavan ve kırılışlardan gelen dolum bonusu
+    const kb = Math.floor(d.kumbara.elmas), tavan = kumbaraTavan(d)
+    cubuk(el.kbCubuk, kb / tavan)
+    yaz(el.kbSayi, `${kb} / ${tavan} elmas${kb >= tavan ? ' · dolu!' : ''}`)
+    const bonus = kumbaraBonus(d) - 1
+    yaz(el.kbBonus, bonus > 0 ? `Dolum +%${Math.round(bonus * 100)}` : '')
+    el.kbBtn.disabled = kb < A.KUMBARA.enAz
+    sinif(el.kbBtn, 'nabiz', kb >= tavan)
     yaz(el.not, Magaza.gercek() ? 'Ödemeler Google Play üzerinden yapılır.' : 'Tarayıcı sürümü: paketler deneme amaçlı ücretsiz verilir, ödeme alınmaz.')
   }
 

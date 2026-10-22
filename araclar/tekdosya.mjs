@@ -51,7 +51,7 @@ try {
     yazitipi = yazitipi.split(`url('${f}')`).join(`url('${veri}')`)
   }
   let css = yazitipi
-  for (const ad of ['temel.css', 'oyun.css', 'pencereler.css', 'sayfalar.css']) css += '\n' + (await readFile(join(KOK, 'css', ad), 'utf8'))
+  for (const ad of ['temel.css', 'oyun.css', 'pencereler.css', 'sayfalar.css', 'sistemler.css']) css += '\n' + (await readFile(join(KOK, 'css', ad), 'utf8'))
   css = gom(css)
 
   // ── HTML: index.html gövde parçasından tam belge ──

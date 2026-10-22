@@ -9,6 +9,7 @@ import {
   MAKS_ISTASYON_SEVIYE, TASIYICI_ESIK, TASIYICI_YUK_TABAN, DEPO_YOL_TABAN, YUKLEME, SATIS, DEPO_KAP_SANIYE,
   HIZ_TAVAN, HIZ_ARTIS, KIRALAMA_TABAN, KIRALAMA_ARTIS, NADIRLIKLER, YETENEKLER,
   LIMAN, AMBAR, ETKINLIKLER, PRESTIJ, BOLGE_USTASI_SATIS, CEVRIMDISI_SINIR_SAAT, ORTAKLAR,
+  KAYA, COSKU, BULUNTU, BULUNTULAR, MADEN_SAYISI,
 } from './ayar.js'
 
 // ---- Kademeler (§2.2) ----
@@ -69,6 +70,52 @@ export function ortakEtki(d, etki) {
   return 0
 }
 
+// ---- Maden Müzesi (buluntular) ----
+
+// Buluntu etkisi (0..): etki türündeki buluntuların seviyeleri × birim etki. Maliyet indirimi tavanlı.
+// d.buluntu her değişimde yeni nesneyle değiştirilir; toplamlar o nesneye göre önbellekte tutulur.
+const buluntuOnbellek = new WeakMap()
+export function buluntuToplam(d) {
+  const l = d && d.buluntu
+  if (!l) return null
+  let t = buluntuOnbellek.get(l)
+  if (t) return t
+  t = { uretim: 0, tasima: 0, gelir: 0, maliyet: 0, set: {} }
+  const say = {}
+  for (const x of BULUNTULAR) {
+    const L = l[x.kod] || 0
+    if (!L) continue
+    t[x.etki] += L * BULUNTU.etki[x.etki]
+    say[x.bolge] = (say[x.bolge] || 0) + 1
+  }
+  t.maliyet = Math.min(BULUNTU.maliyetTavan, t.maliyet)
+  for (const k of Object.keys(say)) if (say[k] >= 3) t.set[k] = true
+  buluntuOnbellek.set(l, t)
+  return t
+}
+export function buluntuEtki(d, etki) {
+  const t = buluntuToplam(d)
+  return t ? t[etki] || 0 : 0
+}
+// Bölgenin üç buluntusu da müzede mi
+export const buluntuSeti = (d, kod) => { const t = buluntuToplam(d); return !!(t && t.set[kod]) }
+
+// ---- Vardiya Coşkusu ----
+
+// Coşku açıkken bütün zincir (üretim, asansör hızı, kamyon hızı) COSKU.carpan kat hızlı; değilse 1
+export function coskuCarpani(d) {
+  const c = d && d.calisma && d.calisma.cosku
+  return c && d.zaman < c.bitis ? COSKU.carpan : 1
+}
+
+// ---- Sert kaya (bariyer) ----
+
+// i. katın önünde sert kaya var mı (her KAYA.aralik katta bir: 6., 11., 16. ... Kat)
+export const kayaKati = (i) => i > 0 && i % KAYA.aralik === 0 && i < MADEN_SAYISI
+export const kayaNo = (i) => i / KAYA.aralik - 1
+// i. katı açmadan önce delinmesi gereken kaya hâlâ duruyor mu
+export const kayaVar = (b, i) => kayaKati(i) && ((b && b.kaya) || 0) <= kayaNo(i)
+
 // Araştırma seviyesi (S1'de hep 0)
 export const ar = (d, kod) => (d && d.arastirma && d.arastirma.sv && d.arastirma.sv[kod]) || 0
 
@@ -127,12 +174,20 @@ export function madenUretim(d, b, i, L) {
 export function madenMaliyet(d, b, i, L) {
   const bb = bolgeBilgi(d, b)
   return MADEN_MALIYET_TABAN * katMaliyetCarpani(i) * Math.pow(MADEN_MALIYET_G, madenL(b, i, L) - 1) *
-    bb.zorluk * bb.olcek * (1 - 0.05 * ar(d, 'usta')) * (1 - ortakEtki(d, 'maliyet'))
+    bb.zorluk * bb.olcek * (1 - 0.05 * ar(d, 'usta')) * (1 - ortakEtki(d, 'maliyet')) * (1 - buluntuEtki(d, 'maliyet'))
 }
 
 export function madenAcilis(d, b, i) {
   const bb = bolgeBilgi(d, b)
   return ACILIS[i] * bb.zorluk * bb.olcek * (1 - 0.08 * ar(d, 'damar')) * (etkinlik(d).acilis || 1)
+}
+
+// Sert kayayı delme bedeli ve süresi (s). Bölgede daha önce delinmiş kaya (prestijden sonra) kısa sürer.
+export const sondajMaliyet = (d, b, i) => madenAcilis(d, b, i) * KAYA.maliyet
+export function sondajSuresi(d, b, i) {
+  const k = kayaNo(i)
+  const rekor = (d && d.prestij && d.prestij.kayaRekor && d.prestij.kayaRekor[bolgeKodu(d, b)]) || 0
+  return KAYA.sure[Math.min(k, KAYA.sure.length - 1)] * (rekor > k ? KAYA.tecrube : 1)
 }
 
 export const yiginKap = (d, b, i, L) => madenUretim(d, b, i, L) * YIGIN_SANIYE
@@ -141,8 +196,8 @@ export const madenciSayisi = (L) => 1 + (L >= 10 ? 1 : 0) + (L >= 50 ? 1 : 0)
 
 // (1 + 0.10 kazma) * (matkap ? 1.5 : 1) * yetenek. yetenekDahil=false: kalıcı çarpan
 export function uretimCarpani(d, b, i, yetenekDahil = true) {
-  let c = (1 + 0.10 * ar(d, 'kazma')) * (ar(d, 'matkap') ? 1.5 : 1) * (1 + ortakEtki(d, 'uretim'))
-  if (yetenekDahil) c *= yetenekCarpani(d, b, 'm' + i, 'kazi')
+  let c = (1 + 0.10 * ar(d, 'kazma')) * (ar(d, 'matkap') ? 1.5 : 1) * (1 + ortakEtki(d, 'uretim')) * (1 + buluntuEtki(d, 'uretim'))
+  if (yetenekDahil) c *= yetenekCarpani(d, b, 'm' + i, 'kazi') * coskuCarpani(d)
   return c
 }
 
@@ -152,14 +207,14 @@ const hizKatsayi = (L) => Math.min(HIZ_TAVAN, 1 + HIZ_ARTIS * (L - 1))
 
 export function asansorKap(d, b, L = b.asansor.L, yetenekDahil = true) {
   let k = ASANSOR_KAP_TABAN * guc(L, KADEME_ISTASYON) * bolgeBilgi(d, b).olcek * (1 + 0.15 * ar(d, 'halat')) *
-    (1 + ortakEtki(d, 'tasima'))
+    (1 + ortakEtki(d, 'tasima')) * (1 + buluntuEtki(d, 'tasima'))
   if (yetenekDahil) k *= yetenekCarpani(d, b, 'asansor', 'genis')
   return k
 }
 
 export function asansorHiz(d, b, L = b.asansor.L, yetenekDahil = true) {
   let v = ASANSOR_HIZ_TABAN * hizKatsayi(L) * (1 + 0.10 * ar(d, 'motor'))
-  if (yetenekDahil) v *= yetenekCarpani(d, b, 'asansor', 'hizli')
+  if (yetenekDahil) v *= yetenekCarpani(d, b, 'asansor', 'hizli') * coskuCarpani(d)
   return v
 }
 
@@ -179,7 +234,8 @@ export function tasiyiciSayisi(L) {
 }
 
 export function tasiyiciYuk(d, b, L = b.depo.L, yetenekDahil = true) {
-  let y = TASIYICI_YUK_TABAN * guc(L, KADEME_ISTASYON) * bolgeBilgi(d, b).olcek * (1 + ortakEtki(d, 'tasima'))
+  let y = TASIYICI_YUK_TABAN * guc(L, KADEME_ISTASYON) * bolgeBilgi(d, b).olcek * (1 + ortakEtki(d, 'tasima')) *
+    (1 + buluntuEtki(d, 'tasima'))
   if (yetenekDahil) y *= yetenekCarpani(d, b, 'depo', 'dolu')
   return y
 }
@@ -187,7 +243,7 @@ export function tasiyiciYuk(d, b, L = b.depo.L, yetenekDahil = true) {
 // Tek yön yol süresi (s)
 export function depoYol(d, b, L = b.depo.L, yetenekDahil = true) {
   let s = DEPO_YOL_TABAN / (hizKatsayi(L) * (1 + 0.10 * ar(d, 'ray')))
-  if (yetenekDahil) s /= yetenekCarpani(d, b, 'depo', 'cevik')
+  if (yetenekDahil) s /= yetenekCarpani(d, b, 'depo', 'cevik') * coskuCarpani(d)
   return s
 }
 
@@ -218,7 +274,8 @@ export function istasyonSeviye(b, istasyon) {
 export function istasyonMaliyet(d, b, istasyon, L = istasyonSeviye(b, istasyon)) {
   if (istasyon === 'asansor' || istasyon === 'depo') {
     const bb = bolgeBilgi(d, b)
-    return ISTASYON_MALIYET_TABAN * Math.pow(ISTASYON_MALIYET_G, L - 1) * bb.zorluk * bb.olcek * (1 - ortakEtki(d, 'maliyet'))
+    return ISTASYON_MALIYET_TABAN * Math.pow(ISTASYON_MALIYET_G, L - 1) * bb.zorluk * bb.olcek * (1 - ortakEtki(d, 'maliyet')) *
+      (1 - buluntuEtki(d, 'maliyet'))
   }
   const i = madenIndeks(istasyon)
   return madenMaliyet(d, b, i, L) * yetenekCarpani(d, b, istasyon, 'pazarlik')
@@ -321,10 +378,11 @@ export function muhurEsigi(d, n) {
   return Math.max(0, PRESTIJ.esik * Math.pow(muhurHakki(o) + Math.max(1, n), 1 / PRESTIJ.us) - o)
 }
 
-// Bölgeye özgü satış çarpanı: Liman × Bölge Ustası × bölge etkinliği
+// Bölgeye özgü satış çarpanı: Liman × Bölge Ustası × buluntu seti × bölge etkinliği
 export function bolgeSatis(d, b) {
   if (!b) return 1
   let c = (1 + LIMAN.satis * (b.liman || 0)) * (b.usta ? 1 + BOLGE_USTASI_SATIS : 1)
+  if (buluntuSeti(d, bolgeKodu(d, b))) c *= 1 + BULUNTU.set
   const e = etkinlik(d)
   if (e.satis && (!e.bolge || e.bolge === bolgeKodu(d, b))) c *= e.satis
   return c
@@ -337,7 +395,7 @@ export function satisKalici(d, b) {
   if (b === undefined) b = d.bolgeler && d.bolgeler[d.aktifBolge]
   return (1 + 0.10 * ar(d, 'pazar')) *
     (ar(d, 'ihracat') ? 1.5 : 1) * (d.satin && d.satin.altinKazma ? 2 : 1) * prestijCarpani(d) * bolgeSatis(d, b) *
-    (1 + ortakEtki(d, 'gelir'))
+    (1 + ortakEtki(d, 'gelir')) * (1 + buluntuEtki(d, 'gelir'))
 }
 
 export const takviyeAktif = (d) => d.zaman < d.takviye.bitis

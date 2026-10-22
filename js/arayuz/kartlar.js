@@ -2,7 +2,8 @@
 // ════════════════════════════════════════════════════════════════
 //  KARTLAR (görsel yön 2) — #dunya katmanı: kat kartları ("5. Kat /
 //  Kömür"), kartın yanındaki yeşil yükseltme okları, galeri yönetici
-//  rozetleri, sonraki (kilitli) kat kartı, yüzeyde silonun üstünde
+//  rozetleri, sonraki (kilitli) kat kartı (her 5 katta bir sert kaya:
+//  sondaj bedeli, süre çubuğu ve hızlandırma), yüzeyde silonun üstünde
 //  Depo etiketi ve rozeti; #maden-ust katmanı: Asansör etiketi ve
 //  Darboğaz kartı.
 //  • Kartlar 4 Hz (yalnız görünür katlar), rozet halkaları 10 Hz.
@@ -11,7 +12,7 @@
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
 import {
-  E, A, yaz, sinif, gizle, ozellik, cubuk, bicim, oranYazi, bolgeAl, nadirlik, yetenekHali,
+  E, A, yaz, sinif, gizle, ozellik, cubuk, bicim, oranYazi, sayac, bolgeAl, nadirlik, yetenekHali,
   kartHizi, ogeYap, yoneticiAdi, yetenekEtki, canlandir, NABIZ, SALLA, PARLA, YUVARLA,
 } from './ortak.js'
 
@@ -64,10 +65,15 @@ export function kur(B) {
     <b class="kart-ad">2. Kat</b>
     <span class="kart-cevher">Yeni maden</span>
     <span class="kart-ikon">${ikon('kilit')}</span>
+    <span class="cubuk kart-sondaj" hidden><i></i></span>
     <button class="btn btn-yesil kart-ac" data-eylem="maden-ac" data-i="1">${ikon('para')}<span class="etiket sayi">Aç · 40</span></button>
   </div>`)
   D.appendChild(kilitli)
-  const kil = { ad: kilitli.querySelector('.kart-ad'), btn: kilitli.querySelector('.kart-ac'), etiket: kilitli.querySelector('.kart-ac .etiket') }
+  const kil = {
+    ad: kilitli.querySelector('.kart-ad'), cevher: kilitli.querySelector('.kart-cevher'), ikon: kilitli.querySelector('.kart-ikon'),
+    sondaj: kilitli.querySelector('.kart-sondaj'), btn: kilitli.querySelector('.kart-ac'), btnIkon: kilitli.querySelector('.kart-ac .ik'),
+    etiket: kilitli.querySelector('.kart-ac .etiket'), hal: '',
+  }
 
   // ── Depo etiketi ve rozeti (yüzeyde, silonun üstünde) ──
   const depoKap = ogeYap(`<div class="depo-kap">
@@ -170,15 +176,7 @@ export function kur(B) {
       sinif(c.k, 'maks', maks)
       okBagla(c.ok, maks ? null : E.teklif(d, b, 'm' + i, d.alimModu), maks)
     }
-    if (n < MAKS) {
-      const mal = E.madenAcilis(d, b, n)
-      // Uzun tutarlarda "Aç ·" atılır, düğmeye sığsın
-      const m = bicim(mal)
-      yaz(kil.etiket, m.length > 4 ? m : 'Aç · ' + m)
-      const yetiyor = b.para >= mal
-      sinif(kil.btn, 'btn-yesil', yetiyor)
-      sinif(kil.btn, 'pasif', !yetiyor)
-    }
+    if (n < MAKS) kilitliBagla(d, b, n)
     // Depo (yüzeyde)
     if (B.kaydirY < y.YUZEY_H) yaz(dpSv, '(Sv.' + b.depo.L + ')')
     yaz(asSv, '(Sv.' + b.asansor.L + ')')
@@ -194,6 +192,44 @@ export function kur(B) {
       darbogaz.tabIndex = m ? 0 : -1
       sonDarbogaz = db
     }
+  }
+
+  // Kilitli kat kartı: yeni kat ('ac'), sert kaya ('kaya') ya da süren sondaj ('sondaj')
+  function kilitliBagla(d, b, n) {
+    const sj = b.sondaj
+    const hal = !E.kayaVar(b, n) ? 'ac' : sj ? 'sondaj' : 'kaya'
+    if (hal !== kil.hal) {
+      kil.hal = hal
+      sinif(kilitli, 'kaya', hal !== 'ac')
+      sinif(kilitli, 'sondaj', hal === 'sondaj')
+      gizle(kil.sondaj, hal !== 'sondaj')
+      kil.ikon.innerHTML = ikon(hal === 'ac' ? 'kilit' : 'kazma')
+      kil.btn.dataset.eylem = hal === 'ac' ? 'maden-ac' : 'sondaj-ac'
+      kil.btnIkon.outerHTML = ikon(hal === 'sondaj' ? 'saat' : 'para')
+      kil.btnIkon = kil.btn.querySelector('.ik')
+      if (hal === 'ac') yaz(kil.cevher, 'Yeni maden')
+      else if (hal === 'kaya') yaz(kil.cevher, 'Sert kaya')
+    }
+    if (hal === 'sondaj') {
+      // Dar kartta: üstte ilerleme yüzdesi, düğmede kalan süre (dokununca hızlandırma penceresi)
+      const kalan = Math.max(0, sj.bitis - d.zaman)
+      const oran = sj.sure > 0 ? 1 - kalan / sj.sure : 1
+      yaz(kil.cevher, 'Sondaj %' + Math.floor(oran * 100))
+      cubuk(kil.sondaj, oran)
+      yaz(kil.etiket, sayac(kalan))
+      sinif(kil.btn, 'btn-yesil', false)
+      sinif(kil.btn, 'btn-mavi', true)
+      sinif(kil.btn, 'pasif', false)
+      return
+    }
+    sinif(kil.btn, 'btn-mavi', false)
+    const mal = hal === 'ac' ? E.madenAcilis(d, b, n) : E.sondajMaliyet(d, b, n)
+    // Uzun tutarlarda "Aç ·" / "Del ·" atılır, düğmeye sığsın
+    const m = bicim(mal)
+    yaz(kil.etiket, m.length > 4 ? m : (hal === 'ac' ? 'Aç · ' : 'Del · ') + m)
+    const yetiyor = b.para >= mal
+    sinif(kil.btn, 'btn-yesil', yetiyor)
+    sinif(kil.btn, 'pasif', !yetiyor)
   }
 
   function rozetBagla(r, yon, d, boyut) {
@@ -281,7 +317,9 @@ export function kur(B) {
   B.eylemler['maden-ac'] = (el) => {
     const s = B.eylem('madenAc', { i: +el.dataset.i })
     if (s && !s.ok && s.sebep === 'para') B.bildir('bilgi', 'Yetersiz para')
+    else if (s && !s.ok && s.sebep === 'kaya') B.pencere.ac('sondaj', {})
   }
+  B.eylemler['sondaj-ac'] = () => B.pencere.ac('sondaj', {})
   B.eylemler.darbogaz = () => {
     const d = B.durumAl()
     const db = d.calisma.darbogaz
@@ -350,6 +388,10 @@ export function kur(B) {
       B.bildir('basari', `${katNo(o.i)}. Kat açıldı!`)
     } else if (o.tip === 'yetenek') {
       if (o.yonetici) B.bildir('basari', `${yoneticiAdi(o.yonetici)}: ${yetenekEtki(o.yonetici)}!`)
+    } else if (o.tip === 'kayaDelindi' && o.bolge === d.aktifBolge) {
+      kil.hal = ''
+      canlandir(kilitli, NABIZ, 300)
+      B.bildir('basari', `Sert kaya delindi! ${katNo(o.i)}. Kat açılabilir.`)
     }
   }
 

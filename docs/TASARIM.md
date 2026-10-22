@@ -1652,3 +1652,52 @@ Every moving thing in the scene uses one data-driven layer, so the art can be re
 
   Timing changes only `KLIPLER` / `DIZILER`. New actor types add a clip block, a procedural fallback (or none) and a manifest entry.
 - **Still procedural:** static sprites keep going through `varliklar.js` (replaceable by PNG there). Particles stay in `parcacik.js`, and UI motion stays in CSS/WAAPI.
+
+### 10.10 Systems adapted from other games (`docs/ARASTIRMA.md`)
+
+The research behind these (which game has what, what we already had, what we skipped and why) is in
+`docs/ARASTIRMA.md`. All five systems live in the pure simulation and are saved; tests are in
+`test/sistemler.test.mjs`.
+
+- **Hard rock and drilling (Idle Miner Tycoon barriers):**
+  - **Where:** the 6th, 11th, 16th, 21st and 26th floors sit behind hard rock (`KAYA`). `madenAc` refuses with `kaya` until it is drilled.
+  - **Cost and time:** `sondajBaslat` costs 25% of that floor's opening price. It takes 2 min, 10 min, 30 min, 1 h or 2 h of game time, so it also runs offline.
+  - **After prestige:** rock drilled before in the same region takes ¼ of the time (`prestij.kayaRekor`).
+  - **Speed-up:** `sondajHizlandir` takes a rewarded ad (−15 min, twice) or gems (1 per 5 min left).
+  - **Save fields:** per region `kaya` (rocks drilled this run) and `sondaj` (`{ i, bitis, sure, reklam }`). Older saves count every opened floor's rock as drilled.
+  - **UI:** the locked floor card shows `Sert kaya` / `Del · cost`, then a countdown bar and `Hızlandır`, which opens the `sondaj` modal.
+  - **Scene:** the strip draws boulders, a hazard band and a `SERT KAYA` sign. While drilling, a yellow rig with a spinning auger, dust and sparks appears.
+  - **Story:** scene `kaya` plays at the first rock.
+- **Vardiya Coşkusu (tap frenzy):**
+  - **Filling:** after the tutorial, every tap on the mine (including managed stations) adds 4% to a gauge (`calisma.cosku`, not saved). Taps count at most once per 0.12 s; the gauge leaks 2% per second.
+  - **When full:** for 15 s, production, elevator speed and truck speed are ×2 (`coskuCarpani`).
+  - **Not affected:** offline income and reward measures (`otoGelir`).
+  - **Changed behaviour:** tapping a managed station feeds the gauge instead of opening the upgrade sheet.
+  - **UI:** a thin gauge sits on the top edge of the bottom band. While active, the mine view edges glow and miners speed up.
+  - **Daily mission:** `cosku` was added to the pool.
+- **Expeditions (Egg Inc ships, Mr. Mine scientists, Deep Town explorer bots):**
+  - **Unlock:** Zeynep's team unlocks when she joins; scene `kesif` introduces it.
+  - **Runs:** one expedition at a time, using `KESIF`:
+
+    | Kind | Time | Relic rolls | Gems |
+    |---|---|---|---|
+    | short | 30 min | 1 × 60% | 2–5 |
+    | medium | 2 h | 2 × 75% | 6–12 |
+    | long | 8 h | 3 × 90% | 15–30 |
+
+  - **Relics found:** they come from the region the team left from. Missing relics are twice as likely. The first expedition always brings one.
+  - **Speed-up:** ad −15 min (twice), or gems.
+  - **Save field:** `kesif`. `kesifTopla` returns the loot.
+- **Maden Müzesi (relics):**
+  - **Collection:** 36 relics, 3 per region, each drawn procedurally (`buluntu` icon). Levels go 1–5 on duplicates (`d.buluntu`, replaced as a new object on every change so `buluntuToplam` can cache by identity).
+  - **Effects per level:** the same four kinds as partners, `BULUNTU.etki`.
+  - **Region set:** all three of a region multiply that region's sales.
+  - **Sources:** expeditions, plus gold treasure veins (8% chance once the team exists).
+  - **Prestige:** relics survive it.
+  - **Achievement:** `buluntu` counts distinct relics.
+  - **UI:** the `kesif` sheet (expedition card, totals, a showcase per region), reached from the Managers page.
+- **Elmas Kumbarası (Egg Inc piggy bank):**
+  - **Filling:** after the tutorial, upgrades (+0.2), floor openings (+2), contracts (+5) and treasure (+1) fill `kumbara.elmas`.
+  - **Cap:** 500, +250 per break, at most 2000.
+  - **Breaking:** the consumable product `cevher_kumbara` runs `kumbaraKir`. Each break raises the fill rate by 10% (at most 100%). It can be broken from 50 gems.
+- **Save fix found along the way:** manager `kalici` is now written to the save. Gem-hired Nadir managers used to lose permanence on reload and vanish at prestige.

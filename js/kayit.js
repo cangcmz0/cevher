@@ -14,11 +14,11 @@ export const ESKI = Object.freeze(['cevher-kayit-v3', 'cevher-kayit-v2'])
 const KOK_ALANLAR = Object.freeze([
   'surum', 'tohum', 'olusturma', 'son', 'enGec', 'zaman', 'oyuncu', 'aktifBolge', 'bolgeler', 'takviye',
   'bekleyenCevrimdisi', 'arastirma', 'gunluk', 'reklamElmas', 'satin', 'ayarlar', 'ogretici', 'alimModu',
-  'istatistik', 'aktarim', 'hikaye', 'misyon', 'etkinlik', 'prestij', 'ortak', 'basarim',
+  'istatistik', 'aktarim', 'hikaye', 'misyon', 'etkinlik', 'prestij', 'ortak', 'basarim', 'buluntu', 'kesif', 'kumbara',
 ])
 const BOLGE_ALANLAR = Object.freeze([
   'acik', 'para', 'toplamKazanc', 'enIyiGelir', 'madenler', 'asansor', 'depo', 'yoneticiler', 'kiralanan',
-  'ayrilis', 'gorev', 'liman', 'ambar', 'kontrat', 'yetenekSay', 'usta', 'giris',
+  'ayrilis', 'gorev', 'liman', 'ambar', 'kontrat', 'yetenekSay', 'usta', 'giris', 'kaya', 'sondaj',
 ])
 const sec = (o, alanlar) => {
   const s = {}
@@ -47,7 +47,7 @@ export function serilestir(durum) {
     k.depo = { L: b.depo.L, stok: b.depo.stok, yoldaki: b.depo.yoldaki }
     k.yoneticiler = b.yoneticiler.map((y) => ({
       id: y.id, tip: y.tip, nadirlik: y.nadirlik, yetenek: y.yetenek, ad: y.ad, tohum: y.tohum,
-      atanan: y.atanan, aktifBitis: y.aktifBitis, hazirZaman: y.hazirZaman,
+      atanan: y.atanan, aktifBitis: y.aktifBitis, hazirZaman: y.hazirZaman, kalici: y.kalici,
     }))
     bolgeler[kod] = k
   }

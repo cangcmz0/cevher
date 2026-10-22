@@ -9,14 +9,15 @@
 //  • Dört yönetici kartı hikâyenin ortaklarıdır (Ahmet, Elif, Mehmet,
 //    Zeynep): sahnede tanışınca katılır, elmasla seviye atlar.
 //  • İstasyon yöneticileri (ustabaşılar) "Ustabaşılar" satırındadır.
-//  • Alt pencereler: ortak, ustalar, lojistik, prestij.
+//  • Keşif ve Müze bölümü: keşif ekibinin durumu ve müzedeki buluntu sayısı.
+//  • Alt pencereler: ortak, ustalar, lojistik, prestij, kesif.
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
 import {
   E, A, yaz, sinif, gizle, cubuk, bicim, tam, sayac, sure, bolgeAl, nadirlik, yetenekEtki, yoneticiAdi, yetenekHali, canlandir,
   simge, simgeleriCiz, bolgeKilitYazi, carpanYazi,
 } from './ortak.js'
-import { kontratDurumu, prestijUygun, bekleyenMuhur, bolgeAcilis } from '../benzetim.js'
+import { kontratDurumu, prestijUygun, bekleyenMuhur, bolgeAcilis, kesifAcik, kesifDurumu } from '../benzetim.js'
 import { KISILER } from '../hikaye.js'
 import { kontratAl } from './harita.js'
 
@@ -79,6 +80,11 @@ export function kur(B, govde) {
         </button>
       </section>
 
+      <section class="pano mg-kesif">
+        <h3 class="plaka">${ikon('harita')}<span>Keşif ve Müze</span><small class="sayi mg-ks-sayi"></small></h3>
+        <button class="mg-ks" data-eylem="kesif-ac">${simge('pusula', '', 46)}<span class="mg-ks-yazi"><b class="mg-ks-durum"></b><small class="mg-ks-alt"></small></span>${simge('muze', '', 46)}${ikon('ileri')}</button>
+      </section>
+
       <section class="pano">
         <h3 class="plaka">${ikon('gemi')}<span>Lojistik ve Altyapı</span></h3>
         <div class="mg-lojistik">
@@ -121,6 +127,7 @@ export function kur(B, govde) {
     cubuk: Object.fromEntries(qa('[data-cubuk]').map((x) => [x.dataset.cubuk, x.firstElementChild])),
     musteri: q('.mg-musteri'), kBaslik: q('.mg-k-baslik'), kMetin: q('.mg-k-metin'), kPara: q('.mg-k-para'), kElmas: q('.mg-k-elmas'),
     kCubuk: q('.mg-k-cubuk i'), kCubukYazi: q('.mg-k-cubuk span'), kBtn: q('.mg-k-btn'), kBtnYazi: q('.mg-k-btn span'),
+    ks: q('.mg-ks'), ksDurum: q('.mg-ks-durum'), ksAlt: q('.mg-ks-alt'), ksSayi: q('.mg-ks-sayi'),
     pSv: q('.mg-p-sv'), pMuhur: q('.mg-p-muhur'), pCarpan: q('.mg-p-carpan'), pBekleyen: q('.mg-p-bekleyen'),
     pCubuk: q('.mg-p-cubuk i'), pCubukYazi: q('.mg-p-cubuk span'), pIpucu: q('.mg-p-ipucu'), pBtn: q('.mg-p-btn'), pBtnYazi: q('.mg-p-btn span'),
   }
@@ -158,6 +165,14 @@ export function kur(B, govde) {
     let hazir = 0
     for (const y of b.yoneticiler) if (y.atanan && yetenekHali(d, y).durum === 'hazir') hazir++
     yaz(el.ustaAlt, b.yoneticiler.length ? `${b.yoneticiler.length} kişi${hazir ? ` · ${hazir} yetenek hazır` : ''}` : 'İstasyonları otomatik çalıştıran ustalar tut')
+    // keşif ve müze
+    const ks = kesifDurumu(d), ksAcik = kesifAcik(d)
+    yaz(el.ksDurum, !ksAcik ? 'Zeynep katılınca kurulur' : !ks ? 'Ekip hazır, keşfe yolla' : ks.hazir ? 'Ekip döndü! Getirdiklerini al' : 'Keşifte · ' + sayac(ks.kalan))
+    const bulunan = Object.keys(d.buluntu).length
+    yaz(el.ksAlt, `Müzede ${bulunan} / ${A.BULUNTULAR.length} buluntu`)
+    yaz(el.ksSayi, ksAcik ? d.kesif.sayi + ' sefer' : '')
+    sinif(el.ks, 'nabiz', !!(ks && ks.hazir))
+    sinif(el.ks, 'kilitli', !ksAcik)
     // lojistik
     const lv = { depo: b.depo.L, asansor: b.asansor.L, liman: b.liman || 0, ambar: b.ambar || 0 }
     for (const l of LOJ) {

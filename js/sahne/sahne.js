@@ -4,13 +4,14 @@
 //   seviye arttıkça arabacı ve ikinci taşıyıcı katılır. Kat boşta ya da doluyken işçiler bekler/oturur.
 // • Asansör kabini yaylı izler; kabin operatörü içinde durur, cevher bunkerden kabine, kabinden siloya akar.
 // • Yüzeyde kamyonlar silonun altında dolar, yoldan karşıdaki satış alanına gidip orada satar.
+// • Her 5 katta bir sıradaki katın yerinde sert kaya durur; sondaj sürerken kayada matkap çalışır.
 // Kare başına yalnız drawImage ve birkaç dönüşüm; şeritler ve kareler ekran çözünürlüğünde önbellekte.
 
 import { Varliklar } from './varliklar.js'
 import { portreCiz } from './madenci.js'
 import { rozetCiz } from './yuzey.js'
 import { Havuz, parcacikSpritelari } from './parcacik.js'
-import { karma, dikey, yuvarlakYol, kalas, rastgele, cizgi } from './cizim.js'
+import { karma, dikey, yuvarlakYol, kalas, rastgele, cizgi, topakYol, kenarIsik } from './cizim.js'
 import { yerlesim, MAKS_MADEN } from '../yerlesim.js'
 import * as E from '../ekonomi.js'
 import { bicim } from '../bicim.js'
@@ -613,7 +614,99 @@ function prosedurelKaydet() {
     c.strokeStyle = '#C9D1D8'; c.lineWidth = 2.2
     c.beginPath(); c.moveTo(tx + 31, y.ZEMIN_Y - 28); c.quadraticCurveTo(tx + 38, y.ZEMIN_Y - 27, tx + 44, y.ZEMIN_Y - 21); c.stroke()
   } })
-  return ['isik.sicak', 'isik.mavi', 'isik.koni', 'dolu.etiket', 'kilit.ust', ...parcacikSpritelari()]
+  // Sert kaya üst katmanı: odayı dolduran iri koyu bloklar, çatlaklar, uyarı bandı ve SERT KAYA tabelası
+  Varliklar.kaydet('kaya.ust', { w: 'W', h: (Wd) => yerlesim(Wd).SATIR_H, ciz: (c, w, h) => {
+    const y = yerlesim(w)
+    const r = rastgele(9157)
+    c.fillStyle = 'rgba(0,0,0,.38)'
+    c.fillRect(0, 0, w, h)
+    const x0 = y.odaX + 2, x1 = y.kuyuX - 2, ust = y.ODA_UST + 4, alt = y.ZEMIN_Y + 12
+    for (let k = 0; k < 10; k++) {
+      const bx = x0 + (x1 - x0) * ((k + 0.5) / 10) + (r() - 0.5) * 10
+      const by = ust + (alt - ust) * (0.25 + r() * 0.55)
+      const rx = 15 + r() * 11, ry = 12 + r() * 10
+      const p = topakYol(bx, by, rx, ry, r, 7, 0.38)
+      c.fillStyle = dikey(c, by - ry, by + ry, ['#5E5852', '#3C3833', '#211E1B'])
+      c.fill(p)
+      kenarIsik(c, p, '#C9C0B4', 1.2, 0.45)
+      c.strokeStyle = 'rgba(0,0,0,.6)'
+      c.lineWidth = 1
+      c.stroke(p)
+    }
+    c.strokeStyle = 'rgba(10,8,6,.75)'
+    c.lineWidth = 1.2
+    for (let k = 0; k < 7; k++) {
+      let cx = x0 + r() * (x1 - x0), cy = ust + r() * (alt - ust) * 0.5
+      c.beginPath(); c.moveTo(cx, cy)
+      for (let q = 0; q < 4; q++) { cx += (r() - 0.5) * 18; cy += 4 + r() * 6; c.lineTo(cx, cy) }
+      c.stroke()
+    }
+    // Uyarı bandı (sarı-siyah, odanın üst kenarında)
+    const by = y.ODA_UST + 3
+    c.save()
+    c.beginPath(); c.rect(x0, by, x1 - x0, 6); c.clip()
+    c.fillStyle = '#F2C14E'; c.fillRect(x0, by, x1 - x0, 6)
+    c.fillStyle = '#1A1612'
+    for (let x = x0 - 6; x < x1; x += 10) { c.beginPath(); c.moveTo(x, by + 6); c.lineTo(x + 5, by); c.lineTo(x + 9, by); c.lineTo(x + 4, by + 6); c.fill() }
+    c.restore()
+    // Tabela
+    const tx = y.odaX + 10, ty = y.ZEMIN_Y * 0.36
+    kalas(c, tx, ty, 76, 19, r, '#8A5A32', '#6B4425', true)
+    c.fillStyle = '#FFC878'
+    c.font = '800 11.5px "Baloo 2", "Trebuchet MS", system-ui, sans-serif'
+    c.textAlign = 'center'; c.textBaseline = 'middle'
+    c.fillText('SERT KAYA', tx + 38, ty + 10.5)
+  } })
+  return ['isik.sicak', 'isik.mavi', 'isik.koni', 'dolu.etiket', 'kilit.ust', 'kaya.ust', ...parcacikSpritelari()]
+}
+
+// ── Sondaj makinesi: sert kayada sarı kule, titreyen motor, dönen burgu; ilerledikçe burgu kayaya gömülür ──
+function sondajCiz(b, sy, t, simdiMs) {
+  const s = b.sondaj
+  const y = yer
+  const ilerleme = s && s.sure > 0 ? Math.min(1, Math.max(0, 1 - (s.bitis - durumRef.zaman) / s.sure)) : 0
+  const mx = (y.odaX + y.kuyuX) / 2 + X(30), zemin = sy + y.ZEMIN_Y, tepe = sy + y.ODA_UST + 9
+  const tit = Math.sin(t * 70) * 0.7
+  ctx.save()
+  // Kule ayakları ve kirişler
+  ctx.lineCap = 'round'
+  for (const [x0, x1] of [[mx - 22, mx - 3], [mx + 22, mx + 3]]) {
+    ctx.strokeStyle = '#3A2A10'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x0, zemin); ctx.lineTo(x1, tepe); ctx.stroke()
+    ctx.strokeStyle = '#F2B632'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x0, zemin); ctx.lineTo(x1, tepe); ctx.stroke()
+  }
+  ctx.strokeStyle = '#D99A2B'; ctx.lineWidth = 2
+  ctx.beginPath(); ctx.moveTo(mx - 14, (zemin + tepe) / 2 + 6); ctx.lineTo(mx + 14, (zemin + tepe) / 2 + 6); ctx.stroke()
+  // Burgu (dönen sarmal) ve uç
+  const ustB = tepe + 14, uc = zemin - 6 + ilerleme * 16
+  ctx.fillStyle = '#5E6872'
+  ctx.fillRect(mx - 2.6 + tit, ustB, 5.2, uc - ustB)
+  ctx.strokeStyle = '#C9D2DA'; ctx.lineWidth = 1.3
+  const kay = (t * 26) % 5
+  for (let yy = ustB + kay; yy < uc - 2; yy += 5) { ctx.beginPath(); ctx.moveTo(mx - 2.6 + tit, yy); ctx.lineTo(mx + 2.6 + tit, yy + 2.6); ctx.stroke() }
+  ctx.fillStyle = '#E8EEF4'
+  ctx.beginPath(); ctx.moveTo(mx - 4 + tit, uc - 2); ctx.lineTo(mx + 4 + tit, uc - 2); ctx.lineTo(mx + tit, uc + 5); ctx.closePath(); ctx.fill()
+  // Motor
+  ctx.fillStyle = '#3A2A10'
+  ctx.fillRect(mx - 12 + tit, tepe - 1, 24, 17)
+  ctx.fillStyle = dikey(ctx, tepe, tepe + 15, ['#FFE08A', '#F2B632', '#B07A1E'])
+  ctx.fillRect(mx - 11 + tit, tepe, 22, 15)
+  ctx.fillStyle = '#3A2A10'
+  for (let k = 0; k < 4; k++) ctx.fillRect(mx - 7 + k * 4 + tit, tepe + 4, 1.4, 7)
+  // Uyarı lambası
+  const yan = Math.sin(t * 6) > 0
+  ctx.fillStyle = yan ? '#FF7A3A' : '#8A3A1A'
+  ctx.beginPath(); ctx.arc(mx + tit, tepe - 3, 2.6, 0, Math.PI * 2); ctx.fill()
+  ctx.restore()
+  // Toz ve kıvılcım (kayaya değdiği yer)
+  if (karma(simdiMs * 0.013) < 0.3) dunyaP.patlat(mx + (karma(simdiMs) - 0.5) * 10, zemin + 2, 'toz', 1)
+  if (karma(simdiMs * 0.021 + 3) < 0.12) dunyaP.patlat(mx, uc, 'kivilcim', 2)
+  if (yan) {
+    ctx.globalCompositeOperation = 'lighter'
+    ctx.globalAlpha = 0.5
+    ctx.drawImage(al('isik.sicak'), mx - 12, tepe - 15, 24, 24)
+    ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = 'source-over'
+  }
 }
 
 // ── Hazine damarı: kaya duvarında parlayan altın külçeleri ya da elmas kristalleri ──
@@ -949,6 +1042,8 @@ export const Sahne = {
     if (alt > dipY) ctx.drawImage(kayaSerit(kod, 2, y.TEPE_H), 0, dipY, W, y.TEPE_H)
     yetAktif.clear()
     for (const yo of b.yoneticiler) if (yo.atanan && durum.zaman < yo.aktifBitis) yetAktif.add(yo.atanan)
+    // Vardiya Coşkusu: bütün katlarda madenciler yetenekteki gibi hızlanır
+    const coskuVar = E.coskuCarpani(durum) > 1
 
     // 1. Kat şeritleri, yığınlar, hazine (işçilerin arkasında)
     let ilk = MAKS_MADEN, son = -1
@@ -965,7 +1060,10 @@ export const Sahne = {
         yiginCiz(yigin(kod, 'bunker', X(D.KAT.bunkerX1 - D.KAT.bunkerX0 - 2), Yk(20), doluluk, 17 + i % 3), X((D.KAT.bunkerX0 + D.KAT.bunkerX1) / 2), sy + Yk(D.KAT.bunkerUst) + 1)
       } else if (i === n) {
         ctx.drawImage(kayaSerit(kod, i % D.KAT_DUZEN, y.SATIR_H), 0, syP, W, y.SATIR_H)
-        ctx.drawImage(al('kilit.ust'), 0, syP, W, y.SATIR_H)
+        if (E.kayaVar(b, i)) {
+          ctx.drawImage(al('kaya.ust'), 0, syP, W, y.SATIR_H)
+          if (b.sondaj) sondajCiz(b, syP, t, simdiMs)
+        } else ctx.drawImage(al('kilit.ust'), 0, syP, W, y.SATIR_H)
       } else {
         ctx.drawImage(kayaSerit(kod, i % D.KAT_DUZEN, y.SATIR_H), 0, syP, W, y.SATIR_H)
         ctx.fillStyle = 'rgba(4,10,14,.35)'
@@ -990,7 +1088,7 @@ export const Sahne = {
       if (i % D.KAT_DUZEN === 1) kanarya(sy, t, i)
       const giris = kb ? (simdiMs - kb - KAZI_MS) / 1000 : 99
       if (giris < GIRIS_SURE) girisCiz(durum, b, i, sy, giris / GIRIS_SURE, kod)
-      else katIscileri(durum, b, i, sy, dt, katTempo(b, i, yetAktif.has('m' + i)), simdiMs)
+      else katIscileri(durum, b, i, sy, dt, katTempo(b, i, yetAktif.has('m' + i) || coskuVar), simdiMs)
       const c = durum.calisma.madenler[i]
       if (c && c.dolu) ctx.drawImage(al('dolu.etiket'), X(D.KAT.bunkerX0) - 2, sy + Yk(D.KAT.bunkerUst) - Yk(30), 30, 12)
     }

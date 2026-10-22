@@ -1,7 +1,7 @@
 // Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
-//  MAĞAZA — uygulama içi satın alma: elmas paketleri, özel teklif
-//  ve kalıcı ürünler (reklamsız, altın kazma).
+//  MAĞAZA — uygulama içi satın alma: elmas paketleri, özel teklif,
+//  elmas kumbarası (Egg Inc'teki kumbara) ve kalıcı ürünler (reklamsız, altın kazma).
 //  • Telefon uygulamasında (Capacitor + cordova-plugin-purchase) Google
 //    Play ödemesi açılır; ödeme onaylanınca ürün verilir. Düğmede
 //    mağazanın verdiği yerel fiyat yazar.
@@ -20,6 +20,8 @@ export const Magaza = (() => {
     { id: 'baslangic', tur: 'paket', ad: 'Özel Teklif', n: 300, takviyeDk: 240, yonetici: { nadirlik: 2 }, fiyat: '₺59,99', etiket: '%50', ne: '300 elmas + Efsanevi yönetici + Kazanç x2 · 4 saat' },
     { id: 'reklamsiz', tur: 'kalici', ad: 'Reklamsız', fiyat: '₺119,99', ne: 'Reklam ödülleri reklam izlemeden gelir' },
     { id: 'altin_kazma', tur: 'kalici', ad: 'Altın Kazma', fiyat: '₺199,99', ne: 'Bütün satışlar kalıcı ×2' },
+    // Tüketilir: kumbaradaki elmaslar verilir (her seferinde kırılır, yeniden dolar)
+    { id: 'cevher_kumbara', tur: 'kumbara', ad: 'Elmas Kumbarası', fiyat: '₺59,99', ne: 'Kumbarada biriken bütün elmaslar' },
   ]
   const bul = (id) => URUNLER.find((u) => u.id === id)
   const SATIN_ANAHTAR = { baslangic: 'baslangic', reklamsiz: 'reklamsiz', altin_kazma: 'altinKazma' }
@@ -30,6 +32,7 @@ export const Magaza = (() => {
     elmasEkle: () => {},
     takviyeEkle: () => {},
     yoneticiVer: () => {},
+    kumbaraKir: () => {},
     kaydet: () => {},
     yayinla: () => {},
   }
@@ -44,6 +47,7 @@ export const Magaza = (() => {
     if (u.n) bag.elmasEkle(u.n)
     if (u.takviyeDk) bag.takviyeEkle(u.takviyeDk)
     if (u.yonetici) bag.yoneticiVer({ ...u.yonetici })
+    if (u.tur === 'kumbara') bag.kumbaraKir()
     if (d && SATIN_ANAHTAR[u.id]) d.satin[SATIN_ANAHTAR[u.id]] = true
     bag.kaydet()
     bag.yayinla({ tip: 'satinAlindi', u })
@@ -58,7 +62,7 @@ export const Magaza = (() => {
     if (!C || yerelKuruldu) return
     yerelKuruldu = true
     const { store, ProductType, Platform } = C
-    store.register(URUNLER.map((u) => ({ id: u.id, platform: Platform.GOOGLE_PLAY, type: u.tur === 'elmas' ? ProductType.CONSUMABLE : ProductType.NON_CONSUMABLE })))
+    store.register(URUNLER.map((u) => ({ id: u.id, platform: Platform.GOOGLE_PLAY, type: u.tur === 'elmas' || u.tur === 'kumbara' ? ProductType.CONSUMABLE : ProductType.NON_CONSUMABLE })))
     store.when()
       .approved((t) => t.verify())
       .verified((r) => r.finish())
@@ -72,7 +76,7 @@ export const Magaza = (() => {
     store.initialize([Platform.GOOGLE_PLAY]).then(() => { yerelHazir = true })
   }
 
-  // ana.js bağlar: { durumAl, elmasEkle, takviyeEkle, yoneticiVer, kaydet, yayinla }
+  // ana.js bağlar: { durumAl, elmasEkle, takviyeEkle, yoneticiVer, kumbaraKir, kaydet, yayinla }
   function kur(secenek = {}) {
     for (const k of Object.keys(bag)) if (typeof secenek[k] === 'function') bag[k] = secenek[k]
     if (cp()) yerelKur()

@@ -64,7 +64,8 @@ export function kur(B) {
     // Harita sekmesinde nokta: görev ya da kontrat hazır
     sinif(el.sekmeler[1], 'rozetli', !!(b.gorev.hazir || b.kontrat.hazir))
     // Yöneticiler sekmesinde nokta: prestij verimli (kazanılacak mühür, sahip olunanın dörtte birini geçti)
-    sinif(el.sekmeler[2], 'rozetli', prestijOnerilir(d))
+    // ya da keşif ekibi döndü
+    sinif(el.sekmeler[2], 'rozetli', prestijOnerilir(d) || !!(d.kesif.suren && d.zaman >= d.kesif.suren.bitis))
     sinif(el.sekmeler[3], 'rozetli', d.ogretici.bitti && !d.arastirma.suren)
     sinif(el.sekmeler[4], 'rozetli', d.gunluk.son !== gunKodu())
     sinif(el.topla, 'aktif', !bc && kalan > 0)

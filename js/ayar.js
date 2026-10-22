@@ -241,12 +241,14 @@ export const BASARIMLAR = don([
   { kod: 'bolge', ad: 'Kâşif', metin: '{n} bölge aç', esik: [2, 4, 6, 9, 12] },
   { kod: 'dokunus', ad: 'Çalışkan Eller', metin: 'Madene {n} kez dokun', esik: [100, 1000, 10000] },
   { kod: 'prestij', ad: 'Efsane', metin: '{n} kez prestij yap', esik: [1, 3, 5] },
+  { kod: 'buluntu', ad: 'Koleksiyoncu', metin: 'Müzeye {n} farklı buluntu koy', esik: [3, 12, 24, 36] },
 ])
 export const BASARIM_ODUL = don({ elmas: [5, 10, 20, 35, 50] })
 
 // Hazine damarı: ara ara rastgele bir katta parlayan damar belirir; dokununca ödül verir, süresi dolunca söner.
 // Altın damarı gelirin 'saniye' kadarını (en az 'taban') verir; elmas damarı elmasMin..elmasMaks elmas.
-export const HAZINE = don({ ilk: 40, araMin: 70, araMaks: 140, omur: 24, saniye: 45, taban: 60, elmasOlasilik: 0.15, elmasMin: 2, elmasMaks: 5, minMaden: 2 })
+// buluntuOlasilik: altın damarından ayrıca bölgenin buluntularından biri çıkma olasılığı (Maden Müzesi)
+export const HAZINE = don({ ilk: 40, araMin: 70, araMaks: 140, omur: 24, saniye: 45, taban: 60, elmasOlasilik: 0.15, elmasMin: 2, elmasMaks: 5, minMaden: 2, buluntuOlasilik: 0.08 })
 
 export const MISYONLAR = don([
   { kod: 'dokun', metin: 'Madencilere {n} kez dokun', sayac: 'dokunus', n: [20, 40, 60] },
@@ -257,6 +259,7 @@ export const MISYONLAR = don([
   { kod: 'kontrat', metin: '{n} kontrat teslim et', sayac: 'kontrat', n: [1, 1, 2] },
   { kod: 'takviye', metin: "Kazanç x2'yi {n} kez başlat", sayac: 'takviye', n: [1, 1, 2] },
   { kod: 'hazine', metin: '{n} hazine damarı topla', sayac: 'hazine', n: [2, 4, 6] },
+  { kod: 'cosku', metin: "Vardiya Coşkusu'nu {n} kez başlat", sayac: 'cosku', n: [1, 2, 3] },
 ])
 export const MISYON_ODUL = don({ elmas: [5, 8, 12], bonusElmas: 15 })
 
@@ -310,3 +313,79 @@ export const ELMAS_HARCAMA = don({
   atla4: { metin: 'Zaman Atla · 4 saat', elmas: 100, saat: 4 },
   yenile: { metin: 'Yetenekleri Yenile', elmas: 10 },
 })
+
+// ════════ Diğer oyunlardan uyarlanan sistemler (docs/ARASTIRMA.md) ════════
+
+// Sert kaya (Idle Miner Tycoon'daki bariyer): her 5 katta bir, yeni katın önünde sert kaya durur ve sondajla delinir
+// (6., 11., 16., 21. ve 26. Kat). Bedel = o katın açılış bedeli × maliyet; süre kayanın sırasına göre. Bölgede daha
+// önce delinmiş kaya (prestijden sonra) tecrübeli ekiple 'tecrube' kadar sürer. Reklam −15 dk (en çok 2 kez), elmasla
+// bitirmek kalan her 5 dakika için 1 elmas.
+export const KAYA = don({ aralik: 5, maliyet: 0.25, sure: [120, 600, 1800, 3600, 7200], tecrube: 0.25, reklamSn: 900, reklamHak: 2 })
+
+// Vardiya Coşkusu (tıklama oyunlarındaki "frenzy"): öğretici bittikten sonra madene her dokunuş göstergeyi doldurur,
+// dokunulmazsa gösterge yavaşça boşalır. Dolunca 'sure' sn boyunca bütün zincir 'carpan' kat hızlı çalışır
+// (üretim, asansör hızı, kamyon hızı). Çok hızlı art arda dokunuşlar 'aralik' sn'de bir sayılır.
+export const COSKU = don({ dokunus: 0.04, sizinti: 0.02, aralik: 0.12, sure: 15, carpan: 2 })
+
+// Maden Müzesi (Mr. Mine kalıntıları, Egg Inc eserleri, Deep Town mağara buluntuları): her bölgenin üç buluntusu var.
+// Keşif seferleri ve altın damarları buluntu getirir; aynı buluntu yeniden çıkarsa seviyesi artar (en çok 5).
+// Etki türleri ortaklarınkiyle aynıdır; birim etki seviye başınadır. Maliyet indirimi toplamda en çok %50.
+// Bir bölgenin üç buluntusu da müzedeyse o bölgenin satışı ×(1 + set).
+// gorsel/ton: müzedeki çizimi (sahne/simge.js; 'cevher' bölgenin cevher yığını).
+// Etkiler otomatik oyuncuyla ayarlandı: keşif sen yokken de sürdüğü için koleksiyon erken dolar; daha güçlü etkiler
+// oyunu fazla kısaltıyordu (docs/ARASTIRMA.md §5).
+export const BULUNTU = don({ maks: 5, set: 0.1, maliyetTavan: 0.3, etki: { uretim: 0.02, tasima: 0.025, gelir: 0.015, maliyet: 0.01 } })
+export const BULUNTULAR = don([
+  { kod: 'lamba', bolge: 'zonguldak', ad: 'Karbür Lambası', etki: 'uretim', metin: 'Ocağın ilk madencilerinin asetilenle yanan lambası.', gorsel: 'lamba', ton: '#C9A040' },
+  { kod: 'egrelti', bolge: 'zonguldak', ad: 'Eğrelti Fosili', etki: 'maliyet', metin: 'Kömür damarında 300 milyon yıl önceki ormandan kalan yaprak izi.', gorsel: 'yaprak', ton: '#7E7468' },
+  { kod: 'uzunmehmet', bolge: 'zonguldak', ad: "Uzun Mehmet'in Kömürü", etki: 'gelir', metin: "1829'da Kestaneci'de bulunan ilk taş kömürü parçası.", gorsel: 'cevher' },
+  { kod: 'hematit', bolge: 'eregli', ad: 'Hematit Kristali', etki: 'uretim', metin: 'Kırmızı tozlu, ağır ve parlak demir cevheri.', gorsel: 'cevher' },
+  { kod: 'capa', bolge: 'eregli', ad: 'Eski Gemi Çapası', etki: 'tasima', metin: 'Ereğli limanında cevher yükleyen yelkenlilerden kalma.', gorsel: 'capa', ton: '#5E6A74' },
+  { kod: 'herakleia', bolge: 'eregli', ad: 'Herakleia Sikkesi', etki: 'gelir', metin: "Ereğli'nin antik adı Herakleia Pontike'nin bronz parası.", gorsel: 'antik', ton: '#B87333' },
+  { kod: 'ammonit', bolge: 'karabuk', ad: 'Ammonit Fosili', etki: 'uretim', metin: 'Kalker ocağından çıkan sarmal deniz kabuğu.', gorsel: 'ammonit', ton: '#C8B48E' },
+  { kod: 'raycivisi', bolge: 'karabuk', ad: 'Eski Ray Çivisi', etki: 'tasima', metin: 'İlk demiryolu hattının dövme çelik çivisi.', gorsel: 'civi', ton: '#6E7A86' },
+  { kod: 'konakanahtari', bolge: 'karabuk', ad: 'Konak Anahtarı', etki: 'maliyet', metin: 'Safranbolu konağından kalma dövme demir anahtar.', gorsel: 'anahtar', ton: '#4E5862' },
+  { kod: 'kurebaltasi', bolge: 'kastamonu', ad: 'Küre Bakır Baltası', etki: 'uretim', metin: 'Küre ocaklarının binlerce yıllık bakır aleti.', gorsel: 'balta', ton: '#C46A34' },
+  { kod: 'sahan', bolge: 'kastamonu', ad: 'Bakır Sahan', etki: 'gelir', metin: 'Kalaylanmış, el işi dövme bakır kap.', gorsel: 'kap', ton: '#C46A34' },
+  { kod: 'paflagonya', bolge: 'kastamonu', ad: 'Paflagonya Mührü', etki: 'maliyet', metin: 'Antik Paflagonya tüccarlarının taş mührü.', gorsel: 'antik', ton: '#9AA2A8' },
+  { kod: 'galen', bolge: 'balya', ad: 'Galen Kristali', etki: 'uretim', metin: 'Küp küp kırılan gümüş grisi kurşun cevheri.', gorsel: 'cevher' },
+  { kod: 'vagonteker', bolge: 'balya', ad: 'Vagon Tekerleği', etki: 'tasima', metin: 'Eski maden demiryolunun pik döküm tekerleği.', gorsel: 'teker', ton: '#4E5862' },
+  { kod: 'hisse', bolge: 'balya', ad: 'Maden Şirketi Hissesi', etki: 'gelir', metin: 'Balya ocaklarını işleten eski şirketin sararmış senedi.', gorsel: 'belge', ton: '#E8DCC0' },
+  { kod: 'keski', bolge: 'afyon', ad: 'Mermerci Keskisi', etki: 'uretim', metin: 'Usta taş yontucunun çelik keskisi.', gorsel: 'keski', ton: '#8C98A4' },
+  { kod: 'dokimeion', bolge: 'afyon', ad: 'Dokimeion Sütun Başlığı', etki: 'gelir', metin: 'Antik ocaklardan Roma\'ya giden mermerden bir parça.', gorsel: 'sutun', ton: '#EDE8DE' },
+  { kod: 'frigkabartma', bolge: 'afyon', ad: 'Frig Kabartması', etki: 'maliyet', metin: 'Frig vadisinden kaya kabartmasının bir parçası.', gorsel: 'tas', ton: '#C9B894' },
+  { kod: 'kukurtkristali', bolge: 'keciborlu', ad: 'Kükürt Kristali', etki: 'uretim', metin: 'Güneş sarısı, iğne iğne kükürt kristali.', gorsel: 'cevher' },
+  { kod: 'kantar', bolge: 'keciborlu', ad: 'Eski Kükürt Kantarı', etki: 'gelir', metin: 'Ocak ağzında çuvalları tartan pirinç kantar.', gorsel: 'kantar', ton: '#C9A040' },
+  { kod: 'duduk', bolge: 'keciborlu', ad: 'Lokomotif Düdüğü', etki: 'tasima', metin: 'Kükürt trenlerinin buharlı düdüğü.', gorsel: 'duduk', ton: '#C9A040' },
+  { kod: 'altinelek', bolge: 'bergama', ad: 'Altın Eleği', etki: 'uretim', metin: 'Dere kumundan altın ayıklayan eski elek.', gorsel: 'elek', ton: '#9A6334' },
+  { kod: 'pergamon', bolge: 'bergama', ad: 'Pergamon Sikkesi', etki: 'gelir', metin: 'Bergama krallığının altın sikkesi.', gorsel: 'antik', ton: '#F2C14E' },
+  { kod: 'parsomen', bolge: 'bergama', ad: 'Parşömen Tomarı', etki: 'maliyet', metin: "Parşömenin doğduğu Bergama'dan bir tomar.", gorsel: 'tomar', ton: '#E6D3A8' },
+  { kod: 'telkari', bolge: 'gumushane', ad: 'Telkari Broş', etki: 'gelir', metin: 'İnce gümüş tellerle örülmüş usta işi broş.', gorsel: 'bros', ton: '#D8E0E8' },
+  { kod: 'kandil', bolge: 'gumushane', ad: 'Gümüş Kandil', etki: 'maliyet', metin: 'Eski galerileri aydınlatan işlemeli kandil.', gorsel: 'kandil', ton: '#C8D0D8' },
+  { kod: 'kervancani', bolge: 'gumushane', ad: 'Kervan Çanı', etki: 'tasima', metin: 'Zigana geçidini aşan kervanların tunç çanı.', gorsel: 'can', ton: '#B5893A' },
+  { kod: 'kromit', bolge: 'elazig', ad: 'Kromit Yumrusu', etki: 'uretim', metin: 'Simsiyah, metal parlaklığında krom cevheri.', gorsel: 'cevher' },
+  { kod: 'harput', bolge: 'elazig', ad: 'Harput Kalesi Taşı', etki: 'maliyet', metin: 'Harput surlarından düşmüş yontma taş.', gorsel: 'kale', ton: '#B9A27E' },
+  { kod: 'kurek', bolge: 'elazig', ad: 'Hazar Küreği', etki: 'tasima', metin: 'Hazar Gölü kayıkçılarının oyma küreği.', gorsel: 'kurek', ton: '#9A6334' },
+  { kod: 'boraks', bolge: 'kirka', ad: 'Boraks Kristali', etki: 'uretim', metin: 'Saydam, prizma biçimli bor kristali.', gorsel: 'cevher' },
+  { kod: 'frigkabi', bolge: 'kirka', ad: 'Frig Seramiği', etki: 'gelir', metin: 'Bölgenin antik çömlekçilerinden boyalı bir kap.', gorsel: 'testi', ton: '#C8784A' },
+  { kod: 'kervannali', bolge: 'kirka', ad: 'Tuz Kervanı Nalı', etki: 'tasima', metin: 'Eskişehir yolunu aşındıran kervan atının nalı.', gorsel: 'nal', ton: '#6E7A86' },
+  { kod: 'bastnazit', bolge: 'beylikova', ad: 'Bastnazit Kristali', etki: 'uretim', metin: 'Nadir toprak elementlerini taşıyan bal renkli cevher.', gorsel: 'cevher' },
+  { kod: 'miknatis', bolge: 'beylikova', ad: 'Neodim Mıknatıs', etki: 'tasima', metin: 'Avuç içi kadar ama bir kamyon kasasını tutacak güçte.', gorsel: 'miknatis', ton: '#D0413A' },
+  { kod: 'defter', bolge: 'beylikova', ad: "Kâzım Dede'nin Defteri", etki: 'gelir', metin: 'Dedenin bütün ocakları anlattığı yıpranmış defter.', gorsel: 'defter', ton: '#7A4E2A' },
+])
+
+// Keşif seferleri (Egg Inc gemileri, Mr. Mine bilim insanları, Deep Town keşif robotları): Zeynep'in ekibi seçilen
+// süre kadar keşfe çıkar; dönüşte seferin çıktığı bölgenin buluntularından 'zar' kez 'olasilik'le buluntu ve elmas
+// getirir. Aynı anda bir sefer. İlk sefer mutlaka bir buluntuyla döner. Reklam −15 dk (en çok 2), elmasla bitirmek
+// kalan her 5 dakika için 1 elmas.
+export const KESIF = don([
+  { kod: 'kisa', ad: 'Yakın Mağaralar', sure: 1800, zar: 1, olasilik: 0.6, elmas: [1, 3] },
+  { kod: 'orta', ad: 'Eski Galeriler', sure: 7200, zar: 2, olasilik: 0.75, elmas: [3, 6] },
+  { kod: 'uzun', ad: 'Derin Keşif', sure: 28800, zar: 3, olasilik: 0.9, elmas: [8, 15] },
+])
+export const KESIF_HIZ = don({ reklamSn: 900, reklamHak: 2 })
+
+// Elmas Kumbarası (Egg Inc'teki kumbara): yükseltme, kat açma, kontrat ve hazineyle elmas birikir; mağazadan kırılınca
+// içindekiler alınır. Tavan her kırılışta büyür; her kırılış dolum hızını 'bonus' artırır (en çok 'bonusMaks').
+// enAz: mağazada kırmak için gereken en az elmas
+export const KUMBARA = don({ yukseltme: 0.2, kat: 2, kontrat: 5, hazine: 1, tavan: 500, tavanArtis: 250, tavanMaks: 2000, bonus: 0.1, bonusMaks: 1, enAz: 50 })

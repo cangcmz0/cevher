@@ -20,6 +20,9 @@ import * as Sayfalar from './sayfalar.js'
 import * as Ogretici from './ogretici.js'
 import * as Hazine from './hazine.js'
 import * as Profil from './profil.js'
+import * as Sondaj from './sondaj.js'
+import * as Cosku from './cosku.js'
+import * as Kesif from './kesif.js'
 
 const SIKKE_HAVUZ = 24
 
@@ -141,6 +144,9 @@ export const Arayuz = {
     B.ogretici = Ogretici.kur(B)
     B.hazine = Hazine.kur(B)
     B.profil = Profil.kur(B)
+    B.sondaj = Sondaj.kur(B)
+    B.cosku = Cosku.kur(B)
+    B.kesif = Kesif.kur(B)
     // Yeni sistemlerin bildirimleri (görev, kontrat, araştırma, bölge ustası, prestij)
     const haberler = {
       olay(o) {
@@ -149,7 +155,8 @@ export const Arayuz = {
         else if (o.tip === 'arastirmaBitti') {
           const a = A.ARASTIRMALAR.find((x) => x.kod === o.kod)
           B.bildir('basari', `Araştırma bitti: ${a ? a.ad : o.kod} ${o.sv}. seviye`)
-        } else if (o.tip === 'bolgeUstasi') B.bildir('basari', `Bölge Ustası! ${A.BOLGE[o.bolge].ad} satışları kalıcı +%10 · +${o.elmas} elmas`)
+        } else if (o.tip === 'kumbaraKirildi') B.bildir('basari', `Kumbara kırıldı! +${o.elmas} elmas`)
+        else if (o.tip === 'bolgeUstasi') B.bildir('basari', `Bölge Ustası! ${A.BOLGE[o.bolge].ad} satışları kalıcı +%10 · +${o.elmas} elmas`)
         else if (o.tip === 'prestijYapildi') {
           const d = B.durumAl(), etki = E.muhurEtki(d)
           B.kutla({
@@ -160,7 +167,7 @@ export const Arayuz = {
         }
       },
     }
-    moduller = [B.ust, B.kartlar, B.alt, B.pencere, B.sayfa, B.ogretici, B.hazine, B.profil, haberler]
+    moduller = [B.ust, B.kartlar, B.alt, B.pencere, B.sayfa, B.ogretici, B.hazine, B.profil, B.sondaj, B.cosku, B.kesif, haberler]
 
     B.kutla = kutlamaKur(B)
 
@@ -207,7 +214,7 @@ export const Arayuz = {
     kok.addEventListener('click', tikla)
     Veriyolu.dinle('uzunBasma', (o) => B.kartlar.uzunBasma(o.el))
     Veriyolu.dinle('uzunBasmaBitti', () => B.kartlar.uzunBitti())
-    Veriyolu.dinle('satinAlindi', () => B.bildir('basari', 'Satın alındı!'))
+    Veriyolu.dinle('satinAlindi', (o) => { if (!(o && o.u && o.u.tur === 'kumbara')) B.bildir('basari', 'Satın alındı!') })
   },
 
   kare(durum, gorunum, simdiMs) {

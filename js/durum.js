@@ -4,7 +4,7 @@
 import {
   SURUM, BOLGE, BOLGELER, BASLANGIC_PARA, MADEN_SAYISI, MAKS_MADEN_SEVIYE, MAKS_ISTASYON_SEVIYE,
   YONETICI_TIPLERI, TIP_YETENEKLERI, NADIRLIKLER, ALIM_MODLARI, GECMIS_UZUNLUK, OGRETICI_SON_ADIM,
-  LIMAN, AMBAR, GOREVLER, ORTAKLAR, ORTAK_MAKS, BASARIMLAR, PRESTIJ,
+  LIMAN, AMBAR, GOREVLER, ORTAKLAR, ORTAK_MAKS, BASARIMLAR, PRESTIJ, KAYA, BULUNTU, BULUNTULAR, KESIF, KUMBARA,
 } from './ayar.js'
 import { tasiyiciSayisi } from './ekonomi.js'
 
@@ -40,6 +40,9 @@ export function yeniBolge(kod) {
     yetenekSay: 0,
     usta: false,
     giris: false,
+    // Sert kaya: kaya = bu turda delinen kaya sayısı; sondaj = { i (kat indeksi), bitis, sure, reklam } ya da null
+    kaya: 0,
+    sondaj: null,
   }
 }
 
@@ -64,7 +67,7 @@ export function yeniDurum(simdiMs = Date.now(), tohum) {
     ayarlar: { ses: true, titresim: true, kalite: 'yuksek' },
     ogretici: { adim: 0, bitti: false },
     alimModu: 1,
-    istatistik: { dokunus: 0, yukseltme: 0, yetenek: 0, reklam: 0, satis: 0, kademe: 0, kontrat: 0, takviye: 0, hazine: 0, yonetici: 0, prestijKazanc: 0 },
+    istatistik: { dokunus: 0, yukseltme: 0, yetenek: 0, reklam: 0, satis: 0, kademe: 0, kontrat: 0, takviye: 0, hazine: 0, yonetici: 0, prestijKazanc: 0, cosku: 0, kesif: 0, sondaj: 0 },
     // Başarımlar: al = alınan kademe sayısı, rekor = görülen en iyi ilerleme (prestijde düşmez)
     basarim: { al: {}, rekor: {} },
     aktarim: false,
@@ -75,8 +78,15 @@ export function yeniDurum(simdiMs = Date.now(), tohum) {
     // gorevRekor = bölge görevlerinin şimdiye dek alınan en ileri sırası, katRekor = bölgede şimdiye dek açılan kat
     // sayısı, acilan = şimdiye dek açılmış bölgeler (elmas ödülleri yalnız ilk sefer; araştırma şartları)
     // omur = önceki turların toplam kazancı (mühür hakkı buna bağlı)
-    prestij: { sv: 0, muhur: 0, omur: 0, enIyi: 0, hazirGoruldu: false, gorevRekor: {}, katRekor: {}, acilan: ['zonguldak'] },
+    // kayaRekor = bölgede şimdiye dek delinen kaya sayısı (tecrübeli ekip: delinmiş kaya prestijden sonra kısa sürer)
+    prestij: { sv: 0, muhur: 0, omur: 0, enIyi: 0, hazirGoruldu: false, gorevRekor: {}, katRekor: {}, kayaRekor: {}, acilan: ['zonguldak'] },
     ortak: { ahmet: 1, elif: 0, mehmet: 0, zeynep: 0 },
+    // Maden Müzesi: { buluntuKodu: seviye }. Her değişimde yeni nesne yazılır (ekonomi önbelleği nesneye bağlı).
+    buluntu: {},
+    // Keşif: suren = { tur, bolge, bitis, sure, reklam, dondu } ya da null; sayi = dönen sefer sayısı
+    kesif: { suren: null, sayi: 0 },
+    // Elmas Kumbarası: elmas = biriken (kesirli), kirma = kırılış sayısı
+    kumbara: { elmas: 0, kirma: 0 },
   }
   d.calisma = yeniCalisma(d)
   return d
@@ -125,6 +135,8 @@ export function yeniCalisma(d) {
     satilan: 0,
     yetenekler: {},
     dolular: { depo: false },
+    // Vardiya Coşkusu: dolum 0..1, bitis = coşkunun bittiği oyun saati, son = son sayılan dokunuş
+    cosku: { dolum: 0, bitis: 0, son: -1e9 },
   }
 }
 
@@ -174,6 +186,14 @@ function bolgeDogrula(kod, b) {
   b.liman = sinirla(b.liman, 0, LIMAN.maks, 0)
   b.ambar = sinirla(b.ambar, 0, AMBAR.maks, 0)
   b.gorev.sira = sinirla(b.gorev.sira, 0, GOREVLER.length, 0)
+  // Sert kaya: açılmış katların önündeki kayalar delinmiş sayılır (bu sistemden önceki kayıtlar dahil)
+  const kayaSay = Math.floor(KAYA.sure.length)
+  b.kaya = Math.max(sinirla(b.kaya, 0, kayaSay, 0), Math.min(kayaSay, Math.floor((b.madenler.length - 1) / KAYA.aralik)))
+  const sj = b.sondaj
+  const sonrakiKaya = KAYA.aralik * (b.kaya + 1)
+  b.sondaj = duzObje(sj) && Math.floor(sj.i) === sonrakiKaya && sonrakiKaya === b.madenler.length && sonrakiKaya < MADEN_SAYISI && sayi(sj.sure) > 0
+    ? { i: sonrakiKaya, bitis: sayi(sj.bitis), sure: sayi(sj.sure), reklam: sinirla(sj.reklam, 0, KAYA.reklamHak, 0) }
+    : null
   // yöneticiler
   const ids = new Set(), atananlar = new Set()
   const yl = []
@@ -279,6 +299,28 @@ export function dogrula(d) {
     if (n > 1) kr[kod] = n
   }
   d.prestij.katRekor = kr
+  const kyr = {}
+  for (const kod of Object.keys(BOLGE)) {
+    const n = Math.max(sinirla(duzObje(d.prestij.kayaRekor) ? d.prestij.kayaRekor[kod] : 0, 0, KAYA.sure.length, 0), bolgeler[kod] ? bolgeler[kod].kaya : 0)
+    if (n > 0) kyr[kod] = n
+  }
+  d.prestij.kayaRekor = kyr
+  // Müze: yalnız tanınan buluntular, seviye 1..maks
+  const bl = {}
+  for (const t of BULUNTULAR) {
+    const L = sinirla(duzObje(d.buluntu) ? d.buluntu[t.kod] : 0, 0, BULUNTU.maks, 0)
+    if (L > 0) bl[t.kod] = L
+  }
+  d.buluntu = bl
+  // Keşif: tanınan tür ve bölge, sonlu süreler
+  const ks = d.kesif.suren
+  d.kesif.sayi = Math.floor(sayi(d.kesif.sayi))
+  d.kesif.suren = duzObje(ks) && KESIF.some((t) => t.kod === ks.tur) && BOLGE[ks.bolge] && sayi(ks.sure) > 0
+    ? { tur: ks.tur, bolge: ks.bolge, bitis: sayi(ks.bitis), sure: sayi(ks.sure), reklam: sinirla(ks.reklam, 0, 2, 0), dondu: !!ks.dondu }
+    : null
+  // Kumbara: kırılış sayısına göre tavan
+  d.kumbara.kirma = Math.floor(sayi(d.kumbara.kirma))
+  d.kumbara.elmas = Math.min(sayi(d.kumbara.elmas), Math.min(KUMBARA.tavanMaks, KUMBARA.tavan + KUMBARA.tavanArtis * d.kumbara.kirma))
   const acilan = new Set(['zonguldak', ...Object.keys(bolgeler)])
   for (const k of Array.isArray(d.prestij.acilan) ? d.prestij.acilan : []) if (BOLGE[k]) acilan.add(k)
   d.prestij.acilan = BOLGELER.map((b) => b.kod).filter((k) => acilan.has(k))

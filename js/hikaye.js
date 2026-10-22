@@ -6,6 +6,7 @@
 //   <bolge>-<n>                bölgenin n. görevi (1 tabanlı) alındıktan sonra (varsa)
 //   <bolge>-acik, <bolge>-giris bölgenin açılış bedeli ilk kez biriktiğinde / ilk girişte
 //   prestij-hazir, prestij     prestij açıldığında / her prestijden sonra
+//   kaya, kesif                ilk sert kayada / keşif ekibi kurulunca (Zeynep katıldıktan sonra)
 // Bölümler: 1–4 Karadeniz (Zonguldak, Ereğli, Karabük, Kastamonu), 5–12 Anadolu (Balya, Afyon,
 // Keçiborlu, Bergama, Gümüşhane, Elazığ, Kırka, Beylikova).
 // Satır: [kişi, metin]. Kişiler KISILER'de; 'mektup' portresiz mektup kartıdır.
@@ -856,6 +857,18 @@ export const SAHNELER = Object.freeze({
   prestij: S('Yeniden Başlangıç',
     ['ahmet', 'Yeni nesil madenciler hazır! Ocakları ilk günkü gibi açıyoruz ama Miras Mühürlerimiz sayesinde her şey çok daha hızlı olacak.'],
   ),
+
+  // ── Ocak sistemleri (ilk karşılaşmada) ──
+  kaya: S('Sert Kaya',
+    ['ahmet', '5. Katın altında sert bir kaya katmanı başlıyor. Kazmayla geçemeyiz, burası sondaj işi.'],
+    ['ahmet', 'Sondaj makinesini kuralım. Biraz para, biraz da zaman ister ama kaya delinince 6. Kat açılır. Her beş katta bir böyle bir katman çıkacak.'],
+    ['mehmet', 'Bir kayayı bir kez deldik mi ekip tecrübe kazanır. Yeni Nesil\'de aynı kayayı çok daha hızlı geçeriz.'],
+  ),
+  kesif: S('Keşif Ekibi',
+    ['zeynep', 'Eski galerilerde, kapalı mağaralarda neler kaldığını merak ediyorum. Küçük bir keşif ekibi kurdum.'],
+    ['zeynep', 'Ekibi keşfe yolla; döndüğünde fosiller, eski aletler, kristaller getirir. Bulduklarımızı Maden Müzesi\'nde sergileyelim, her buluntu ocağa kalıcı güç verir.'],
+    ['ahmet', 'Bir bölgenin üç buluntusunu da toplarsak o bölgenin satışları da ona göre artar!'],
+  ),
 })
 
 // Görevin başlığı/açıklaması (bölge yoksa Zonguldak)
@@ -873,7 +886,7 @@ export function gorevSahnesi(bolge, i) {
 
 // Sahnenin ait olduğu bölüm (hikâye defteri için)
 export function sahneBolumu(id) {
-  if (id === 'giris' || id === 'ogretici') return 'zonguldak'
+  if (id === 'giris' || id === 'ogretici' || id === 'kaya' || id === 'kesif') return 'zonguldak'
   if (id.startsWith('prestij')) return 'prestij'
   return id.split('-')[0]
 }

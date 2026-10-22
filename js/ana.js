@@ -184,6 +184,17 @@ function sesler(liste) {
         Ses.cal('hazine'); break
       case 'hazineAlindi':
         Ses.cal('odul'); Ses.titret([15, 30, 15]); break
+      case 'sondajBasladi':
+        Ses.cal('kazi'); Ses.titret(15); break
+      case 'kayaDelindi':
+        Ses.cal('galeri'); Ses.titret([20, 40, 20]); break
+      case 'coskuBasladi':
+        Ses.cal('esik'); Ses.titret([10, 20, 10]); break
+      case 'kesifDondu':
+        Ses.cal('kervan'); break
+      case 'kesifToplandi':
+      case 'kumbaraKirildi':
+        Ses.cal('odul'); Ses.titret([15, 30, 15]); break
     }
   }
 }
@@ -398,6 +409,7 @@ async function basla() {
     elmasEkle: (n) => { durum.oyuncu.elmas += n },
     takviyeEkle: (dk) => eylem('takviye', { dakika: dk, sinirSaat: 24 }),
     yoneticiVer: (o) => eylem('urunVer', { yonetici: o }),
+    kumbaraKir: () => eylem('kumbaraKir', {}),
     kaydet,
     yayinla: (o) => Veriyolu.yayinla(o),
   })

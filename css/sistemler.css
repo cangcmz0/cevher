@@ -1,0 +1,128 @@
+/* Cevher Madenci · Geliştirici: İbrahim Can Göçmez */
+/* ════════════════════════════════════════════════════════════════
+   SİSTEMLER: diğer oyunlardan uyarlanan bölümlerin görünümü
+   (docs/ARASTIRMA.md): sert kaya kartı ve sondaj penceresi, Vardiya
+   Coşkusu göstergesi, Keşif ve Müze sayfası, Elmas Kumbarası.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Sert kaya: kilitli kat kartı ── */
+.kart.kilitli.kaya {
+  background: linear-gradient(180deg, #2B2420, #18120E) padding-box, linear-gradient(140deg, #F2A23E, #8A5A2A 40%, #4A3A2A) border-box;
+}
+.kart.kilitli.kaya .kart-cevher { color: #FFC878; font-weight: 600; }
+.kart.kilitli.kaya .kart-ikon { color: #FFC878; }
+.kart-sondaj { position: absolute; left: 8px; right: 8px; top: 45px; height: 4px; border-radius: 2px; background: rgba(0, 0, 0, .55); }
+.kart-sondaj > i { background: linear-gradient(90deg, #F6A623, #FFD36B); }
+.kart.kilitli.sondaj .kart-cevher { font-variant-numeric: tabular-nums; }
+
+/* ── Sondaj penceresi ── */
+.sj-ust { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sj-ust .simge { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .55)); }
+.sj-ust h2 { margin: 0 !important; }
+.sj-ust small { display: block; font: 500 12px/15px var(--f-govde); color: var(--acik-soluk); }
+.sj-metin { margin: 4px 0 10px; }
+.sj-cubuk { margin-top: 12px; }
+.sj-cubuk > i, .ks .kt-cubuk > i { transform: scaleX(var(--o, 0)); transition: transform .4s; }
+.sj-cubuk > i { background: linear-gradient(180deg, #FFD36B, #E8A33A); }
+.sj-dugmeler { flex-wrap: wrap; }
+.sj-dugmeler .btn { gap: 6px; }
+.sj-dugmeler .btn .ik { width: 18px; height: 18px; flex: none; }
+
+/* ── Vardiya Coşkusu: alt bandın üst kenarında ince gösterge ── */
+.cosku-serit {
+  position: absolute; left: 50%; top: -12px;
+  width: 196px; height: 20px;
+  padding: 0 !important;
+  transform: translateX(-50%);
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0E3346, #0A2433) !important;
+  border: 1px solid #2B6585 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .5);
+  color: var(--acik) !important;
+  transition: opacity .3s, box-shadow .3s;
+}
+.cosku-serit.bos { opacity: .72; }
+.cs-dolum { position: absolute; inset: 0; transform-origin: 0 50%; transform: scaleX(0); background: linear-gradient(180deg, #7DD3FF, #2F86C8); transition: transform .15s linear; }
+.cs-yazi { position: relative; display: flex; align-items: center; justify-content: center; gap: 4px; height: 100%; font: 800 11px/1 var(--f-govde); text-shadow: 0 1px 2px rgba(0, 0, 0, .75); white-space: nowrap; }
+.cs-yazi .ik { width: 12px; height: 12px; flex: none; }
+.cs-yazi small { font: 600 10px/1 var(--f-govde); color: rgba(255, 255, 255, .85); }
+.cosku-serit.aktif { border-color: #FFE7A0 !important; box-shadow: 0 0 12px rgba(255, 200, 80, .75), 0 2px 6px rgba(0, 0, 0, .5); animation: cosku-nabiz .7s ease-in-out infinite alternate; }
+.cosku-serit.aktif .cs-dolum { background: linear-gradient(180deg, #FFE08A, #F6A623); transition: transform .1s linear; }
+.cosku-serit.aktif .cs-yazi { color: #3A2410; text-shadow: 0 1px 0 rgba(255, 255, 255, .45); }
+.cosku-serit.aktif .cs-yazi small { color: #5A3812; }
+#maden.cosku::after { box-shadow: inset 0 0 0 2px rgba(255, 214, 107, .55), inset 0 0 30px rgba(255, 176, 60, .45); animation: cosku-isil .8s ease-in-out infinite alternate; }
+@keyframes cosku-nabiz { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.05); } }
+@keyframes cosku-isil { from { opacity: .65; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cosku-serit.aktif, #maden.cosku::after { animation: none; } }
+
+/* ── Keşif ve Müze ── */
+.ks { display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; }
+.ks-bas { margin-bottom: 0; }
+.ks-bas .simge { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .55)); }
+.ks-kilit { font: 600 13px/17px var(--f-govde); color: var(--acik-soluk); text-align: center; padding: 6px 4px 2px; }
+.ks-secenekler { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ks-sec { gap: 3px !important; padding: 8px 4px !important; }
+.ks-sec > b { white-space: normal !important; font-size: 13px !important; line-height: 15px !important; min-height: 30px; display: grid; place-items: center; }
+.ks-sec > small { white-space: normal !important; }
+.ks-odul { display: inline-flex; align-items: center; gap: 3px; margin-top: 2px; padding: 3px 7px; border-radius: 8px; background: rgba(0, 0, 0, .4); font: 800 11.5px/1 var(--f-govde); color: #BFE6FF; }
+.ks-odul .ik { width: 13px; height: 13px; }
+.ks-suren { display: flex; flex-direction: column; gap: 8px; }
+.ks-ad { font: 800 16px/19px var(--f-baslik); color: #FFF1D6; }
+.ks-suren .kt-cubuk > i { background: linear-gradient(180deg, #7DD3FF, #2F86C8); }
+.ks-dugmeler { display: flex; gap: 8px; }
+.ks-dugmeler .btn { flex: 1; height: 42px; gap: 6px; }
+.ks-dugmeler .btn .ik { width: 18px; height: 18px; flex: none; }
+.ks-hazir { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.ks-hazir p { font: 500 14px/18px var(--f-govde); color: var(--acik); }
+.ks-hazir .btn { width: 100%; height: 46px; gap: 6px; }
+.ks-hazir .btn .ik { width: 20px; height: 20px; }
+.ks-sonuc { margin-top: 10px; padding: 8px; border-radius: 11px; background: rgba(0, 0, 0, .3); border: 1px solid rgba(246, 196, 83, .45); text-align: center; }
+.ks-sonuc > b { font: 800 14px/18px var(--f-baslik); color: #FFD36B; }
+.ks-sonuc-l { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
+.ks-yeni { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 84px; }
+.ks-yeni small { font: 600 11px/13px var(--f-govde); color: var(--acik); }
+.ks-toplam { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-bottom: 8px; }
+.ks-toplam > span { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 2px; border-radius: 9px; background: rgba(0, 0, 0, .3); }
+.ks-toplam small { font: 600 10px/12px var(--f-govde); color: var(--acik-soluk); }
+.ks-toplam b { font: 800 13px/15px var(--f-govde); color: rgba(255, 255, 255, .5); }
+.ks-toplam .var b { color: #8EF0A2; }
+.ks-bolge-satir { padding: 6px 0 2px; border-top: 1px solid rgba(255, 255, 255, .08); }
+.ks-bolge-satir:first-of-type { border-top: 0; }
+.ks-bolge-bas { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding: 0 2px 5px; }
+.ks-bolge-bas b { font: 800 14px/17px var(--f-baslik); color: #FFF1D6; }
+.ks-set { font: 600 10.5px/13px var(--f-govde); color: var(--acik-soluk); }
+.ks-bolge-satir.set .ks-set { color: #FFD36B; }
+.ks-bolge-satir.set .ks-set::before { content: "✓ "; }
+.ks-vitrin { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ks-esya { gap: 2px !important; padding: 6px 3px 6px !important; }
+.ks-esya > b { white-space: normal !important; font-size: 11.5px !important; line-height: 13px !important; min-height: 26px; display: grid; place-items: center; }
+.ks-esya.yok > b { color: var(--acik-soluk); }
+.ks-esya.maks { border-color: #F6C453 !important; box-shadow: inset 0 0 10px rgba(246, 196, 83, .25), 0 0 0 1px rgba(246, 196, 83, .6); }
+.ks-simge { display: grid; place-items: center; width: 48px; height: 48px; }
+.ks-simge .simge { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .55)); }
+.ks-sv { display: flex; gap: 3px; margin-top: 2px; font-style: normal; }
+.ks-sv > i { width: 6px; height: 6px; border-radius: 50%; background: rgba(0, 0, 0, .5); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15); }
+.ks-sv > i.dolu { background: radial-gradient(circle at 35% 30%, #FFF2B8, #F6C453 55%, #B07A1E); box-shadow: none; }
+
+/* Yöneticiler sayfasındaki giriş */
+.mg-ks {
+  display: flex !important; align-items: center; gap: 8px;
+  width: 100%; padding: 6px 10px !important;
+  border-radius: 11px;
+  background: linear-gradient(90deg, rgba(125, 211, 255, .14), rgba(0, 0, 0, .2)) !important;
+  border: 1px solid rgba(125, 211, 255, .45) !important;
+  color: var(--acik) !important; text-align: left;
+}
+.mg-ks .simge { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5)); }
+.mg-ks > .ik { width: 18px; height: 18px; flex: none; color: #7DD3FF; }
+.mg-ks-yazi { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mg-ks-yazi b { font: 800 14.5px/18px var(--f-baslik); }
+.mg-ks-yazi small { font: 500 11.5px/14px var(--f-govde); color: var(--acik-soluk); }
+.mg-ks.kilitli { filter: saturate(.4) brightness(.8); }
+
+/* ── Elmas Kumbarası (Mağaza) ── */
+.dk-kumbara .dk-satir > div { gap: 3px; }
+.dk-kumbara .cubuk-ince { height: 8px; border-radius: 4px; }
+.dk-kumbara .cubuk-ince > i { background: linear-gradient(180deg, #FFB3CF, #E2668F); transform: scaleX(var(--o, 0)); transition: transform .4s; }
+.dk-kumbara-sayi { font: 800 15px/18px var(--f-govde); color: #BFE6FF; }

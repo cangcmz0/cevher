@@ -8,6 +8,11 @@
 // - yetenekBitti/yetenekHazir {istasyon, yonetici}: yonetici = kimlik
 // - bolgeAcilabilir {bolge}: bir önceki bölgenin kasası açılış bedelini ilk kez karşıladı
 // - darbogaz {tur}: tur null ise uyarı kalktı
+// - sondajBasladi {i, sure}, kayaDelindi {bolge, i}: sert kaya (her 5 katta bir)
+// - coskuBasladi {bitis}, coskuBitti: Vardiya Coşkusu
+// - kesifBasladi {tur, bolge}, kesifDondu {tur}, kesifToplandi {tur, bulunan, elmas}: keşif seferi
+// - buluntu {kod, L, yeni}: müzeye buluntu geldi (keşif ya da hazine)
+// - kumbaraKirildi {elmas}
 // Hata ayıklama eylemi (harness için): 'para' {miktar}
 
 import {
@@ -18,12 +23,14 @@ import {
   BOLGE, BOLGE_USTASI_ELMAS, BOLGE_ACMA_ELMAS, KAT_ACMA_ELMAS, LIMAN, AMBAR, KONTRAT, KONTRAT_MUSTERI, MISYONLAR, MISYON_ODUL,
   ETKINLIKLER, ARASTIRMALAR, ARASTIRMA_MALIYET, ARASTIRMA_SURELER, ARASTIRMA_T3_SURE, GUNLUK_HEDIYE,
   ELMAS_HARCAMA, TAKVIYE_MAGAZA_SINIR_SAAT, ORTAKLAR, ORTAK_MAKS, ORTAK_MALIYET, HAZINE, BASARIMLAR, BASARIM_ODUL,
+  KAYA, COSKU, BULUNTU, BULUNTULAR, KESIF, KESIF_HIZ, KUMBARA,
 } from './ayar.js'
 import {
   madenUretim, uretimCarpani, yiginKap, asansorKap, asansorHiz, tasiyiciSayisi, tasiyiciYuk, depoYol, depoKap,
   satisCarpani, kapasiteler, otoGelir, toplamUretim, teklif, madenAcilis, kiralamaMaliyeti,
   yoneticiBul, yetenekDurum, yetenekSuresi, yetenekBekleme, gecilenKademeler, gelirRef, bolgeBilgi,
   bolgeKodu, etkinlik, otoAkis, ar, limanMaliyet, ambarMaliyet, cevrimdisiSinir, turKazanc, muhurKazanci,
+  kayaVar, sondajMaliyet, sondajSuresi,
 } from './ekonomi.js'
 import { yeniCalisma, yeniTasiyici, yeniDurum, yeniBolge, rastgele, istasyonGecerli, istasyonTip } from './durum.js'
 import { SAHNELER, gorevYazi, gorevSahnesi } from './hikaye.js'
@@ -72,6 +79,7 @@ export function adim(durum, dt, olaylar) {
   const b = durum.bolgeler[c.bolge]
   const paraOnce = b.para
   durum.zaman += dt
+  coskuAdim(durum, c, dt, olaylar)
   yetenekKontrol(durum, b, c, olaylar)
   madenlerAdim(durum, b, c, dt, olaylar)
   asansorAdim(durum, b, c, dt, olaylar)
@@ -88,6 +96,8 @@ export function adim(durum, dt, olaylar) {
     bolgeAcilabilirKontrol(durum, olaylar)
     hazineKontrol(durum, b, c, olaylar)
     basarimKontrol(durum, c, olaylar)
+    sondajKontrol(durum, olaylar)
+    kesifKontrol(durum, olaylar)
   }
   c.sayac30 += dt
   if (c.sayac30 >= GECMIS_ARALIK - EPS) {
@@ -341,6 +351,7 @@ export function basarimDeger(d, kod) {
     case 'kat': return bl.reduce((m, b) => Math.max(m, b.madenler.length), 0)
     case 'bolge': return bl.length
     case 'prestij': return d.prestij.sv
+    case 'buluntu': return Object.keys(d.buluntu || {}).length
     case 'yonetici': return Math.max(ist.yonetici || 0, bl.reduce((s, b) => s + Object.values(b.kiralanan || {}).reduce((x, y) => x + (y || 0), 0), 0))
     default: return ist[kod] || 0
   }
@@ -365,6 +376,104 @@ function basarimKontrol(d, c, olaylar) {
     if (il.alinabilir && !c.basarimHazir[t.kod]) yay(olaylar, { tip: 'basarimHazir', kod: t.kod, ad: t.ad, kademe: il.kademe + 1 })
     c.basarimHazir[t.kod] = il.alinabilir
   }
+}
+
+// ---- Vardiya Coşkusu ----
+
+// Dokunuş göstergeyi doldurur; dolunca coşku başlar. Öğretici bitmeden dolmaz; coşku sürerken dokunuş sayılır ama
+// gösterge dolmaz. Art arda gelen dokunuşlar COSKU.aralik sn'de bir sayılır. -> dokunuş coşkuya sayıldı mı
+function coskuEkle(d, c, olaylar) {
+  if (!d.ogretici.bitti) return false
+  const k = c.cosku
+  if (d.zaman < k.bitis) return true
+  if (d.zaman - k.son < COSKU.aralik - EPS) return true
+  k.son = d.zaman
+  k.dolum = Math.min(1, k.dolum + COSKU.dokunus)
+  if (k.dolum >= 1 - 1e-9) {
+    k.dolum = 0
+    k.bitis = d.zaman + COSKU.sure
+    d.istatistik.cosku = (d.istatistik.cosku || 0) + 1
+    yay(olaylar, { tip: 'coskuBasladi', bitis: k.bitis })
+  }
+  return true
+}
+
+function coskuAdim(d, c, dt, olaylar) {
+  const k = c.cosku
+  if (k.bitis > 0) {
+    if (d.zaman >= k.bitis) { k.bitis = 0; yay(olaylar, { tip: 'coskuBitti' }) }
+  } else if (k.dolum > 0) k.dolum = Math.max(0, k.dolum - COSKU.sizinti * dt)
+}
+
+// ---- Sert kaya ve sondaj ----
+
+// Bitmiş sondajlar (bütün bölgelerde; süre oyun saatiyle işler, çevrimdışı da dolar)
+function sondajKontrol(d, olaylar) {
+  for (const kod of Object.keys(d.bolgeler)) {
+    const b = d.bolgeler[kod], s = b.sondaj
+    if (!s || d.zaman < s.bitis - EPS) continue
+    b.sondaj = null
+    b.kaya = (b.kaya || 0) + 1
+    d.prestij.kayaRekor[kod] = Math.max(d.prestij.kayaRekor[kod] || 0, b.kaya)
+    yay(olaylar, { tip: 'kayaDelindi', bolge: kod, i: s.i })
+    isaretle(d, true)
+  }
+}
+
+// Kalan süreyi elmasla bitirmenin bedeli: kalan her 5 dakika için 1 elmas (en az 1)
+export const hizlandirmaElmas = (kalan) => Math.max(1, Math.ceil(kalan / 60 / 5))
+
+// ---- Keşif seferleri ve Maden Müzesi ----
+
+// Keşif ekibi Zeynep katılınca kurulur (öğretici bitmiş olmalı)
+export const kesifAcik = (d) => !!(d.ogretici.bitti && d.ortak && d.ortak.zeynep >= 1)
+// Sefer durumu: null (ekip boşta) ya da { ...suren, kalan, hazir }
+export function kesifDurumu(d) {
+  const s = d.kesif.suren
+  if (!s) return null
+  const kalan = Math.max(0, s.bitis - d.zaman)
+  return { ...s, kalan, hazir: kalan <= EPS }
+}
+
+function kesifKontrol(d, olaylar) {
+  if (kesifAcik(d) && !d.hikaye.goruldu.includes('kesif')) hikayeEkle(d, 'kesif', olaylar)
+  const s = d.kesif.suren
+  if (!s || s.dondu || d.zaman < s.bitis - EPS) return
+  s.dondu = true
+  yay(olaylar, { tip: 'kesifDondu', tur: s.tur })
+  isaretle(d, true)
+}
+
+// Bölgenin henüz en üst seviyede olmayan buluntularından biri (eksik olanlar iki kat olası) ya da null
+function buluntuSec(d, bolge) {
+  const havuz = BULUNTULAR.filter((x) => x.bolge === bolge && (d.buluntu[x.kod] || 0) < BULUNTU.maks)
+  if (!havuz.length) return null
+  const agirlik = (x) => (d.buluntu[x.kod] ? 1 : 2)
+  let r = rastgele(d) * havuz.reduce((t, x) => t + agirlik(x), 0)
+  for (const x of havuz) { r -= agirlik(x); if (r < 0) return x }
+  return havuz[havuz.length - 1]
+}
+
+// Buluntuyu müzeye koyar ya da seviyesini artırır (müze nesnesi yenilenir: ekonomi önbelleği) -> { kod, L, yeni }
+function buluntuEkle(d, kod, olaylar) {
+  const yeni = !d.buluntu[kod]
+  const L = Math.min(BULUNTU.maks, (d.buluntu[kod] || 0) + 1)
+  d.buluntu = { ...d.buluntu, [kod]: L }
+  for (const k of Object.keys(d.bolgeler)) enIyiGuncelle(d, d.bolgeler[k])
+  const r = { kod, L, yeni }
+  yay(olaylar, { tip: 'buluntu', ...r })
+  return r
+}
+
+// ---- Elmas Kumbarası ----
+
+export const kumbaraTavan = (d) => Math.min(KUMBARA.tavanMaks, KUMBARA.tavan + KUMBARA.tavanArtis * ((d.kumbara && d.kumbara.kirma) || 0))
+export const kumbaraBonus = (d) => 1 + Math.min(KUMBARA.bonusMaks, KUMBARA.bonus * ((d.kumbara && d.kumbara.kirma) || 0))
+// Öğretici bittikten sonra oyun içi işler kumbarayı doldurur
+function kumbaraEkle(d, n) {
+  if (!d.ogretici.bitti || !(n > 0)) return
+  const k = d.kumbara
+  k.elmas = Math.min(kumbaraTavan(d), k.elmas + n * kumbaraBonus(d))
 }
 
 // Hazine damarı (§10): öğretici bittikten sonra, en az iki açık katta ara ara rastgele bir katta belirir.
@@ -737,6 +846,7 @@ const EYLEMLER = {
     const kademeler = gecilenKademeler(eskiL, tk.yeniL, liste)
     d.istatistik.yukseltme++
     d.istatistik.kademe += kademeler.length
+    kumbaraEkle(d, KUMBARA.yukseltme)
     yay(olaylar, { tip: 'yukseltildi', istasyon: ist, eskiL, yeniL: tk.yeniL, kademeler })
     enIyiGuncelle(d, b)
     yay(olaylar, { tip: 'paraDegisti' })
@@ -751,6 +861,7 @@ const EYLEMLER = {
     if (i >= MADEN_SAYISI) return RED('maks')
     if (i < n) return RED('gecersiz')
     if (i > n) return RED('kilit')
+    if (kayaVar(b, i)) return RED('kaya')
     const maliyet = madenAcilis(d, b, i)
     if (b.para < maliyet) return RED('para')
     b.para -= maliyet
@@ -766,6 +877,9 @@ const EYLEMLER = {
       d.oyuncu.elmas += elmas
     }
     if (elmas) yay(olaylar, { tip: 'katElmasi', i, elmas })
+    kumbaraEkle(d, KUMBARA.kat)
+    // İlk sert kayaya varınca Ahmet sondajı anlatır
+    if (kayaVar(b, b.madenler.length)) hikayeEkle(d, 'kaya', olaylar)
     enIyiGuncelle(d, b)
     yay(olaylar, { tip: 'paraDegisti' })
     isaretle(d, true)
@@ -775,8 +889,15 @@ const EYLEMLER = {
   dokun(d, b, v, olaylar) {
     const ist = v.istasyon
     if (!istasyonGecerli(b, ist)) return RED('gecersiz')
-    if (yoneticiBul(b, ist)) return RED('otomatik')
     const c = d.calisma
+    // Öğreticiden sonra her dokunuş Vardiya Coşkusu'nu doldurur; yöneticili istasyon yalnız coşkuya sayılır
+    const cosku = coskuEkle(d, c, olaylar)
+    if (yoneticiBul(b, ist)) {
+      if (!cosku) return RED('otomatik')
+      d.istatistik.dokunus++
+      isaretle(d, false)
+      return { ok: true, etkisiz: true, cosku: true }
+    }
     d.istatistik.dokunus++
     isaretle(d, false)
     if (ist === 'asansor') {
@@ -1120,6 +1241,7 @@ const EYLEMLER = {
     k.ilerleme = 0
     k.hazir = false
     d.istatistik.kontrat++
+    kumbaraEkle(d, KUMBARA.kontrat)
     yay(olaylar, { tip: 'kontratTamam', ...o, musteri: kd.musteri })
     kontratKur(d, b)
     gorevKontrol(d, b, olaylar)
@@ -1154,7 +1276,7 @@ const EYLEMLER = {
       s.bitis -= 900
       d.istatistik.reklam++
     } else {
-      const elmas = Math.max(1, Math.ceil(kalan / 60 / 5))
+      const elmas = hizlandirmaElmas(kalan)
       if (d.oyuncu.elmas < elmas) return RED('elmas')
       d.oyuncu.elmas -= elmas
       s.bitis = d.zaman
@@ -1271,10 +1393,17 @@ const EYLEMLER = {
       b.toplamKazanc += para
       yay(olaylar, { tip: 'paraDegisti' })
     }
+    // Altın damarından ara sıra müzelik bir buluntu da çıkar (keşif ekibi kurulduktan sonra)
+    let buluntu = null
+    if (h.tur === 'altin' && kesifAcik(d) && rastgele(d) < HAZINE.buluntuOlasilik) {
+      const x = buluntuSec(d, bolgeKodu(d, b))
+      if (x) buluntu = buluntuEkle(d, x.kod, olaylar)
+    }
     d.istatistik.hazine = (d.istatistik.hazine || 0) + 1
-    yay(olaylar, { tip: 'hazineAlindi', kat: h.kat, tur: h.tur, yer: h.yer, para, elmas })
+    kumbaraEkle(d, KUMBARA.hazine)
+    yay(olaylar, { tip: 'hazineAlindi', kat: h.kat, tur: h.tur, yer: h.yer, para, elmas, buluntu })
     isaretle(d, true)
-    return { ok: true, tur: h.tur, kat: h.kat, para, elmas }
+    return { ok: true, tur: h.tur, kat: h.kat, para, elmas, buluntu }
   },
 
   // Günün misyonlarını kurar (gün değiştiyse) {gun}
@@ -1376,6 +1505,114 @@ const EYLEMLER = {
     return { ok: true, sv: d.prestij.sv, muhur, toplam: d.prestij.muhur }
   },
 
+
+  // ── Sert kaya: sondajı başlat (sıradaki kat kayanın ardındaysa) ──
+  sondajBaslat(d, b, v, olaylar) {
+    const i = b.madenler.length
+    if (!kayaVar(b, i)) return RED('gecersiz')
+    if (b.sondaj) return RED('mesgul')
+    const maliyet = sondajMaliyet(d, b, i)
+    if (b.para < maliyet) return RED('para')
+    b.para -= maliyet
+    const sure = sondajSuresi(d, b, i)
+    b.sondaj = { i, bitis: d.zaman + sure, sure, reklam: 0 }
+    d.istatistik.sondaj = (d.istatistik.sondaj || 0) + 1
+    yay(olaylar, { tip: 'sondajBasladi', i, sure })
+    yay(olaylar, { tip: 'paraDegisti' })
+    isaretle(d, true)
+    return { ok: true, maliyet, sure }
+  },
+
+  // Sondajı hızlandır {yontem: 'reklam' | 'elmas'}: reklam −15 dk (en çok 2 kez), elmas hemen bitirir
+  sondajHizlandir(d, b, v, olaylar) {
+    const s = b.sondaj
+    if (!s) return RED('gecersiz')
+    if (v.yontem === 'reklam') {
+      if (s.reklam >= KAYA.reklamHak) return RED('maks')
+      s.reklam++
+      s.bitis -= KAYA.reklamSn
+      d.istatistik.reklam++
+    } else {
+      const elmas = hizlandirmaElmas(Math.max(0, s.bitis - d.zaman))
+      if (d.oyuncu.elmas < elmas) return RED('elmas')
+      d.oyuncu.elmas -= elmas
+      s.bitis = d.zaman
+    }
+    sondajKontrol(d, olaylar)
+    isaretle(d, true)
+    return TAMAM()
+  },
+
+  // ── Keşif: ekibi yolla {tur: 'kisa' | 'orta' | 'uzun'} (etkin bölgenin buluntularını arar) ──
+  kesifBaslat(d, b, v, olaylar) {
+    if (!kesifAcik(d)) return RED('kilit')
+    if (d.kesif.suren) return RED('mesgul')
+    const t = KESIF.find((x) => x.kod === v.tur)
+    if (!t) return RED('gecersiz')
+    const bolge = bolgeKodu(d, b)
+    d.kesif.suren = { tur: t.kod, bolge, bitis: d.zaman + t.sure, sure: t.sure, reklam: 0, dondu: false }
+    yay(olaylar, { tip: 'kesifBasladi', tur: t.kod, bolge })
+    isaretle(d, true)
+    return { ok: true, sure: t.sure, bolge }
+  },
+
+  // Keşfi hızlandır {yontem: 'reklam' | 'elmas'}
+  kesifHizlandir(d, b, v, olaylar) {
+    const s = d.kesif.suren
+    if (!s || s.dondu) return RED('gecersiz')
+    if (v.yontem === 'reklam') {
+      if (s.reklam >= KESIF_HIZ.reklamHak) return RED('maks')
+      s.reklam++
+      s.bitis -= KESIF_HIZ.reklamSn
+      d.istatistik.reklam++
+    } else {
+      const elmas = hizlandirmaElmas(Math.max(0, s.bitis - d.zaman))
+      if (d.oyuncu.elmas < elmas) return RED('elmas')
+      d.oyuncu.elmas -= elmas
+      s.bitis = d.zaman
+    }
+    kesifKontrol(d, olaylar)
+    isaretle(d, true)
+    return TAMAM()
+  },
+
+  // Dönen ekibin getirdiklerini al: buluntular (ilk sefer en az bir tane) ve elmas.
+  // Bölgenin bütün buluntuları en üst seviyedeyse buluntu yerine elmas gelir.
+  kesifTopla(d, b, v, olaylar) {
+    const s = d.kesif.suren
+    if (!s) return RED('gecersiz')
+    if (d.zaman < s.bitis - EPS) return RED('kilit')
+    const t = KESIF.find((x) => x.kod === s.tur) || KESIF[0]
+    const bulunan = []
+    let elmas = t.elmas[0] + Math.floor(rastgele(d) * (t.elmas[1] - t.elmas[0] + 1))
+    for (let k = 0; k < t.zar; k++) {
+      const garanti = d.kesif.sayi === 0 && k === 0
+      if (!garanti && rastgele(d) >= t.olasilik) continue
+      const x = buluntuSec(d, s.bolge)
+      if (x) bulunan.push(buluntuEkle(d, x.kod, olaylar))
+      else elmas += 5
+    }
+    d.oyuncu.elmas += elmas
+    d.kesif.suren = null
+    d.kesif.sayi++
+    d.istatistik.kesif = (d.istatistik.kesif || 0) + 1
+    yay(olaylar, { tip: 'kesifToplandi', tur: t.kod, bolge: s.bolge, bulunan, elmas })
+    isaretle(d, true)
+    return { ok: true, bulunan, elmas, bolge: s.bolge }
+  },
+
+  // ── Kumbara: ödeme onaylandıktan sonra kırılır, içindeki elmaslar verilir ──
+  kumbaraKir(d, b, v, olaylar) {
+    const k = d.kumbara
+    const elmas = Math.floor(k.elmas)
+    if (elmas < 1) return RED('bos')
+    d.oyuncu.elmas += elmas
+    k.elmas = 0
+    k.kirma++
+    yay(olaylar, { tip: 'kumbaraKirildi', elmas })
+    isaretle(d, true)
+    return { ok: true, elmas }
+  },
 
   // Hata ayıklama / test düzeneği: aktif bölgeye para ekle
   para(d, b, v, olaylar) {

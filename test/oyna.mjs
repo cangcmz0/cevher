@@ -321,6 +321,13 @@ async function senaryo3(tarayici, profil) {
     })),
     { ad: 'pencere-ortak', ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('ortak', { kod: 'ahmet' })) },
     { ad: 'pencere-lojistik', ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('lojistik', { tur: 'liman' })) },
+    // Diğer oyunlardan uyarlananlar: sert kaya (sıradaki kat kayanın ardında olana dek kat açılır) ve keşif/müze
+    { ad: 'pencere-sondaj', hazirla: (s) => s.sayfa.evaluate(() => {
+      const d = __cevher.durum; d.oyuncu.elmas = 1000
+      for (let k = 0; k < 30; k++) { __cevher.eylem('para', { miktar: 1e30 }); const r = __cevher.eylem('madenAc', { i: d.bolgeler[d.aktifBolge].madenler.length }); if (!r.ok) break }
+    }), ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('sondaj', {})) },
+    { ad: 'pencere-kesif', hazirla: (s) => s.sayfa.evaluate(() => { const d = __cevher.durum; d.ortak.zeynep = Math.max(1, d.ortak.zeynep); d.oyuncu.elmas = 1000; d.buluntu = { lamba: 2, hematit: 1 } }),
+      ac: (s) => s.sayfa.evaluate(() => __cevher.modalAc('kesif', {})) },
     // Üstteki görev çubuğu bölge görevlerini açar (seviye çubuğunun yerine)
     { ad: 'hud-gorev', ac: (s) => s.sayfa.evaluate(() => document.querySelector('#ust .ust-xp').click()) },
   ]
