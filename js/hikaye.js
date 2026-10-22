@@ -46,7 +46,7 @@ export const GOREV_YAZI = Object.freeze({
     G('İlk Ustabaşı', 'Bir yönetici, sen yokken de ocağı çalıştırır.', true),
     G('Derine İn', 'Eski haritalarda bir kat daha görünüyor.', true),
     G('Kabin Ustası', 'Asansör kendi kendine çalışsın.'),
-    G('Vagon Başı', 'Yükleme katında satış hiç durmasın.', true),
+    G('Kamyon Başı', 'Kamyonlar satışa hiç durmadan gitsin.', true),
     G('Damarın İzinde', 'Kademe ödülleri üretimi katlar.', true),
     G('Usta Hüneri', 'Yöneticinin yeteneği ocağı hızlandırır.', true),
     G('Grizu Kapısı', 'Derin katlarda havalandırma şart.', true),

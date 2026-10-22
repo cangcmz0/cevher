@@ -224,7 +224,7 @@ test('görev metinleri bölgeye göre: başlık, koşul ve 15 görev', () => {
   const g = B.gorevDurumu(d, d.bolgeler.zonguldak)
   assert.equal(g.toplam, 15)
   assert.equal(g.baslik, 'Ocağı Uyandır')
-  assert.equal(g.metin, '2. Katı 5. seviyeye çıkar')
+  assert.equal(g.metin, '1. Katı 5. seviyeye çıkar')
 })
 
 test('bölge: sırayla ve önceki bölgenin kasasından açılır; ilk açılış elmas verir, dönüşte yöneticili gelir eklenir', () => {

@@ -11,7 +11,7 @@ import { arastirmaTeklif, arastirmaSart, arastirmaBilgi } from '../benzetim.js'
 
 const ETKI = {
   kazma: 'Üretim +%10', damar: 'Kat açma −%8', usta: 'Kat yükseltme −%5', matkap: 'Üretim ×1,5',
-  halat: 'Asansör kapasitesi +%15', motor: 'Asansör hızı +%10', ray: 'Vagon hızı +%10', depo: 'Depo kapasitesi +%25',
+  halat: 'Asansör kapasitesi +%15', motor: 'Asansör hızı +%10', ray: 'Kamyon hızı +%10', depo: 'Depo kapasitesi +%25',
   pazar: 'Satış +%10', gece: 'Çevrimdışı +1 saat', ihracat: 'Satış ×1,5',
   okul: 'Yetenek süresi +%20', dinlenme: 'Yetenek bekleme −%10', ik: 'Yönetici maliyeti −%15', miras: 'Mühür etkisi +%1',
 }

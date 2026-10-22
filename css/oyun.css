@@ -165,12 +165,6 @@
 .kart.maks .kart-bar > i { background: linear-gradient(180deg, var(--para-acik), var(--para-koyu)); }
 
 /* Yükleme katı kartı */
-.kart.yukleme::after { display: none; }
-.kart.yukleme .kart-ad { left: 9px; top: 9px; font-size: 15px; }
-.kart.yukleme .kart-cevher { left: 9px; top: 30px; font: 400 14px/17px var(--f-govde); color: var(--acik); }
-.kart.yukleme .kart-ok-sari { position: absolute; right: 7px; top: 15px; width: 24px; height: 24px; color: #F6C453; }
-.kart.yukleme .kart-ok-sari .ik { width: 24px; height: 24px; stroke-width: 3; }
-.kart.yukleme .kart-sv { left: auto; right: 6px; top: auto; bottom: 4px; }
 
 /* Kilitli (sonraki kat) */
 .kart.kilitli { background: linear-gradient(180deg, #23201C, #14110E) padding-box, linear-gradient(140deg, #8A7A5A, #4A4234) border-box; }
@@ -378,7 +372,8 @@
 .cevrimdisi-panel { width: calc((100% - 29px) / 2); }
 .topla2x { left: calc(18px + (100% - 29px) / 2); width: calc((100% - 29px) / 2); }
 /* Atanmış yöneticinin rozeti görünür: dokununca yetenek / yönetici penceresi */
-.asansor-kap .yonetici-rozet { left: -31px !important; top: 6px !important; }
+.asansor-kap .yonetici-rozet, .depo-kap .yonetici-rozet { left: -31px !important; top: 6px !important; }
+.depo-kap { position: absolute; z-index: 2; }
 .hud-ikon { flex: none; width: 27px; height: 27px; margin-left: -3px; pointer-events: none; }
 .ust-elmas .hud-ikon { width: 28px; height: 25px; margin-left: 0; }
 .ist-metin small { font-size: 11px; letter-spacing: -.2px; }

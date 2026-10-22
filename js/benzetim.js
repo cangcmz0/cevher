@@ -3,7 +3,7 @@
 //
 // Olay notları (§6.4 listesine ek alanlar, hiçbiri zorunlu değil):
 // - asansorDurak {kat, miktar, istasyon}: kat = maden indeksi (0 tabanlı), istasyon = 'm'+kat
-// - satis {miktar, para, k}: k = taşıyıcı indeksi
+// - satis {miktar, para, k}: k = taşıyıcı (kamyon) indeksi
 // - yoneticiAtandi {id, istasyon, eski, cikarilan}: istasyon null ise çıkarıldı
 // - yetenekBitti/yetenekHazir {istasyon, yonetici}: yonetici = kimlik
 // - bolgeAcilabilir {bolge}: bir önceki bölgenin kasası açılış bedelini ilk kez karşıladı
@@ -444,9 +444,9 @@ function istatistikVeDarbogaz(d, b, c, h, olaylar) {
 export function gorevKosulu(g) {
   if (!g) return ''
   switch (g.tur) {
-    case 'seviye': return `${g.i + 2}. Katı ${g.L}. seviyeye çıkar`
+    case 'seviye': return `${g.i + 1}. Katı ${g.L}. seviyeye çıkar`
     case 'yonetici': return 'Bir yönetici tut'
-    case 'ac': return `${g.n + 1}. Katı aç`
+    case 'ac': return `${g.n}. Katı aç`
     case 'yon': return g.ist === 'asansor' ? 'Asansöre yönetici tut' : 'Depoya yönetici tut'
     case 'yetenek': return 'Bir yönetici yeteneği kullan'
     case 'L': return g.ist === 'asansor' ? `Asansörü ${g.L}. seviyeye çıkar` : `Depoyu ${g.L}. seviyeye çıkar`

@@ -251,14 +251,14 @@ async function senaryo2(tarayici, profil) {
   const s = await sayfaAc(tarayici, profil, { kayit: 'zengin.json' })
   const { sayfa } = s
   const eksik = []
-  for (const m of ['Zonguldak', 'Görev hazır · Al', '420', 'Günlük Üretim', 'Depo Doluluğu', 'Gelir', 'Çevrimdışı Kazanç', 'Topla', '1. Kat', 'Yükleme']) {
+  for (const m of ['Zonguldak', 'Görev hazır · Al', '420', 'Günlük Üretim', 'Depo Doluluğu', 'Gelir', 'Çevrimdışı Kazanç', 'Topla', '1. Kat', 'Depo']) {
     if (!(await metinVar(sayfa, m))) eksik.push(m)
   }
   // Para HUD'u: başlangıçta 318,6 bin (gelirle birkaç saniyede artar)
   const paraOk = await sayfa.evaluate(() => /31[89],\d bin|32\d,\d bin/.test(document.body.innerText))
   const tam = await metinVar(sayfa, '318,6 bin')
   if (!paraOk) eksik.push('318,6 bin')
-  const kartlar = await sayfa.evaluate(() => {
+  const gorunenKartlar = () => sayfa.evaluate(() => {
     const g = []
     for (const k of document.querySelectorAll('.kart')) {
       const r = k.getBoundingClientRect()
@@ -266,8 +266,16 @@ async function senaryo2(tarayici, profil) {
     }
     return g
   })
-  // Görsel yön 2: katlar alttan üste; görünümde en az 1. Kat (yükleme) ve 2.–4. Kat kartları
+  // Maden aşağı doğru ilerler: ilk görünümde yüzey (Depo) ve 1. Kat; 2. Kata kaydırınca 2.–4. Kat kartları
+  if (!(await gorunenKartlar()).some((t) => t.startsWith('1. Kat'))) eksik.push('kart 1. Kat')
+  await sayfa.evaluate(() => {
+    const k = [...document.querySelectorAll('.kart')].find((e) => e.innerText.startsWith('2. Kat'))
+    if (k) __cevher.kaydirKonumu(Math.max(0, parseFloat(k.style.top) - 20), { anim: false })
+  })
+  await bekle(400)
+  const kartlar = await gorunenKartlar()
   for (let i = 2; i <= 4; i++) if (!kartlar.some((t) => t.startsWith(i + '. Kat'))) eksik.push('kart ' + i + '. Kat')
+  await sayfa.evaluate(() => __cevher.kaydirKonumu(0, { anim: false }))
   await bekle(1200)
   await ekran(s, profil, 'zengin-ana.png')
   if (profil === 'telefon') await copyFile(join(EKRAN, profil, 'zengin-ana.png'), join(EKRAN, 'zengin-ana.png'))

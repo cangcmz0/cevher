@@ -18,7 +18,7 @@ import { KISILER, SAHNELER, BOLUMLER, sahneBolumu } from '../hikaye.js'
 const SAYFALAR = new Set(['yukseltme', 'ayarlar', 'istasyonSec', 'defter'])
 const ONCELIK = { hikaye: 1 }
 const MODLAR = [[1, 'x1'], [10, 'x10'], [50, 'x50'], ['max', 'Max']]
-const katAdi = (ist) => (ist === 'asansor' ? 'Asansör' : ist === 'depo' ? '1. Kat · Depo' : (+ist.slice(1) + 2) + '. Kat')
+const katAdi = (ist) => (ist === 'asansor' ? 'Asansör' : ist === 'depo' ? 'Depo' : (+ist.slice(1) + 1) + '. Kat')
 // İstasyon simgesi; katlarda etkin bölgenin cevheri (sahnedeki yığınla aynı çizim)
 const istIkon = (B, ist) => (ist === 'asansor' ? ikon('asansor') : ist === 'depo' ? ikon('sepet')
   : `<img class="cevher-img" src="${B.sahne.simgeAdres('cevher', B.durumAl().aktifBolge, 40)}" alt="">`)
@@ -137,7 +137,7 @@ export function kur(B) {
         <button class="btn btn-yesil kucuk-btn" data-eylem="yetenek-kullan" data-istasyon="${ist}" hidden>${ikon('yildirim')}Kullan</button>
         <button class="btn btn-krem kucuk-btn" data-eylem="yonetici-ac" data-istasyon="${ist}">Yönetici</button></div>
       <button class="btn btn-turuncu buyuk-btn" data-eylem="yukselt-al" data-istasyon="${ist}" data-uzun data-ogretici="sheet-yukselt"><span class="parla"></span>${ikon('yukari')}<span class="etiket sayi">Yükselt</span></button>`
-    const satirAdlari = madenMi_ ? ['Üretim', 'Madenci', 'Yığın kapasitesi'] : ist === 'asansor' ? ['Kapasite', 'Hız', 'Tur süresi'] : ['Vagon', 'Vagon yükü', 'Depo kapasitesi']
+    const satirAdlari = madenMi_ ? ['Üretim', 'Madenci', 'Yığın kapasitesi'] : ist === 'asansor' ? ['Kapasite', 'Hız', 'Tur süresi'] : ['Kamyon', 'Kamyon yükü', 'Depo kapasitesi']
     const satirlar = g.querySelector('.yk-satirlar')
     satirlar.innerHTML = satirAdlari.map((a) => `<div class="yk-satir"><span>${a}</span><b class="sayi"><span class="simdi"></span><span class="artis"></span></b></div>`).join('')
     const el = {
@@ -189,10 +189,10 @@ export function kur(B) {
       }
       const liste = madenMi_ ? A.KADEME_MADEN : A.KADEME_ISTASYON
       const sonraki = E.sonrakiKademe(L, liste)
-      const stat = madenMi_ ? 'Üretim' : ist === 'asansor' ? 'Kapasite' : 'Vagon yükü'
+      const stat = madenMi_ ? 'Üretim' : ist === 'asansor' ? 'Kapasite' : 'Kamyon yükü'
       let ek = ''
       if (sonraki && madenMi_ && (sonraki === 10 || sonraki === 50)) ek = ' · +1 madenci'
-      if (sonraki && ist === 'depo' && A.TASIYICI_ESIK.includes(sonraki)) ek = ' · +1 vagon'
+      if (sonraki && ist === 'depo' && A.TASIYICI_ESIK.includes(sonraki)) ek = ' · +1 kamyon'
       yaz(el.kademeYazi, sonraki ? `Sonraki kademe: ${sonraki} → ${stat} ×2${ek}` : 'Bütün kademeler tamam')
       cubuk(el.kademeBar, sonraki ? E.kademeIlerleme(L, liste) : 1)
       // Yönetici bölümü

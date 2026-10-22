@@ -69,7 +69,7 @@ export const ISTASYON_MALIYET_TABAN = 5
 export const ISTASYON_MALIYET_G = 1.05
 export const MAKS_ISTASYON_SEVIYE = 800
 
-// Depo ve taşıyıcılar (§2.6)
+// Depo ve taşıyıcılar (§2.6): her taşıyıcı yüzeyde bir kamyondur
 export const TASIYICI_ESIK = don([10, 50, 150, 300])
 export const TASIYICI_YUK_TABAN = 20
 export const DEPO_YOL_TABAN = 2.5
@@ -147,9 +147,9 @@ export const OGRETICI_ADIMLARI = don([
   { adim: 1, hedef: 'm0-yukselt', metin: 'Madenini yükselt!' },
   { adim: 2, hedef: 'm0-oda', metin: 'Madencilere dokun, kazmaya başlasınlar.' },
   { adim: 3, hedef: 'asansor', metin: 'Asansöre dokun, cevheri yukarı taşısın.' },
-  { adim: 4, hedef: 'depo', metin: 'Depoya dokun, taşıyıcılar satsın.' },
-  { adim: 5, hedef: 'm0-yonetici', metin: 'Bir yönetici tut, 2. Kat kendi kendine çalışsın.' },
-  { adim: 6, hedef: 'm1-ac', metin: '3. Katı aç!' },
+  { adim: 4, hedef: 'depo', metin: 'Depoya dokun, kamyonlar satışa gitsin.' },
+  { adim: 5, hedef: 'm0-yonetici', metin: 'Bir yönetici tut, 1. Kat kendi kendine çalışsın.' },
+  { adim: 6, hedef: 'm1-ac', metin: '2. Katı aç!' },
   { adim: 7, hedef: 'asansor-yonetici', metin: 'Asansöre yönetici tut.' },
   { adim: 8, hedef: 'depo-yonetici', metin: 'Depoya yönetici tut.' },
   { adim: 9, hedef: null, metin: 'Artık madenin kendi kendine işliyor. Yükseltmeye devam et!' },
@@ -167,7 +167,7 @@ export const ARASTIRMALAR = don([
   { kod: 'matkap', dal: 'Madencilik', ad: 'Elmas Matkap', tier: 3, sv: 1, sart: { usta: 2, bolge: 'karabuk' } },
   { kod: 'halat', dal: 'Taşıma', ad: 'Çelik Halat', tier: 1, sv: 5, sart: {} },
   { kod: 'motor', dal: 'Taşıma', ad: 'Güçlü Motor', tier: 2, sv: 4, sart: { halat: 1 } },
-  { kod: 'ray', dal: 'Taşıma', ad: 'Raylı Yol', tier: 1, sv: 5, sart: {} },
+  { kod: 'ray', dal: 'Taşıma', ad: 'Asfalt Yol', tier: 1, sv: 5, sart: {} },
   { kod: 'depo', dal: 'Taşıma', ad: 'Geniş Depo', tier: 2, sv: 3, sart: { ray: 1 } },
   { kod: 'pazar', dal: 'Ticaret', ad: 'Pazar Bilgisi', tier: 1, sv: 5, sart: {} },
   { kod: 'gece', dal: 'Ticaret', ad: 'Gece Vardiyası', tier: 1, sv: 6, sart: {} },
@@ -235,7 +235,7 @@ export const BASARIMLAR = don([
   { kod: 'kademe', ad: 'Kademe Ustası', metin: '{n} kademe geç', esik: [10, 50, 200] },
   { kod: 'yonetici', ad: 'Ekip Lideri', metin: '{n} yönetici işe al', esik: [3, 10, 25] },
   { kod: 'yetenek', ad: 'Takım Ruhu', metin: '{n} yönetici yeteneği kullan', esik: [10, 50, 250] },
-  { kod: 'satis', ad: 'Tüccar', metin: '{n} vagon cevher sat', esik: [500, 5000, 50000] },
+  { kod: 'satis', ad: 'Tüccar', metin: '{n} kamyon cevher sat', esik: [500, 5000, 50000] },
   { kod: 'hazine', ad: 'Hazine Avcısı', metin: '{n} hazine damarı topla', esik: [5, 25, 100] },
   { kod: 'kontrat', ad: 'Sözünün Eri', metin: '{n} kontrat teslim et', esik: [3, 15, 50] },
   { kod: 'bolge', ad: 'Kâşif', metin: '{n} bölge aç', esik: [2, 4, 6, 9, 12] },
@@ -252,7 +252,7 @@ export const MISYONLAR = don([
   { kod: 'dokun', metin: 'Madencilere {n} kez dokun', sayac: 'dokunus', n: [20, 40, 60] },
   { kod: 'yukselt', metin: '{n} yükseltme yap', sayac: 'yukseltme', n: [10, 25, 50] },
   { kod: 'yetenek', metin: '{n} yönetici yeteneği kullan', sayac: 'yetenek', n: [1, 2, 3] },
-  { kod: 'satis', metin: '{n} vagon cevher sat', sayac: 'satis', n: [60, 200, 500] },
+  { kod: 'satis', metin: '{n} kamyon cevher sat', sayac: 'satis', n: [60, 200, 500] },
   { kod: 'kademe', metin: '{n} kademe geç', sayac: 'kademe', n: [1, 2, 4] },
   { kod: 'kontrat', metin: '{n} kontrat teslim et', sayac: 'kontrat', n: [1, 1, 2] },
   { kod: 'takviye', metin: "Kazanç x2'yi {n} kez başlat", sayac: 'takviye', n: [1, 1, 2] },

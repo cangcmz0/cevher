@@ -5,22 +5,13 @@
 // • Kareler ilk kullanımda ekran çözünürlüğünde fırınlanır (tembel önbellek); kare başına yalnız drawImage.
 // • Sola bakan figürler çizerken aynalanır.
 
+import { KLIPLER } from './anim.js'
+
 // Hücre (birim): figür + araç payı. Ayak noktası hücrede (AYAK_X, AYAK_Y).
 export const HUCRE = { w: 64, h: 62, ayakX: 30, ayakY: 58 }
 
-// Animasyonlar: kare sayısı ve doğal döngü süresi (s)
-export const ANIM = Object.freeze({
-  yuru: { kare: 8, sure: 0.72 },
-  tasi: { kare: 8, sure: 0.8 },
-  it: { kare: 8, sure: 0.85 },
-  kaz: { kare: 8, sure: 0.62 },
-  bekle: { kare: 6, sure: 2.4 },
-  dinlen: { kare: 4, sure: 3.2 },
-  sevin: { kare: 6, sure: 0.75 },
-  egil: { kare: 4, sure: 0.5 },
-  bosalt: { kare: 4, sure: 0.5 },
-})
-export const VURUS = 4   // kaz animasyonunda kazmanın kayaya değdiği kare
+// Animasyonlar (kare sayısı, döngü süresi, olaylar) animasyon sisteminin klip tablosundan gelir
+export const ANIM = KLIPLER.madenci
 
 // Görünüşler: ten, bıyık, başlık (kask | kep), kask rengi
 export const GORUNUS = [

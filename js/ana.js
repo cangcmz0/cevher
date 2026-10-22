@@ -205,6 +205,8 @@ function dokun(x, yDunya) {
   let h = null
   try { h = Sahne.isabet(x, yDunya, durum) } catch (e) { console.error(e) }
   if (h && h.hazine) { eylem('hazineAl'); return }
+  // Satış alanı: satış gelirini artıran Liman penceresi
+  if (h && h.satis) { Arayuz.modalAc('lojistik', { tur: 'liman' }); return }
   if (!h || !h.istasyon) return
   const s = eylem('dokun', { istasyon: h.istasyon })
   // Dokunuş geri bildirimi: iş başladıysa altın halka, zaten çalışıyorsa küçük beyaz halka
@@ -476,9 +478,6 @@ Object.assign(K, {
   kaydirKonumu: (y, s) => kaydirma?.kaydirKonumu(y, s),
   modalAc: (ad, veri) => Arayuz.modalAc(ad, veri),
   sayfaAc: (ad) => Arayuz.sayfaAc(ad),
-  get kaydirY() { return kaydirma ? kaydirma.y : 0 },
-  get kaydirMaks() { return kaydirma ? kaydirma.maks : 0 },
-  get kaydirMin() { return kaydirma ? kaydirma.enAz : 0 },
   // Öğretici hedefi: sayfa koordinatlarında { x, y } ya da null
   ogreticiHedef() {
     try {
@@ -494,6 +493,13 @@ Object.assign(K, {
     }
     return null
   },
+})
+
+// Kaydırma okumaları canlı kalsın diye getter olarak tanımlanır (Object.assign getter'ı bir kez okur)
+Object.defineProperties(K, {
+  kaydirY: { get: () => (kaydirma ? kaydirma.y : 0), configurable: true },
+  kaydirMaks: { get: () => (kaydirma ? kaydirma.maks : 0), configurable: true },
+  kaydirMin: { get: () => (kaydirma ? kaydirma.enAz : 0), configurable: true },
 })
 
 // Android geri tuşu (Capacitor uygulaması): önce açık pencere/sayfa kapanır, ana ekranda oyun arka plana alınır

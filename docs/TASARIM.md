@@ -1556,22 +1556,99 @@ hour pass their peak (but not when the next region is close). It never sleeps, s
   the story chapter and +50 elmas), with confetti on top. Story dialogs wait behind it; it closes on tap or after 3.6 s.
 - **HUD quest bar**: glows and reads `Görev hazır · Al` when the current quest is done; tapping claims it.
 
-### 10.8 The mine goes down
+### 10.8 The mine goes down; depot, trucks and sales on the surface
 
-The mine reads like a real mine: from the surface down. The look of every strip, card and character is unchanged.
+The mine reads like a real mine, from the surface down. Floors, cards and characters keep their look.
 
-- **Order (top to bottom, `js/yerlesim.js`):** surface strip `YUZEY_H = rd(64)` (sky, hills, a wooden region sign and
-  the steel headframe with its sheave, `dekor.yuzeyCiz`), then `1. Kat Yükleme` (`yuklemeY = YUZEY_H`), then mine i at
-  `satirY(i) = yuklemeY + YUKLEME_H + i × SATIR_H`, then a rock cap `TEPE_H` at the bottom. A new floor opens below the
-  last one.
-- **Loading floor:** the shaft column runs down its right edge (`YUKLEME.kuyuX = 290`). The depot bunker sits left of the
-  shaft (`bunkerX0..X1 = 232..286`) and the cabin tips into it through a sloped chute. The shed, rails and truck
-  moved left to make room (`KAMYON.dx = −14`).
-- **Elevator:** position 0 is the bunker mouth at the top (`KABIN_YUKLEME_ALT = yuklemeY + rd(50)`), and position k is
-  floor k going down. The sheave sits on the headframe (`makaraY`), so the ropes hang down to the cabin. A negative
-  spring overshoot moves the cabin up.
-- **Scroll:** the view starts at the top (`kaydirKonumu(0)`) and scrolls down. The top limit is 0. The bottom limit is
-  `dunyaH(open)`: the locked next floor plus a 24 px margin, or the rock cap when all 30 floors are open. Overscroll
-  above the top shows sky blue.
-- **DOM:** the `Asansör (Sv.N)` label stays at 181 px but never drops below the bottom of the shaft
-  (`kartlar.js kare10`).
+- **Order (top to bottom, `js/yerlesim.js`):**
+  1. The surface `YUZEY_H = rd(230)`.
+  2. Mine i at `satirY(i) = YUZEY_H + i × SATIR_H`, labelled `(i+1). Kat`.
+  3. A rock cap `TEPE_H`.
+
+  There is no underground loading floor any more. A new floor opens below the last one. The road surface is
+  `YOL_Y = rd(180)`.
+- **Surface art (`dekor.yuzeyArkaCiz`, `dekor.yuzeyOnCiz`, points in `dekor.YUZEY`):** Two strips are baked per region
+  and size:
+  - **Back strip (opaque):** sky, sun with rays, and two ranges of distant mountains tinted by the region, with snow
+    caps.
+  - **Front strip (transparent sky):** hills and pines, and the soil below the road with the shaft running through
+    it. It also holds, from left to right:
+    - the **sales area:** a timber shop with a tiled roof, a `SATIŞ` sign, a chimney, a striped awning over the
+      counter window (coins and scales), a door, crates, and a receiving hopper on legs beside it;
+    - a wooden **region sign**;
+    - a two-lane **road**, with a weighbridge plate at the sales stop;
+    - the **depot silo:** galvanised body, rivet bands, `DEPO` plate, fill-gauge slot, ladder, hopper cone and spout,
+      four legs, and a sloped chute from the cabin;
+    - the steel **headframe** over the shaft: A-frame legs, braces, guide rails, the sheave platform and a warning
+      light.
+
+  Clouds and birds drift between the two strips, so they pass behind the headframe.
+- **Trucks (`sahne.js yuzeyCanli`):** each depot carrier in the simulation is drawn as a truck at half the reference
+  size.
+  - **`bekle`:** parks under the silo spout. Only one parked truck is drawn.
+  - **`yukluyor`:** loads there; ore streams from the spout into the bed.
+  - **`gidiyor`:** drives left in the front lane to the sales stop, loaded, with smoothstep easing and exhaust.
+  - **`satiyor`:** at the sale moment (the `satis` event) the bed tips into the hopper, coins burst from the counter
+    window and the seller cheers.
+  - **`donuyor`:** turns around and returns in the back lane facing right. It changes lanes over the first and last
+    15% of the trip.
+
+  Positions come from `tasiyici.konum` (0 depot, 1 sale). Wheels turn with the distance travelled.
+- **Elevator:** position 0 is up in the headframe, beside the chute (`KABIN_YUKLEME_ALT = rd(108)`). The sheave sits
+  at `makaraY = rd(16)`. When unloading, ore arcs from the cabin into the silo. The silo shows the depot stock as a
+  heap at its mouth and a fill gauge (green → yellow → red).
+- **Input:**
+  - The silo area is the depot (tap sends trucks, or opens the upgrade sheet when it has a manager).
+  - The sales area opens the `Lojistik` (Liman) sheet, because the harbour raises sales.
+  - The shaft column from the headframe to the last floor is the elevator.
+- **DOM:**
+  - The `1. Kat Yükleme` card is gone. A `Depo (Sv.N)` label and the depot manager badge sit above the silo.
+  - The fixed `Asansör (Sv.N)` label stays below the surface: it is at least 181 px down, never below the shaft
+    bottom, and above `görünür − 135`. The `Darboğaz` card follows 67 px under it.
+- **Scroll:** the view starts at the top (`kaydirKonumu(0)`). The bottom limit is the locked next floor plus 24 px,
+  and overscroll above the top shows sky blue. The tutorial scrolls to floor 1 for steps 1, 2 and 5, to floor 2 for
+  step 6, and to the top for the others.
+- **Wording:** floors count from 1 in quests, the tutorial, sheets and badges. Depot carriers are called trucks: the
+  upgrade rows are `Kamyon` / `Kamyon yükü`, and the mission and achievement say `kamyon cevher sat`. The research
+  `ray` is renamed `Asfalt Yol` (`Kamyon hızı +%10`).
+
+### 10.9 Animation system
+
+Every moving thing in the scene uses one data-driven layer, so the art can be replaced without touching game logic.
+
+- **`js/sahne/anim.js` (pure, tested in `test/anim.test.mjs`):**
+  - **`KLIPLER`:** clip table per actor type (`madenci`, `kamyon`, `araba`). Each clip has `kare` (frames), `sure` (cycle seconds), `dongu` (loops or holds the last frame), `adim` (distance per walk cycle, so feet don't slide) and `olaylar` (frame events, e.g. `kaz` frame 4 = `vurus`, which triggers the pickaxe sparks).
+  - **Frame helpers:**
+    - `klipKaresi(tur, klip, t)` picks the frame for a time;
+    - `yolKaresi(tur, klip, yol)` picks it for a distance travelled;
+    - `olaylariTara(tur, klip, t0, t1, dinle)` reports the events crossed between two times.
+  - **`Oynatici`:** one actor's player. `oynat(klip, { bastan, hiz, sure, sonra })` and `ilerle(dt, dinle)`. Example: the seller plays `sevin` for 0.9 s on a sale, then returns to `bekle`. The cabin operator does the same on an elevator upgrade.
+  - **`DIZILER` + `diziPoz`:** work cycles as step lists:
+    - `{ ad, klip, sure, yer, yon }` waits at a point;
+    - `{ ad, klip, git: [a, b], hiz }` walks between points.
+
+    `tasiyici` (pick up → carry → empty → walk back) and `arabaci` (wait → push → tip → pull back) replace the hard-coded functions and give identical poses (checked by a test against the old code).
+  - **Easing and springs:**
+    - `YUMUSAT` easing curves: `lineer`, `yumusak`, `girisKare`, `cikisKare`, `cikisKubik`, `girisCikisKubik`, `yayli`, `zipla`;
+    - `gecis(a, b, u, egri)`;
+    - `Yay`, an under-damped spring used for the cabin.
+- **`js/sahne/kaynak.js` (frame sources):** `aktorCiz(ctx, tur, s)` draws an actor frame from its source. Every actor type has a procedural drawer registered by the scene (`cizimKaydet`).
+  - If a PNG frame sheet (atlas) for that type has loaded, it is drawn from the atlas instead. Mirroring and tipping (`aci`, `pivot`) are applied.
+  - A missing or mis-sized sheet logs a warning and falls back to drawing.
+- **`js/sahne/atlaslar.js` (manifest, empty by default):** one entry per sheet:
+  - **`tur`:** the actor type.
+  - **`resim`:** a path, or one path per look.
+  - **`hucre`:** cell size in atlas pixels.
+  - **`ayak`:** the foot point in the cell (for trucks, the front bumper on the ground).
+  - **`birim`:** atlas px per actor unit.
+  - **`yon`:** the direction the frames face.
+  - **`satirlar`:** `{ clip: row }`. Each row holds that clip's frames left to right; frame counts come from `KLIPLER`.
+
+  Sheets load during the splash.
+- **Adding new art:**
+  1. Draw frames that match the clip names and frame counts.
+  2. Put the PNGs under `img/anim/`.
+  3. Add a manifest entry.
+
+  Timing changes only `KLIPLER` / `DIZILER`. New actor types add a clip block, a procedural fallback (or none) and a manifest entry.
+- **Still procedural:** static sprites keep going through `varliklar.js` (replaceable by PNG there). Particles stay in `parcacik.js`, and UI motion stays in CSS/WAAPI.

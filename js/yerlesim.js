@@ -3,11 +3,12 @@
 // Sahne ve arayüz aynı sayıları buradan okur; böylece kanvas ile DOM kartları birebir hizalanır.
 //
 // Ölçüler docs/referans2.webp'nin 1. ekranından alındı: referans ekran 367 px genişlikte (x 203..570),
-// bir kat 107 px (oda 73 + konveyör 34), yükleme katı 107 px, dip taş şeridi 16 px.
+// bir kat 107 px (oda 73 + konveyör 34), dip taş şeridi 16 px.
 // Bütün ölçüler ekran genişliğiyle orantılıdır: k = W / 367.
-// Maden aşağı doğru ilerler: en üstte yüzey (gökyüzü, kuyu kulesi), altında
-// "1. Kat Yükleme" (kamyon, depo), onun altında Maden 1 ("2. Kat") ve derine doğru diğerleri.
-// Asansör konumu: 0 = kuyu kulesindeki boşaltma noktası (depo bunkerinin ağzı), k = Maden k'nın zemini (aşağı).
+// Maden aşağı doğru ilerler. En üstte yüzey: gökyüzü, solda satış alanı, ortada yol, sağda depo silosu ve
+// kuyu kulesi. Kamyonlar silonun altında dolar, yoldan karşıdaki satış alanına gidip satar. Yüzeyin altında
+// Maden 1 ("1. Kat") ve derine doğru diğerleri.
+// Asansör konumu: 0 = kuyu kulesindeki boşaltma noktası (silonun yanı), k = Maden k'nın zemini (aşağı).
 
 export const MAKS_MADEN = 30
 export const REF_G = 367            // referans ekran genişliği
@@ -24,9 +25,9 @@ export function yerlesim(W) {
   const r = (v) => Math.round(v * k * 10) / 10      // referans px → dünya px (yatay)
   const rd = (v) => Math.round(v * k * KY * 10) / 10 // referans px → dünya px (dikey)
   const SATIR_H = rd(REF_KAT)
-  const YUZEY_H = rd(64)                              // en üstte yüzey şeridi
+  const YUZEY_H = rd(230)                             // en üstte yüzey: gökyüzü, yol, silo, kule, satış alanı
+  const YOL_Y = rd(180)                               // yol yüzeyi (kamyon tekerleri)
   const TEPE_H = rd(16)                               // en altta taş şeridi (dip)
-  const YUKLEME_H = rd(107)
   // Kat içi (referans kat şeridine göre)
   const ODA_UST = rd(4), ZEMIN_Y = rd(73)              // oda zemini = konveyörün üstü
   const KART_UST = rd(11.5), KART_H = rd(81.5)
@@ -35,16 +36,16 @@ export function yerlesim(W) {
   const odaX = r(104), kuyuX = r(289), kuyuG = W - r(289)    // kuyu dilimi sağ kenara kadar (kayalar dahil)
   const tupX = r(300), tupG = r(47)                  // cam tüp (kabin) bandı
   const odaG = kuyuX - odaX
-  const yuklemeY = YUZEY_H
-  const ilkKatY = yuklemeY + YUKLEME_H
+  const ilkKatY = YUZEY_H
   const satirY = (i) => ilkKatY + i * SATIR_H
   const DUNYA_H = satirY(MAKS_MADEN) + TEPE_H
-  // Yükleme katı içi: boyalı kart, depo (bunker kuyunun solunda)
-  const yKart = { x: r(3), y: rd(11), w: r(87), h: rd(57) }
-  const depo = { x: r(226), y: yuklemeY + rd(4), w: r(290 - 226), h: rd(92) }
+  // Yüzey: depo silosu (kamyonlar altında dolar) ve satış alanı (kamyonlar orada boşaltır)
+  const silo = { x: r(212), y: rd(96), w: r(72), h: rd(84), agizY: rd(158), cx: r(248) }
+  const depo = { x: silo.x - r(4), y: silo.y - rd(6), w: silo.w + r(8), h: YOL_Y + rd(10) - silo.y + rd(6) }
+  const satis = { x: 0, y: rd(104), w: r(132), h: YOL_Y + rd(10) - rd(104), huniX: r(106), huniY: rd(152) }
   const KABIN_H = rd(82)
-  const KABIN_YUKLEME_ALT = yuklemeY + rd(50)          // boşaltırken kabin tabanı bunkerin ağzında
-  const makaraY = yuklemeY - rd(44)                    // kuyu kulesinin makarası (yüzeyde)
+  const KABIN_YUKLEME_ALT = rd(108)                    // boşaltırken kabin tabanı (silonun ağzının üstünde)
+  const makaraY = rd(16)                               // kuyu kulesinin makarası
 
   // Kabinin alt kenarının dünya y'si (konum aşağı doğru artar; katlar arası doğrusal; eksi = yaylanma, yukarı)
   function kabinAltY(konum) {
@@ -66,10 +67,10 @@ export function yerlesim(W) {
   function istasyonKutusu(istasyon, acik) {
     if (istasyon === 'asansor') {
       const alt = acik > 0 ? satirY(acik - 1) + SATIR_H : ilkKatY
-      return { x: kuyuX, y: yuklemeY, w: kuyuG, h: alt - yuklemeY }
+      return { x: kuyuX, y: 0, w: kuyuG, h: alt }
     }
     if (istasyon === 'depo') return { x: depo.x, y: depo.y, w: depo.w, h: depo.h }
-    if (istasyon === 'satis') return { x: r(110), y: yuklemeY + r(40), w: r(120), h: r(55) }
+    if (istasyon === 'satis') return { x: satis.x, y: satis.y, w: satis.w, h: satis.h }
     if (typeof istasyon === 'string' && istasyon[0] === 'm') {
       const i = +istasyon.slice(1)
       if (!(i >= 0 && i < MAKS_MADEN)) return null
@@ -80,9 +81,9 @@ export function yerlesim(W) {
 
   // Dondurulmaz: tüketiciler nesneye kendi işaretini ekleyebilir.
   const y = {
-    W, k, r, rd, kenar, kartG, odaX, odaG, kuyuX, kuyuG, tupX, tupG, okX, okY, okG, okH, depo, yKart,
-    SATIR_H, KART_H, KART_UST, TEPE_H, YUZEY_H, YUKLEME_H, ODA_UST, ZEMIN_Y, KABIN_H, DUNYA_H,
-    satirY, yuklemeY, ilkKatY, makaraY, dunyaH, istasyonKutusu, ustSinir, kabinAltY,
+    W, k, r, rd, kenar, kartG, odaX, odaG, kuyuX, kuyuG, tupX, tupG, okX, okY, okG, okH, depo, silo, satis,
+    SATIR_H, KART_H, KART_UST, TEPE_H, YUZEY_H, YOL_Y, ODA_UST, ZEMIN_Y, KABIN_H, DUNYA_H,
+    satirY, ilkKatY, makaraY, dunyaH, istasyonKutusu, ustSinir, kabinAltY,
   }
   onbellek.set(W, y)
   return y

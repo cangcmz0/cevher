@@ -231,7 +231,7 @@ export function hazirla(B) {
   // Ortak ayrıntısı ve seviye yükseltme
   const ACIKLAMA = {
     uretim: 'Bütün bölgelerde madencilerin ürettiği cevheri artırır.',
-    tasima: 'Asansör kabinine ve vagonlara daha çok yük sığar.',
+    tasima: 'Asansör kabinine ve kamyonlara daha çok yük sığar.',
     gelir: 'Bütün satışlardan daha çok para kazanırsın.',
     maliyet: 'Kat, asansör ve depo yükseltmeleri ucuzlar.',
   }
@@ -265,7 +265,7 @@ export function hazirla(B) {
 
   // Ustabaşılar: istasyon yöneticileri (portreli ızgara), kiralama
   let tip = 'maden'
-  const yerAdi = (ist) => (!ist ? 'Boşta' : ist === 'asansor' ? 'Asansör' : ist === 'depo' ? '1. Kat · Depo' : (+ist.slice(1) + 2) + '. Kat')
+  const yerAdi = (ist) => (!ist ? 'Boşta' : ist === 'asansor' ? 'Asansör' : ist === 'depo' ? 'Depo' : (+ist.slice(1) + 1) + '. Kat')
   P.kaydet('ustalar', (g) => {
     g.innerHTML = `<div class="sayfa-baslik2">${ikon('yonetici')}<div><h2>Ustabaşılar</h2><small>İstasyonu otomatik çalıştırırlar; yeteneklerini madendeki rozetlerinden kullan.</small></div></div>
       <div class="bolumlu yon-sekmeler" role="group">${[['maden', 'Katlar'], ['asansor', 'Asansör'], ['depo', 'Depo']].map(([k, a]) => `<button data-eylem="yon-sekme" data-tip="${k}" aria-pressed="${k === tip}">${a}</button>`).join('')}</div>

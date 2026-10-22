@@ -39,7 +39,7 @@ export function kur(B) {
       const satirlar = [
         ['para', 'Toplam kazanç', bicim(basarimDeger(d, 'kazanc'))],
         ['yukari', 'Yükseltme', tamSayi(s.yukseltme)],
-        ['sepet', 'Satılan vagon', tamSayi(s.satis)],
+        ['sepet', 'Kamyon seferi', tamSayi(s.satis)],
         ['elmas', 'Hazine damarı', tamSayi(s.hazine || 0)],
         ['yonetici', 'Yönetici', tamSayi(basarimDeger(d, 'yonetici'))],
         ['yildirim', 'Yetenek', tamSayi(s.yetenek)],

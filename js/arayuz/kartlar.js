@@ -2,8 +2,9 @@
 // ════════════════════════════════════════════════════════════════
 //  KARTLAR (görsel yön 2) — #dunya katmanı: kat kartları ("5. Kat /
 //  Kömür"), kartın yanındaki yeşil yükseltme okları, galeri yönetici
-//  rozetleri, sonraki (kilitli) kat kartı, "1. Kat / Yükleme" kartı,
-//  depo rozeti; #maden-ust katmanı: Asansör etiketi ve Darboğaz kartı.
+//  rozetleri, sonraki (kilitli) kat kartı, yüzeyde silonun üstünde
+//  Depo etiketi ve rozeti; #maden-ust katmanı: Asansör etiketi ve
+//  Darboğaz kartı.
 //  • Kartlar 4 Hz (yalnız görünür katlar), rozet halkaları 10 Hz.
 //  • Uzun basma (≥ 350 ms): seçili modla hızlı alım, 150 ms'de bir
 //    (1,5 sn sonra 80 ms), para yettikçe.
@@ -15,7 +16,7 @@ import {
 } from './ortak.js'
 
 const MAKS = A.MADEN_SAYISI
-const katNo = (i) => i + 2            // Maden i → "(i+2). Kat" (1. Kat yükleme katıdır)
+const katNo = (i) => i + 1            // Maden i → "(i+1). Kat" (yüzeyin hemen altı 1. Kat)
 const cevherAdi = (d) => (A.BOLGE[d.aktifBolge] || A.BOLGELER[0]).cevher
 // Kat kartındaki cevher görseli (referans 3. ekranın kaynak kutularından)
 // Kat kartındaki cevher: sahnedeki yığınla aynı çizim (bölgenin renginde)
@@ -60,7 +61,7 @@ export function kur(B) {
 
   // ── Kilitli (sonraki) kat ──
   const kilitli = ogeYap(`<div class="kart kilitli" hidden>
-    <b class="kart-ad">3. Kat</b>
+    <b class="kart-ad">2. Kat</b>
     <span class="kart-cevher">Yeni maden</span>
     <span class="kart-ikon">${ikon('kilit')}</span>
     <button class="btn btn-yesil kart-ac" data-eylem="maden-ac" data-i="1">${ikon('para')}<span class="etiket sayi">Aç · 40</span></button>
@@ -68,19 +69,16 @@ export function kur(B) {
   D.appendChild(kilitli)
   const kil = { ad: kilitli.querySelector('.kart-ad'), btn: kilitli.querySelector('.kart-ac'), etiket: kilitli.querySelector('.kart-ac .etiket') }
 
-  // ── 1. Kat Yükleme kartı ve depo rozeti ──
-  const yk = ogeYap(`<div class="kart yukleme" data-eylem="yukselt-ac" data-istasyon="depo">
-    <b class="kart-ad">1. Kat</b>
-    <span class="kart-cevher">Yükleme</span>
-    <i class="kart-ok-sari">${ikon('geri')}</i>
-    <i class="kart-sv sayi">Sv.1</i>
+  // ── Depo etiketi ve rozeti (yüzeyde, silonun üstünde) ──
+  const depoKap = ogeYap(`<div class="depo-kap">
+    <button class="asansor-etiket depo-etiket" data-eylem="yukselt-ac" data-istasyon="depo"><b>Depo</b><span class="sayi">(Sv.1)</span></button>
+    <button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="depo" aria-label="Depo yöneticisi" data-ogretici="depo-yonetici">
+      ${ikon('arti')}<canvas class="portre" width="40" height="40" style="inset:2px;width:20px;height:20px"></canvas><i class="simsek">${ikon('yildirim')}</i></button>
   </div>`)
-  D.appendChild(yk)
-  const ykEl = { sv: yk.querySelector('.kart-sv') }
-  const rozetD = ogeYap(`<button class="yonetici-rozet bos" data-eylem="rozet-yonetici" data-istasyon="depo" aria-label="Depo yöneticisi" data-ogretici="depo-yonetici">
-    ${ikon('arti')}<span class="rozet-etiket">Yönetici</span><canvas class="portre" width="48" height="48"></canvas><i class="simsek">${ikon('yildirim')}</i></button>`)
-  D.appendChild(rozetD)
-  const rD = { r: rozetD, portre: rozetD.querySelector('.portre'), yonId: null }
+  D.appendChild(depoKap)
+  const dpEt = depoKap.querySelector('.depo-etiket')
+  const dpSv = dpEt.querySelector('span')
+  const rD = { r: depoKap.querySelector('.yonetici-rozet'), portre: depoKap.querySelector('.portre'), yonId: null }
 
   // ── Görünüme sabit: Asansör etiketi ve Darboğaz kartı ──
   const asansorKap = ogeYap(`<div class="asansor-kap">
@@ -114,8 +112,7 @@ export function kur(B) {
     kilitli.style.left = y.kenar + 'px'
     kilitli.style.width = y.kartG + 'px'
     kilitli.style.height = y.KART_H + 'px'
-    yk.style.cssText = `left:${y.yKart.x}px;top:${y.yuklemeY + y.yKart.y}px;width:${y.yKart.w}px;height:${y.yKart.h}px`
-    rozetD.style.cssText = `left:${y.depo.x + y.r(6)}px;top:${y.yuklemeY + y.r(8)}px`
+    depoKap.style.cssText = `left:${Math.round(y.silo.cx - 29)}px;top:${Math.round(y.silo.y - y.rd(46))}px`
     // Görünüme sabit etiketler kuyunun gerçek konumuna göre (genişlik değişince kaymasın)
     asansorKap.style.left = Math.round(y.tupX + y.tupG / 2 - 29) + 'px'
     darbogaz.style.left = Math.round(y.W - 109) + 'px'
@@ -182,8 +179,8 @@ export function kur(B) {
       sinif(kil.btn, 'btn-yesil', yetiyor)
       sinif(kil.btn, 'pasif', !yetiyor)
     }
-    // Yükleme katı (depo)
-    if (y.yuklemeY < alt) yaz(ykEl.sv, 'Sv.' + b.depo.L)
+    // Depo (yüzeyde)
+    if (B.kaydirY < y.YUZEY_H) yaz(dpSv, '(Sv.' + b.depo.L + ')')
     yaz(asSv, '(Sv.' + b.asansor.L + ')')
     // Darboğaz
     const db = d.calisma.darbogaz
@@ -233,11 +230,13 @@ export function kur(B) {
       rozetBagla(kartlar[i], atanan['m' + i], d, 24)
     }
     rozetBagla(rA, atanan.asansor, d, 20)
-    if (B.yer.yuklemeY < alt) rozetBagla(rD, atanan.depo, d, 24)
-    // Asansör etiketi kuyunun dibinden aşağıda (boş kayada) kalmasın
+    if (B.kaydirY < B.yer.YUZEY_H) rozetBagla(rD, atanan.depo, d, 20)
+    // Asansör etiketi yüzeyin altında, kuyunun üstünde durur: yüzeyin (kulenin) önüne çıkmaz, kuyunun dibinden
+    // aşağı inmez, kısa ekranda Darboğaz kartına yer bırakır. Darboğaz kartı etiketin hemen altındadır.
+    const yuzeyAlt = B.yer.YUZEY_H - B.kaydirY + 8
     const kuyuAlt = B.yer.satirY(Math.max(0, b.madenler.length - 1)) + B.yer.SATIR_H - B.kaydirY
-    const ust2 = Math.round(Math.min(181, kuyuAlt - 46))
-    if (ust2 !== asansorUst) { asansorUst = ust2; asansorKap.style.top = ust2 + 'px' }
+    const ust2 = Math.round(Math.max(8, Math.min(Math.max(181, yuzeyAlt), kuyuAlt - 46, B.gorunurYuk - 135)))
+    if (ust2 !== asansorUst) { asansorUst = ust2; asansorKap.style.top = ust2 + 'px'; darbogaz.style.top = (ust2 + 67) + 'px' }
   }
 
   // ── Uzun basma: hızlı alım ──
@@ -297,7 +296,7 @@ export function kur(B) {
     const y = B.yer
     let x, yy
     if (ist === 'asansor') { x = y.kuyuX - 30; yy = B.kaydirY + 40 }
-    else if (ist === 'depo') { x = y.depo.x + y.depo.w / 2 - 10; yy = y.yuklemeY + 20 }
+    else if (ist === 'depo') { x = y.silo.cx; yy = y.silo.y - 12 }
     else { const i = +ist.slice(1); x = y.odaX + y.odaG / 2; yy = y.satirY(i) + 30 }
     const s = ogeYap('<div class="kademe-serit"></div>')
     s.textContent = metin
@@ -311,7 +310,7 @@ export function kur(B) {
     if (o.tip === 'yukseltildi') {
       const i = E.madenIndeks(o.istasyon)
       const c = i >= 0 ? kartlar[i] : null
-      const kartEl = c ? c.k : o.istasyon === 'depo' ? yk : null
+      const kartEl = c ? c.k : o.istasyon === 'depo' ? dpEt : null
       const simdi = performance.now()
       if (kartEl && !(kartEl.__nabiz > simdi - 220)) {
         kartEl.__nabiz = simdi
@@ -326,7 +325,7 @@ export function kur(B) {
         if (bar) canlandir(bar.firstElementChild, PARLA, 300)
         const m = o.kademeler[o.kademeler.length - 1]
         const kat = o.kademeler.length > 1 ? '×' + Math.pow(2, o.kademeler.length) : '×2'
-        const stat = o.istasyon === 'asansor' ? 'Kapasite' : o.istasyon === 'depo' ? 'Vagon yükü' : 'Üretim'
+        const stat = o.istasyon === 'asansor' ? 'Kapasite' : o.istasyon === 'depo' ? 'Kamyon yükü' : 'Üretim'
         serit(o.istasyon, `Kademe ${m} · ${kat}`)
         B.bildir('basari', `Kademe ${m}! ${stat} ${kat}`)
       }
