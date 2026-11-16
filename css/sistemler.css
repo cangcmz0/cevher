@@ -46,7 +46,7 @@
 .cs-dolum { position: absolute; inset: 0; transform-origin: 0 50%; transform: scaleX(0); background: linear-gradient(180deg, #7DD3FF, #2F86C8); transition: transform .15s linear; }
 .cs-yazi { position: relative; display: flex; align-items: center; justify-content: center; gap: 4px; height: 100%; font: 800 11px/1 var(--f-govde); text-shadow: 0 1px 2px rgba(0, 0, 0, .75); white-space: nowrap; }
 .cs-yazi .ik { width: 12px; height: 12px; flex: none; }
-.cs-yazi small { font: 600 10px/1 var(--f-govde); color: rgba(255, 255, 255, .85); }
+.cs-yazi small { font: 600 11px/1 var(--f-govde); color: rgba(255, 255, 255, .85); }
 .cosku-serit.aktif { border-color: #FFE7A0 !important; box-shadow: 0 0 12px rgba(255, 200, 80, .75), 0 2px 6px rgba(0, 0, 0, .5); animation: cosku-nabiz .7s ease-in-out infinite alternate; }
 .cosku-serit.aktif .cs-dolum { background: linear-gradient(180deg, #FFE08A, #F6A623); transition: transform .1s linear; }
 .cosku-serit.aktif .cs-yazi { color: #3A2410; text-shadow: 0 1px 0 rgba(255, 255, 255, .45); }
@@ -84,14 +84,14 @@
 .ks-yeni small { font: 600 11px/13px var(--f-govde); color: var(--acik); }
 .ks-toplam { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-bottom: 8px; }
 .ks-toplam > span { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 2px; border-radius: 9px; background: rgba(0, 0, 0, .3); }
-.ks-toplam small { font: 600 10px/12px var(--f-govde); color: var(--acik-soluk); }
+.ks-toplam small { font: 600 11px/13px var(--f-govde); color: var(--acik-soluk); }
 .ks-toplam b { font: 800 13px/15px var(--f-govde); color: rgba(255, 255, 255, .5); }
 .ks-toplam .var b { color: #8EF0A2; }
 .ks-bolge-satir { padding: 6px 0 2px; border-top: 1px solid rgba(255, 255, 255, .08); }
 .ks-bolge-satir:first-of-type { border-top: 0; }
 .ks-bolge-bas { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding: 0 2px 5px; }
 .ks-bolge-bas b { font: 800 14px/17px var(--f-baslik); color: #FFF1D6; }
-.ks-set { font: 600 10.5px/13px var(--f-govde); color: var(--acik-soluk); }
+.ks-set { font: 600 11px/13px var(--f-govde); color: var(--acik-soluk); }
 .ks-bolge-satir.set .ks-set { color: #FFD36B; }
 .ks-bolge-satir.set .ks-set::before { content: "✓ "; }
 .ks-vitrin { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }

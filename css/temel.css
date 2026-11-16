@@ -28,9 +28,9 @@
   --metin: #2B1D12;
   --metin-soluk: #6B5640;
   --acik: #FFFFFF;
-  --acik-soluk: rgba(255, 255, 255, .72);
+  --acik-soluk: #B7CEDB;
   --yukselt-acik: #F59A55;
-  --yukselt-koyu: #CC5F27;
+  --yukselt-koyu: #B9501C;
   --yukselt-kenar: #9A4316;
   --para-acik: #FFE08A;
   --para-koyu: #D99A2B;
@@ -40,7 +40,8 @@
   --basari-kenar: #13703A;
   --bilgi-acik: #7DB1F0;
   --bilgi-koyu: #2F6DB8;
-  --uyari: #E25A43;
+  --cini: #3FBDB6;
+  --uyari: #FF7A63;
   --uyari-zemin: #4A1F1A;
   --uyari-kenar: #8E3B2E;
   --pasif: #A8968A;
@@ -52,7 +53,7 @@
   --f-govde: "Rubik", "Segoe UI", Roboto, system-ui, sans-serif;
 
   --golge-kart: 0 2px 0 rgba(120, 80, 40, .28), 0 6px 14px rgba(0, 0, 0, .30);
-  --golge-buton: inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 -3px 0 rgba(0, 0, 0, .16), 0 2px 0 var(--yukselt-kenar), 0 4px 8px rgba(0, 0, 0, .25);
+  --golge-buton: inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 -3px 0 rgba(0, 0, 0, .16), 0 2px 0 rgba(0, 0, 0, .35);
   --golge-panel: 0 10px 28px rgba(0, 0, 0, .40);
   --golge-yazi: 0 1px 0 rgba(0, 0, 0, .30);
 
@@ -123,10 +124,10 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 40px;
+  height: 48px;
   padding: 0 14px;
   border-radius: 9px;
-  font: 800 15px/18px var(--f-baslik) !important;
+  font: 800 16px/19px var(--f-baslik) !important;
   color: var(--acik) !important;
   text-shadow: var(--golge-yazi);
   white-space: nowrap;
@@ -135,16 +136,16 @@ html, body {
 }
 .btn .ik { width: 15px; height: 15px; }
 .btn:active, .btn.basili { transform: scale(.96) translateY(1px); transition-duration: .08s; }
-.btn-turuncu { background: linear-gradient(180deg, var(--yukselt-acik), var(--yukselt) 55%, var(--yukselt-koyu)); box-shadow: var(--golge-buton); }
+.btn-turuncu { background: linear-gradient(180deg, var(--yukselt), var(--yukselt-koyu) 55%); box-shadow: var(--golge-buton); }
 .btn-yesil { background: linear-gradient(180deg, var(--basari-acik), var(--basari) 50%, var(--basari-koyu)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.16), 0 2px 0 var(--basari-kenar), 0 4px 8px rgba(0,0,0,.25); }
-.btn-mavi { background: linear-gradient(180deg, var(--bilgi-acik), var(--bilgi) 50%, var(--bilgi-koyu)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.16), 0 2px 0 #23548F, 0 4px 8px rgba(0,0,0,.25); }
+.btn-mavi { background: linear-gradient(180deg, var(--bilgi-acik), var(--bilgi) 50%, var(--bilgi-koyu)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.16), 0 2px 0 #23548F, 0 4px 8px rgba(0,0,0,.25); height: 44px; }
 .btn-altin { background: linear-gradient(180deg, var(--para-acik), var(--para) 50%, var(--para-koyu)); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), inset 0 -3px 0 rgba(0,0,0,.12), 0 2px 0 var(--para-kenar), 0 4px 8px rgba(0,0,0,.2); color: var(--metin) !important; text-shadow: none; }
 .btn-krem { background: linear-gradient(180deg, var(--panel-acik), var(--panel-koyu)); border: 1px solid var(--panel-kenar) !important; color: var(--metin) !important; text-shadow: none; box-shadow: 0 2px 0 rgba(120,80,40,.3); }
-.btn-kirmizi { background: linear-gradient(180deg, #F07A62, var(--uyari) 55%, #B03E2C); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 0 var(--uyari-kenar); }
+.btn-kirmizi { background: linear-gradient(180deg, #C24A36, #A23C2B 55%, var(--uyari-kenar)); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 0 var(--uyari-kenar); }
 .btn[disabled], .btn.pasif {
   background: linear-gradient(180deg, #B5A497, #9C8A7E) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 2px 0 #7E6E62 !important;
-  color: rgba(244, 232, 214, .75) !important;
+  color: var(--metin) !important;
   text-shadow: none;
 }
 .btn[disabled] { cursor: default; }
@@ -235,7 +236,7 @@ html, body {
 }
 .bolumlu > button[aria-pressed="true"] {
   color: var(--acik) !important;
-  background: linear-gradient(180deg, var(--yukselt-acik), var(--yukselt) 55%, var(--yukselt-koyu));
+  background: linear-gradient(180deg, var(--yukselt), var(--yukselt-koyu) 55%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 1px 0 var(--yukselt-kenar);
   text-shadow: var(--golge-yazi);
 }

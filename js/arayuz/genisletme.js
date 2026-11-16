@@ -1,14 +1,16 @@
 // Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
-//  MADEN GENİŞLETME — Yöneticiler sekmesi.
-//  • Bütün bölümler kodla kurulur (maden ekranıyla aynı dil): kaya dokulu
+//  YÖNETİCİLER sekmesi (yoneticiler.md) ve altında MADEN GENİŞLETME.
+//  • Üstte istasyon yöneticileri: Katlar/Asansör/Depo segmenti, krem
+//    yönetici kartları (portre, nadirlik noktası + yazı, yetenek, atama) ve
+//    sayfa kayarken sabit kalan alt tutma çubuğu (Yönetici Tut / Elmasla).
+//  • Altında genişletme bölümleri: bütün bölümler kodla kurulur (maden ekranıyla aynı dil): kaya dokulu
 //    zemin, altın kenarlı paneller, kalas başlık plakaları ve sahnedeki
 //    çizimlerden üretilen simgeler (cevher, vagon, kabin, gemi, ambar...).
 //  • Kaynak kutuları bölgelerdir (Kömür → Zonguldak, Demir → Ereğli,
 //    Taş → Karabük, Bakır → Kastamonu); dokununca o bölgeye geçilir.
 //  • Dört yönetici kartı hikâyenin ortaklarıdır (Ahmet, Elif, Mehmet,
 //    Zeynep): sahnede tanışınca katılır, elmasla seviye atlar.
-//  • İstasyon yöneticileri (ustabaşılar) "Ustabaşılar" satırındadır.
 //  • Keşif ve Müze bölümü: keşif ekibinin durumu ve müzedeki buluntu sayısı.
 //  • Alt pencereler: ortak, ustalar, lojistik, prestij, kesif.
 // ════════════════════════════════════════════════════════════════
@@ -42,13 +44,25 @@ function prestijIpucu(d, p) {
   return `Mührünün dörtte birini (${tam(onerilenMuhur(d))}) geçince baştan başlamak daha verimli olur. Uzun turlar daha çok mühür getirir.`
 }
 
+// Yönetici türü (Katlar | Asansör | Depo): sayfa ve Ustabaşılar penceresi paylaşır
+let tip = 'maden'
+const TIPLER = [['maden', 'Katlar'], ['asansor', 'Asansör'], ['depo', 'Depo']]
+const yerAdi = (ist) => (!ist ? 'Boşta' : ist === 'asansor' ? 'Asansör' : ist === 'depo' ? 'Depo' : (+ist.slice(1) + 1) + '. Kat')
+const halYazi = (s) => (s.durum === 'hazir' ? 'Yetenek hazır' : s.durum === 'aktif' ? 'Aktif · ' + sayac(s.kalan) : 'Bekleme · ' + sayac(s.kalan))
+
+// Sayfa başlığının alt satırı: bölge ve yönetici sayacı
+export const baslik = (d) => ({ ad: 'Yöneticiler', alt: `${A.BOLGE[d.aktifBolge].ad} · ${bolgeAl(d).yoneticiler.length}/${A.MAKS_YONETICI} yönetici` })
+
 export function kur(B, govde) {
   const d0 = B.durumAl()
   const kod0 = d0.aktifBolge
   govde.innerHTML = `
     <div class="mg sy">
-      <header class="sy-bas">${simge('kazma', kod0, 54)}<div><h2>Maden Genişletme</h2><small>Hangi kaynağa odaklanmak istiyorsun?</small></div></header>
+      <div class="yn-segment" role="tablist" aria-label="İstasyon türü">${TIPLER.map(([k, a]) => `<button role="tab" data-eylem="yn-sekme" data-tip="${k}" aria-selected="${k === tip}">${a}</button>`).join('')}</div>
+      <p class="yn-ipucu">Yöneticiler istasyonu otomatik çalıştırır. Yeteneği kullanmak için madendeki rozetine dokun.</p>
+      <div class="yn-liste" role="tabpanel"></div>
 
+      <h3 class="yn-bolum">Maden Genişletme</h3>
       <section class="pano">
         <h3 class="plaka">${ikon('harita')}<span>Kaynaklar</span><small>Bölgeye geç</small></h3>
         <div class="mg-kaynaklar">
@@ -62,7 +76,7 @@ export function kur(B, govde) {
       </section>
 
       <section class="pano">
-        <h3 class="plaka">${ikon('yonetici')}<span>Yöneticiler</span><small class="mg-sayi"></small></h3>
+        <h3 class="plaka">${ikon('yonetici')}<span>Ortaklar</span><small class="mg-sayi"></small></h3>
         <div class="mg-ortaklar">
           ${A.ORTAKLAR.map((o) => {
             const k = KISILER[o.kod]
@@ -73,11 +87,6 @@ export function kur(B, govde) {
               <span class="mg-etki"></span></button>`
           }).join('')}
         </div>
-        <button class="mg-usta" data-eylem="mg-tumu">
-          <span class="mg-usta-yuzler"></span>
-          <span class="mg-usta-yazi"><b>Ustabaşılar</b><small class="mg-usta-alt"></small></span>
-          ${ikon('ileri')}
-        </button>
       </section>
 
       <section class="pano mg-kesif">
@@ -108,8 +117,13 @@ export function kur(B, govde) {
           <div class="mg-p-kazanc"><small>Bu tur</small><b class="sayi mg-p-bekleyen"></b><small>mühür</small></div></div>
         <div class="kt-cubuk mg-p-cubuk"><i></i><span class="sayi"></span></div>
         <p class="mg-p-ipucu"></p>
-        <button class="btn btn-turuncu mg-p-btn" data-eylem="mg-prestij"><span>Baştan Başla</span></button>
+        <button class="btn btn-altin mg-p-btn" data-eylem="mg-prestij"><span>Baştan Başla</span></button>
       </section>
+
+      <div class="yn-alt">
+        <button class="btn btn-turuncu yn-tut" data-eylem="yn-kirala" data-odeme="para">${ikon('para')}<span class="sayi"></span></button>
+        <button class="btn btn-mavi yn-elmas" data-eylem="yn-kirala" data-odeme="elmas">${ikon('elmas')}<span class="sayi">Elmasla · ${A.ELMAS_KIRALAMA}</span></button>
+      </div>
     </div>`
   simgeleriCiz(govde, B)
 
@@ -122,7 +136,8 @@ export function kur(B, govde) {
       const b = q(`.mg-ortak[data-kod="${o.kod}"]`)
       return { o, b, lv: b.querySelector('.mg-lv'), etki: b.querySelector('.mg-etki') }
     }),
-    ustaYuzler: q('.mg-usta-yuzler'), ustaAlt: q('.mg-usta-alt'),
+    sekmeler: qa('[data-eylem="yn-sekme"]'), liste: q('.yn-liste'),
+    tut: q('.yn-tut'), tutYazi: q('.yn-tut span'), elmasTut: q('.yn-elmas'),
     lv: Object.fromEntries(qa('[data-lv]').map((x) => [x.dataset.lv, x])),
     cubuk: Object.fromEntries(qa('[data-cubuk]').map((x) => [x.dataset.cubuk, x.firstElementChild])),
     musteri: q('.mg-musteri'), kBaslik: q('.mg-k-baslik'), kMetin: q('.mg-k-metin'), kPara: q('.mg-k-para'), kElmas: q('.mg-k-elmas'),
@@ -131,10 +146,50 @@ export function kur(B, govde) {
     pSv: q('.mg-p-sv'), pMuhur: q('.mg-p-muhur'), pCarpan: q('.mg-p-carpan'), pBekleyen: q('.mg-p-bekleyen'),
     pCubuk: q('.mg-p-cubuk i'), pCubukYazi: q('.mg-p-cubuk span'), pIpucu: q('.mg-p-ipucu'), pBtn: q('.mg-p-btn'), pBtnYazi: q('.mg-p-btn span'),
   }
-  let ustaImza = ''
+  let listeImza = '', haller = [], parlaId = null
+
+  // İstasyon yöneticileri: seçili türün krem kartları (en yeni en üstte)
+  function yoneticiYaz(d, b) {
+    for (const s of el.sekmeler) s.setAttribute('aria-selected', String(s.dataset.tip === tip))
+    const liste = b.yoneticiler.filter((y) => y.tip === tip).reverse()
+    const im = d.aktifBolge + tip + b.yoneticiler.length + liste.map((y) => y.id + ':' + y.atanan).join(',')
+    if (im !== listeImza) {
+      listeImza = im
+      if (!liste.length) {
+        el.liste.innerHTML = `<p class="sayfa-bos">${b.yoneticiler.length ? 'Bu türde yöneticin yok. Aşağıdan tut.' : 'Henüz yöneticin yok. Bir istasyon seç ve yönetici tut.'}</p>`
+        haller = []
+      } else {
+        el.liste.innerHTML = liste.map((y) => {
+          const n = nadirlik(y.nadirlik)
+          return `<div class="yn-kart${y.id === parlaId ? ' yeni' : ''}" data-id="${y.id}">
+            <span class="yn-portre" style="--nr:${n.renk}"><canvas data-tohum="${y.tohum}" data-nadir="${y.nadirlik}" width="112" height="112"></canvas></span>
+            <div class="yn-bilgi"><b>${yoneticiAdi(y)}</b>
+              <small class="yn-nadir"><i style="background:${n.renk}"></i>${n.ad} · ${yetenekEtki(y)} · ${sure(n.sure)}</small>
+              <small class="yn-atama${y.atanan ? '' : ' bosta'}">${yerAdi(y.atanan)}<span class="yn-hal sayi"></span>${y.kalici ? ' · Prestijde kalır' : ''}</small></div>
+            <button class="btn btn-krem yn-ata" data-eylem="sayfa-ata" data-id="${y.id}">${y.atanan ? 'Değiştir' : 'Ata'}</button></div>`
+        }).join('')
+        for (const c of el.liste.querySelectorAll('canvas[data-tohum]')) { try { B.sahne.portre(+c.dataset.tohum, +c.dataset.nadir, c, 56) } catch {} }
+        haller = [...el.liste.querySelectorAll('.yn-hal')].map((h, i) => ({ el: h, y: liste[i] }))
+      }
+      parlaId = null
+    }
+    for (const h of haller) {
+      const s = yetenekHali(d, h.y)
+      yaz(h.el, h.y.atanan ? ' · ' + halYazi(s) : '')
+      sinif(h.el, 'hazir', s.durum === 'hazir')
+    }
+    // Alt tutma çubuğu: oda doluysa tek, pasif düğme
+    const dolu = b.yoneticiler.length >= A.MAKS_YONETICI
+    const mal = E.kiralamaMaliyeti(d, b, tip)
+    yaz(el.tutYazi, dolu ? `Yönetici odası dolu (${A.MAKS_YONETICI}/${A.MAKS_YONETICI})` : 'Yönetici Tut · ' + bicim(mal))
+    el.tut.disabled = dolu || b.para < mal
+    gizle(el.elmasTut, dolu)
+    el.elmasTut.disabled = dolu || d.oyuncu.elmas < A.ELMAS_KIRALAMA
+  }
 
   function kare2(d) {
     const b = bolgeAl(d)
+    yoneticiYaz(d, b)
     for (const k of el.kaynaklar) {
       const bb = A.BOLGE[k.kod]
       const a = bolgeAcilis(d, k.kod)
@@ -155,16 +210,6 @@ export function kur(B, govde) {
       sinif(r.b, 'alinir', L > 0 && L < A.ORTAK_MAKS && d.oyuncu.elmas >= A.ORTAK_MALIYET[L])
     }
     yaz(el.sayi, tanisilan + ' / ' + A.ORTAKLAR.length)
-    // ustabaşılar: ilk üç portre, kişi ve hazır yetenek sayısı
-    const im = d.aktifBolge + b.yoneticiler.slice(0, 3).map((y) => y.id).join(',')
-    if (im !== ustaImza) {
-      ustaImza = im
-      el.ustaYuzler.innerHTML = b.yoneticiler.slice(0, 3).map((y) => `<canvas style="--nr:${nadirlik(y.nadirlik).renk}" data-tohum="${y.tohum}" data-nadir="${y.nadirlik}"></canvas>`).join('') || `<i>${ikon('yonetici')}</i>`
-      for (const c of el.ustaYuzler.querySelectorAll('canvas')) { try { B.sahne.portre(+c.dataset.tohum, +c.dataset.nadir, c, 34) } catch {} }
-    }
-    let hazir = 0
-    for (const y of b.yoneticiler) if (y.atanan && yetenekHali(d, y).durum === 'hazir') hazir++
-    yaz(el.ustaAlt, b.yoneticiler.length ? `${b.yoneticiler.length} kişi${hazir ? ` · ${hazir} yetenek hazır` : ''}` : 'İstasyonları otomatik çalıştıran ustalar tut')
     // keşif ve müze
     const ks = kesifDurumu(d), ksAcik = kesifAcik(d)
     yaz(el.ksDurum, !ksAcik ? 'Zeynep katılınca kurulur' : !ks ? 'Ekip hazır, keşfe yolla' : ks.hazir ? 'Ekip döndü! Getirdiklerini al' : 'Keşifte · ' + sayac(ks.kalan))
@@ -224,6 +269,17 @@ export function kur(B, govde) {
   }
   B.eylemler['mg-ortak'] = (btn) => B.pencere.ac('ortak', { kod: btn.dataset.kod })
   B.eylemler['mg-tumu'] = () => B.pencere.ac('ustalar', {})
+  B.eylemler['yn-sekme'] = (btn) => { tip = btn.dataset.tip; kare2(B.durumAl()) }
+  B.eylemler['yn-kirala'] = (btn) => {
+    const s = B.eylem('yoneticiTut', { tip, odeme: btn.dataset.odeme })
+    if (s && s.ok) {
+      parlaId = s.yonetici.id
+      listeImza = ''
+      kare2(B.durumAl())
+      B.bildir('basari', `${yoneticiAdi(s.yonetici)} katıldı! (${nadirlik(s.yonetici.nadirlik).ad})`)
+    } else if (s && s.sebep === 'para') B.bildir('bilgi', 'Yetersiz para')
+    else if (s && s.sebep === 'elmas') B.bildir('bilgi', 'Yetersiz elmas')
+  }
   B.eylemler['mg-loj'] = (btn) => {
     const tur = btn.dataset.tur
     if (tur === 'depo' || tur === 'asansor') { B.sayfa.kapat(); B.istasyonaKaydir(tur); B.pencere.ac('yukseltme', { istasyon: tur }) }
@@ -279,11 +335,9 @@ export function hazirla(B) {
   }
 
   // Ustabaşılar: istasyon yöneticileri (portreli ızgara), kiralama
-  let tip = 'maden'
-  const yerAdi = (ist) => (!ist ? 'Boşta' : ist === 'asansor' ? 'Asansör' : ist === 'depo' ? 'Depo' : (+ist.slice(1) + 1) + '. Kat')
   P.kaydet('ustalar', (g) => {
     g.innerHTML = `<div class="sayfa-baslik2">${ikon('yonetici')}<div><h2>Ustabaşılar</h2><small>İstasyonu otomatik çalıştırırlar; yeteneklerini madendeki rozetlerinden kullan.</small></div></div>
-      <div class="bolumlu yon-sekmeler" role="group">${[['maden', 'Katlar'], ['asansor', 'Asansör'], ['depo', 'Depo']].map(([k, a]) => `<button data-eylem="yon-sekme" data-tip="${k}" aria-pressed="${k === tip}">${a}</button>`).join('')}</div>
+      <div class="bolumlu yon-sekmeler" role="group">${TIPLER.map(([k, a]) => `<button data-eylem="yon-sekme" data-tip="${k}" aria-pressed="${k === tip}">${a}</button>`).join('')}</div>
       <div class="yon-izgara"></div>
       <div class="us-alt"><button class="btn btn-turuncu" data-eylem="sayfa-kirala" data-odeme="para">${ikon('para')}<span class="sayi maliyet"></span></button>
       <button class="btn btn-mavi" data-eylem="sayfa-kirala" data-odeme="elmas">${ikon('elmas')}<span class="sayi">Elmasla · ${A.ELMAS_KIRALAMA}</span></button></div>`
@@ -305,7 +359,7 @@ export function hazirla(B) {
             return `<div class="yon-kart" style="--nr:${n.renk}"><canvas data-tohum="${y.tohum}" data-nadir="${y.nadirlik}" width="128" height="128"></canvas>
               <b>${yoneticiAdi(y)}</b><span class="nadir" style="color:${n.renk}">${n.ad}</span><span class="yetenek">${yetenekEtki(y)} · ${sure(n.sure)}</span>
               <span class="atama${y.atanan ? '' : ' bosta'}">${yerAdi(y.atanan)}</span><span class="hal sayi"></span>${y.kalici ? '<span class="kalici">Prestijde kalır</span>' : ''}
-              <button class="btn ${y.atanan ? 'btn-krem' : 'btn-turuncu'} etiket-btn" data-eylem="sayfa-ata" data-id="${y.id}">${y.atanan ? 'Değiştir' : 'Ata'}</button></div>`
+              <button class="btn btn-krem etiket-btn" data-eylem="sayfa-ata" data-id="${y.id}">${y.atanan ? 'Değiştir' : 'Ata'}</button></div>`
           }).join('')
           for (const c of izgara.querySelectorAll('canvas[data-tohum]')) { try { B.sahne.portre(+c.dataset.tohum, +c.dataset.nadir, c, 64) } catch {} }
           haller = [...izgara.querySelectorAll('.hal')].map((h, i) => ({ el: h, y: liste[i] }))
@@ -313,7 +367,7 @@ export function hazirla(B) {
       }
       for (const h of haller) {
         const s = yetenekHali(d, h.y)
-        yaz(h.el, s.durum === 'hazir' ? 'Yetenek hazır' : s.durum === 'aktif' ? 'Aktif · ' + sayac(s.kalan) : 'Bekleme · ' + sayac(s.kalan))
+        yaz(h.el, halYazi(s))
         sinif(h.el, 'hazir', s.durum === 'hazir')
       }
       const dolu = b.yoneticiler.length >= A.MAKS_YONETICI

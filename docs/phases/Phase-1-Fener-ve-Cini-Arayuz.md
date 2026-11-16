@@ -20,11 +20,11 @@ sahne sanatı değişmez; yalnız görünüm ve arayüz metni değişir.
 
 | Status | # | Task | Module | Reference |
 |--------|---|------|--------|-----------|
-| — | 1 | `--yukselt-koyu` #CC5F27 → #B9501C, `--uyari` #E25A43 → #FF7A63, `--acik-soluk` → #B7CEDB; yeni `--cini` (#3FBDB6) değişkenini ekle | css/temel.css | docs/design/design-system.md |
-| — | 2 | Ana düğmeyi `accent-light → accent` degradesine, `--golge-buton` alt kenarını DESIGN.md gölgesine çek; düğme yüksekliği 48 (elmas 44) | css/temel.css | docs/design/DESIGN.md |
-| — | 3 | Yazı ölçeğini token tablosuna eşle (hero, title, card-title, button 16, value, body, meta, label); 11 px altı yazıları kaldır | css/temel.css, css/oyun.css | docs/design/design-system.md |
-| — | 4 | `--uyari` ve `--yukselt-koyu` kullanan 12 yerde kontrastı yeniden kontrol et; krem üzerinde artış metnini `--basari-kenar` (#13703A) yap | css/*.css | docs/design/DESIGN.md |
-| — | 5 | Alt gezinti: seçili sekmeye 3 px `accent-light` üst çizgi, sekme dokunma alanı en az 44 px | css/oyun.css, js/arayuz/arayuz.js | docs/design/screens/maden-ana.md |
+| x | 1 | `--yukselt-koyu` #CC5F27 → #B9501C, `--uyari` #E25A43 → #FF7A63, `--acik-soluk` → #B7CEDB; yeni `--cini` (#3FBDB6) değişkenini ekle | css/temel.css | docs/design/design-system.md |
+| x | 2 | Ana düğmeyi `accent-light → accent` degradesine, `--golge-buton` alt kenarını DESIGN.md gölgesine çek; düğme yüksekliği 48 (elmas 44) | css/temel.css | docs/design/DESIGN.md |
+| x | 3 | Yazı ölçeğini token tablosuna eşle (hero, title, card-title, button 16, value, body, meta, label); 11 px altı yazıları kaldır | css/temel.css, css/oyun.css | docs/design/design-system.md |
+| x | 4 | `--uyari` ve `--yukselt-koyu` kullanan 12 yerde kontrastı yeniden kontrol et; krem üzerinde artış metnini `--basari-kenar` (#13703A) yap | css/*.css | docs/design/DESIGN.md |
+| x | 5 | Alt gezinti: seçili sekmeye 3 px `accent-light` üst çizgi, sekme dokunma alanı en az 44 px | css/oyun.css, js/arayuz/arayuz.js | docs/design/screens/maden-ana.md |
 
 ### Acceptance Criteria
 

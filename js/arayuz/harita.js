@@ -85,6 +85,26 @@ export function kontratAl(B, kaynakEl) {
   return true
 }
 
+// Bölge kartlarının merkezleri (360×440 birim). Düğümün altındaki varsayılan yer
+// (DUGUM.kart) 360 px'lik ekranda birbirine binen kartlar için burada kaydırılır.
+const KART_YERI = { zonguldak: [240, 148], eregli: [94, 216], elazig: [272, 330], beylikova: [102, 380] }
+const kartYeri = (k) => KART_YERI[k] || DUGUM[k].kart
+
+// Belirtme durumu eki: "Karabük'ü", "Ereğli'yi", "Kastamonu'yu"
+export function belirtme(ad) {
+  const kucuk = ad.toLocaleLowerCase('tr')
+  const sesli = kucuk.match(/[aeıioöuü]/g)
+  const ek = { a: 'ı', ı: 'ı', e: 'i', i: 'i', o: 'u', u: 'u', ö: 'ü', ü: 'ü' }[sesli ? sesli[sesli.length - 1] : 'a']
+  return ad + "'" + (/[aeıioöuü]$/.test(kucuk) ? 'y' : '') + ek
+}
+
+// Bölgenin harita durumu: burada | acik | hazir (açılabilir) | para (bedel yetmiyor) | sira (kilitli)
+function bolgeHali(d, kod) {
+  const a = bolgeAcilis(d, kod)
+  return { a, hal: d.aktifBolge === kod ? 'burada' : a.durum }
+}
+const HAL_AD = { burada: 'Buradasın', acik: 'Açık', hazir: 'Açılabilir', para: 'Bedel bekliyor', sira: 'Kilitli' }
+
 // Haritanın üstündeki DOM katmanı: bulut, gemi, duman, hale ve bölge kartları
 function katmanHtml(kod) {
   const g = GEMI[kod], h = HARITALAR.find((x) => x.kod === kod)
@@ -92,35 +112,47 @@ function katmanHtml(kod) {
     ${g ? `<span class="hr-gemi" style="top:${yy(g.y)};left:${yx(g.x0)};--yol:${((g.x1 - g.x0) / HARITA.w * 100).toFixed(1)}cqw;--boy:${g.boy}px">${simge('gemi', h.bolgeler[0], g.boy)}</span>` : ''}
     ${(DUMAN[kod] || []).map(([x, y, ton], i) => `<i class="hr-duman${ton ? ' ' + ton : ''}" style="left:${yx(x)};top:${yy(y)};--g:${-i * 0.9}s"><i></i><i></i><i></i></i>`).join('')}
     ${h.bolgeler.map((k) => {
-      const n = DUGUM[k], bb = A.BOLGE[k]
+      const n = DUGUM[k], bb = A.BOLGE[k], [kx, ky] = kartYeri(k)
       return `<i class="hr-hale" data-hale="${k}" style="left:${yx(n.x)};top:${yy(n.y - 8)}"></i>
-        <button class="hr-bolge" data-eylem="harita-bolge" data-kod="${k}" style="left:${yx(n.kart[0])};top:${yy(n.kart[1])}" aria-label="${bb.ad}">
-          ${simge('cevher', k, 30)}<span class="hr-b-yazi"><b>${bb.ad}</b><small>${bb.alt}</small></span>
-          <span class="hr-b-durum sayi" data-durum="${k}"></span></button>`
+        <button class="hr-bolge" data-eylem="harita-bolge" data-kod="${k}" style="left:${yx(kx)};top:${yy(ky)}" aria-label="${bb.ad}">
+          <i class="hr-b-isaret">${simge('cevher', k, 26)}${ikon('tik')}${ikon('kilit')}</i>
+          <span class="hr-b-yazi"><b>${bb.ad}</b><small data-alt="${k}"></small></span>
+          <span class="btn btn-turuncu hr-b-ac" aria-hidden="true">Aç</span></button>`
     }).join('')}`
 }
+
+// Sayfa başlığının alt satırı: harita ve açık bölge sayısı
+export const baslik = (d) => ({ ad: 'Harita', alt: `${HARITALAR.length} bölge haritası · ${Object.keys(d.bolgeler).length}/${A.BOLGELER.length} bölge açık` })
 
 export function kur(B, govde) {
   const d0 = B.durumAl()
   const bolgeler = A.BOLGELER
   let secili = haritaKodu(d0.aktifBolge)
+  let secBolge = d0.aktifBolge
   govde.innerHTML = `
     <div class="hr sy">
-      <nav class="hr-sekmeler" role="tablist" aria-label="Haritalar">${HARITALAR.map((h) => `
-        <button class="hr-sekme" role="tab" data-eylem="harita-sekme" data-h="${h.kod}"><b>${h.kod === 'dogu' ? 'İç ve Doğu' : h.ad}</b><small class="sayi" data-hs="${h.kod}"></small><i class="hr-nokta" data-hn="${h.kod}" hidden></i></button>`).join('')}
+      <nav class="hr-ust" aria-label="Haritalar">
+        <button class="hr-ok geri" data-eylem="harita-ok" data-yon="-1" aria-label="Önceki harita">${ikon('ileri')}<i class="hr-nokta" hidden></i></button>
+        <div class="hr-ust-yazi" aria-live="polite"><b><span class="hr-ad"></span><em class="hr-acik sayi"></em></b><small class="hr-alt"></small></div>
+        <button class="hr-ok" data-eylem="harita-ok" data-yon="1" aria-label="Sonraki harita">${ikon('ileri')}<i class="hr-nokta" hidden></i></button>
       </nav>
       <div class="hr-harita">
         <canvas class="hr-tuval" aria-hidden="true"></canvas>
         <div class="hr-katman"></div>
-        <header class="hr-bas"><h2></h2><small></small></header>
-        <div class="hr-ilerleme-kutu">${ikon('yildiz')}<span><small>Bölge İlerlemesi</small><b class="sayi hr-ilerleme"></b></span></div>
       </div>
+
+      <section class="pano hr-secili" aria-live="polite">
+        <div class="hr-s-ust"><b class="hr-s-ad"></b><span class="hr-s-rozet"></span></div>
+        <div class="hr-s-meta"><span class="hr-s-gorev sayi"></span><span class="hr-s-kasa sayi"></span></div>
+        <span class="cubuk-ince hr-s-cubuk"><i></i></span>
+        <button class="btn btn-krem hr-s-btn" data-eylem="harita-secili"></button>
+      </section>
 
       <section class="pano hr-gorev">
         <h3 class="plaka">${ikon('madalya')}<span>Aktif Görev</span><button class="plaka-btn" data-eylem="harita-gorevler">Tümü ${ikon('ileri')}</button></h3>
         <div class="hr-g-ust">${simge('kazma', d0.aktifBolge, 50)}<div><b class="hr-g-baslik"></b><small class="hr-g-metin"></small><span class="hr-odul hr-g-odul"></span></div></div>
         <div class="hr-g-alt"><div class="kt-cubuk hr-g-cubuk"><i></i><span class="sayi"></span></div>
-          <button class="btn btn-turuncu hr-git" data-eylem="harita-gorev">Git</button></div>
+          <button class="btn btn-krem hr-git" data-eylem="harita-gorev">Git</button></div>
       </section>
 
       <section class="pano hr-kontrat">
@@ -144,42 +176,46 @@ export function kur(B, govde) {
   simgeleriCiz(govde, B)
 
   const q = (s) => govde.querySelector(s)
+  const oklar = [...govde.querySelectorAll('.hr-ok')]
   const el = {
-    ilerleme: q('.hr-ilerleme'),
-    baslik: q('.hr-bas h2'), altBaslik: q('.hr-bas small'),
-    sekme: Object.fromEntries(HARITALAR.map((h) => [h.kod, q(`.hr-sekme[data-h="${h.kod}"]`)])),
-    sekmeSayi: Object.fromEntries(HARITALAR.map((h) => [h.kod, q(`[data-hs="${h.kod}"]`)])),
-    sekmeNokta: Object.fromEntries(HARITALAR.map((h) => [h.kod, q(`[data-hn="${h.kod}"]`)])),
-    durum: {}, hale: {}, bolgeBtn: {},
+    ad: q('.hr-ad'), acik: q('.hr-acik'), alt: q('.hr-alt'),
+    okGeri: oklar[0], okIleri: oklar[1],
+    noktaGeri: oklar[0].querySelector('.hr-nokta'), noktaIleri: oklar[1].querySelector('.hr-nokta'),
+    alt2: {}, hale: {}, bolgeBtn: {},
+    sAd: q('.hr-s-ad'), sRozet: q('.hr-s-rozet'), sGorev: q('.hr-s-gorev'), sKasa: q('.hr-s-kasa'),
+    sCubuk: q('.hr-s-cubuk i'), sBtn: q('.hr-s-btn'), secili: q('.hr-secili'),
     gBaslik: q('.hr-g-baslik'), gMetin: q('.hr-g-metin'), gOdul: q('.hr-g-odul'),
     gCubuk: q('.hr-g-cubuk i'), gCubukYazi: q('.hr-g-cubuk span'), git: q('.hr-git'),
     kBaslik: q('.hr-k-baslik'), kMetin: q('.hr-k-metin'), kOdul: q('.hr-k-odul'),
     kCubuk: q('.hr-k-cubuk i'), kCubukYazi: q('.hr-k-cubuk span'), detay: q('.hr-detay'),
-    rozetSayi: q('.hr-rozet-sayi'), kRozet: q('.hr-k-rozet'), misyonNokta: q('.hr-nokta'), etk: q('.hr-etk'),
+    rozetSayi: q('.hr-rozet-sayi'), kRozet: q('.hr-k-rozet'), misyonNokta: q('.hr-kisa[data-k="misyonlar"] .hr-nokta'), etk: q('.hr-etk'),
     defter: q('.hr-defter small'),
   }
   let sonOdul = '', sonKOdul = ''
+  const haritaSira = () => HARITALAR.findIndex((x) => x.kod === secili)
 
   // Seçili haritayı çizer ve üst katmanı kurar
   function haritaKur(kod) {
     secili = kod
     const h = HARITALAR.find((x) => x.kod === kod)
+    const i = haritaSira()
     katman.innerHTML = katmanHtml(kod)
     simgeleriCiz(katman, B)
     kutu.style.background = h.zemin
     kutu.dataset.harita = kod
-    el.baslik.textContent = h.ad
-    el.altBaslik.textContent = h.alt
-    for (const x of HARITALAR) {
-      sinif(el.sekme[x.kod], 'secili', x.kod === kod)
-      el.sekme[x.kod].setAttribute('aria-selected', String(x.kod === kod))
-    }
-    el.durum = {}; el.hale = {}; el.bolgeBtn = {}
+    kutu.setAttribute('aria-label', h.ad + ' haritası')
+    yaz(el.ad, h.ad)
+    yaz(el.alt, h.alt.split(' · ')[0] + ' · ' + (i + 1) + '/' + HARITALAR.length)
+    el.okGeri.disabled = i <= 0
+    el.okIleri.disabled = i >= HARITALAR.length - 1
+    el.alt2 = {}; el.hale = {}; el.bolgeBtn = {}
     for (const k of h.bolgeler) {
-      el.durum[k] = katman.querySelector(`[data-durum="${k}"]`)
+      el.alt2[k] = katman.querySelector(`[data-alt="${k}"]`)
       el.hale[k] = katman.querySelector(`[data-hale="${k}"]`)
       el.bolgeBtn[k] = katman.querySelector(`.hr-bolge[data-kod="${k}"]`)
     }
+    const d = B.durumAl()
+    if (!h.bolgeler.includes(secBolge)) secBolge = h.bolgeler.includes(d.aktifBolge) ? d.aktifBolge : h.bolgeler.find((k) => d.bolgeler[k]) || h.bolgeler[0]
     try { B.sahne.harita(tuval, tuval.clientWidth || govde.clientWidth || 390, kod) } catch {}
   }
   haritaKur(secili)
@@ -187,37 +223,64 @@ export function kur(B, govde) {
   const odulHtml = (o) => `${o.para > 0 ? `<img src="img/ref/hud-para.png" alt=""><b class="sayi">+${bicim(o.para)}</b>` : ''}` +
     `${o.elmas > 0 ? `<img src="img/ref/hud-elmas.png" alt=""><b class="sayi">+${o.elmas}</b>` : ''}`
 
+  // Seçili bölgenin alt kartı: ad, durum, görev ilerlemesi, kasa ve tek eylem
+  function seciliYaz(d) {
+    const bb = A.BOLGE[secBolge], kb = d.bolgeler[secBolge]
+    const { a, hal } = bolgeHali(d, secBolge)
+    yaz(el.sAd, bb.ad + ' · ' + bb.cevher)
+    yaz(el.sRozet, HAL_AD[hal])
+    if (el.secili.dataset.hal !== hal) el.secili.dataset.hal = hal
+    el.secili.setAttribute('aria-label', 'Seçili bölge: ' + bb.ad)
+    const btn = el.sBtn
+    if (kb) {
+      yaz(el.sGorev, `Görevler ${Math.min(kb.gorev.sira, A.GOREVLER.length)}/${A.GOREVLER.length}`)
+      ozellikYaz(el.sKasa, `Biriken: <b>${bicim(kb.para)}</b>`)
+      cubuk(el.sCubuk, kb.gorev.sira / A.GOREVLER.length)
+      yaz(btn, hal === 'burada' ? 'Bölge görevleri' : 'Bölgeye Git')
+      btn.disabled = false
+    } else {
+      yaz(el.sGorev, 'Açılış: ' + bicim(a.bedel))
+      ozellikYaz(el.sKasa, a.kasa ? `${A.BOLGE[a.kasa].ad} kasası${d.bolgeler[a.kasa] ? `: <b>${bicim(d.bolgeler[a.kasa].para)}</b>` : ''}` : '')
+      cubuk(el.sCubuk, hal === 'hazir' ? 1 : hal === 'para' ? a.oran || 0 : 0)
+      yaz(btn, hal === 'hazir' ? 'Bölgeyi aç' : hal === 'para' ? 'Kasada yeterli para yok' : belirtme(A.BOLGE[a.kasa].ad) + ' aç')
+      btn.disabled = hal !== 'hazir'
+    }
+    sinif(btn, 'btn-yesil', hal === 'hazir')
+    sinif(btn, 'btn-krem', hal !== 'hazir')
+  }
+  function ozellikYaz(e, h) { if (e.__h !== h) { e.__h = h; e.innerHTML = h } }
+
   function kare2(d) {
     const b = bolgeAl(d)
-    yaz(el.ilerleme, Object.keys(d.bolgeler).length + ' / ' + bolgeler.length)
-    // Sekmeler: açık bölge sayısı, kilit ve açılabilir bölge noktası
-    for (const h of HARITALAR) {
-      const acik = h.bolgeler.filter((k) => d.bolgeler[k]).length
-      const hazir = h.bolgeler.some((k) => bolgeAcilis(d, k).durum === 'hazir')
-      const sh = acik ? acik + ' / ' + h.bolgeler.length : `${ikon('kilit')}Kilitli`
-      const ys = el.sekmeSayi[h.kod]
-      if (ys.__h !== sh) { ys.__h = sh; ys.innerHTML = sh }
-      sinif(el.sekme[h.kod], 'kilitli', !acik)
-      gizle(el.sekmeNokta[h.kod], !hazir || h.kod === secili)
-    }
+    // Harita başlığı: açık bölge sayısı ya da kilit; oklarda açılabilir bölge noktası
+    const h0 = HARITALAR.find((x) => x.kod === secili)
+    const acik0 = h0.bolgeler.filter((k) => d.bolgeler[k]).length
+    ozellikYaz(el.acik, acik0 ? acik0 + '/' + h0.bolgeler.length : `${ikon('kilit')}Kilitli`)
+    const i0 = haritaSira()
+    const hazirMi = (h) => h.bolgeler.some((k) => bolgeAcilis(d, k).durum === 'hazir')
+    gizle(el.noktaGeri, !HARITALAR.slice(0, i0).some(hazirMi))
+    gizle(el.noktaIleri, !HARITALAR.slice(i0 + 1).some(hazirMi))
     for (const bb of bolgeler) {
-      const kb = d.bolgeler[bb.kod]
-      const a = bolgeAcilis(d, bb.kod)
-      const acilabilir = a.durum === 'hazir'
       const btn = el.bolgeBtn[bb.kod]
       if (!btn) continue
-      const aktif = d.aktifBolge === bb.kod
-      const y = el.durum[bb.kod]
-      const h = kb ? (kb.usta ? `${ikon('tik')}Usta` : '%' + Math.round(Math.min(1, kb.gorev.sira / A.GOREVLER.length) * 100))
-        : acilabilir ? `Aç · ${bicim(a.bedel)}` : a.durum === 'para' ? `${ikon('para')}${bicim(a.bedel)}` : ikon('kilit')
-      if (y.__h !== h) { y.__h = h; y.innerHTML = h }
-      sinif(btn, 'aktif', aktif)
-      sinif(btn, 'acilabilir', acilabilir)
-      sinif(btn, 'bedel', a.durum === 'para')
-      sinif(btn, 'kilitli', a.durum === 'sira')
-      sinif(el.hale[bb.kod], 'aktif', aktif)
-      sinif(el.hale[bb.kod], 'acilabilir', acilabilir)
+      const kb = d.bolgeler[bb.kod]
+      const { a, hal } = bolgeHali(d, bb.kod)
+      const alt = hal === 'burada' ? 'Buradasın'
+        : hal === 'acik' ? `${bb.cevher} · ${kb.madenler.length}/${A.MADEN_SAYISI}`
+        : hal === 'hazir' ? `${bb.cevher} · ${bicim(a.bedel)}`
+        : hal === 'para' ? `${ikon('para')}${bicim(a.bedel)}`
+        : belirtme(A.BOLGE[a.kasa].ad) + ' aç'
+      ozellikYaz(el.alt2[bb.kod], alt)
+      if (btn.dataset.hal !== hal) {
+        btn.dataset.hal = hal
+        btn.setAttribute('aria-label', `${bb.ad}: ${hal === 'sira' ? 'Kilitli, ' + belirtme(A.BOLGE[a.kasa].ad) + ' aç' : hal === 'hazir' ? 'Aç' : HAL_AD[hal]}`)
+      }
+      sinif(btn, 'secili', bb.kod === secBolge)
+      sinif(btn.querySelector('.hr-b-ac'), 'pasif', hal === 'para')
+      sinif(el.hale[bb.kod], 'aktif', hal === 'burada')
+      sinif(el.hale[bb.kod], 'acilabilir', hal === 'hazir')
     }
+    seciliYaz(d)
     // görev
     const g = gorevDurumu(d, b)
     if (g) {
@@ -230,7 +293,7 @@ export function kur(B, govde) {
       const hazir = g.hazir || g.simdi >= g.hedef
       yaz(el.git, hazir ? 'Al' : 'Git')
       sinif(el.git, 'btn-yesil', hazir)
-      sinif(el.git, 'btn-turuncu', !hazir)
+      sinif(el.git, 'btn-krem', !hazir)
       sinif(el.git, 'nabiz', hazir)
       el.git.disabled = false
     } else {
@@ -270,23 +333,32 @@ export function kur(B, govde) {
     yaz(el.defter, `Bölüm ${bolum.no}: ${bolum.ad} · ${d.hikaye.goruldu.length}/${Object.keys(SAHNELER).length} sahne`)
   }
 
-  B.eylemler['harita-sekme'] = (btn) => {
-    if (btn.dataset.h === secili) return
-    haritaKur(btn.dataset.h)
+  B.eylemler['harita-ok'] = (btn) => {
+    const i = haritaSira() + Number(btn.dataset.yon)
+    if (i < 0 || i >= HARITALAR.length) return
+    haritaKur(HARITALAR[i].kod)
     kare2(B.durumAl())
   }
   B.eylemler['harita-bolge'] = (btn) => {
     const kod = btn.dataset.kod
     const d = B.durumAl()
-    const bb = A.BOLGE[kod]
     if (kod === d.aktifBolge) { B.sayfa.kapat(); return }
     const a = bolgeAcilis(d, kod)
     if (a.durum !== 'acik' && a.durum !== 'hazir') {
+      secBolge = kod
+      kare2(d)
       B.bildir('bilgi', bolgeKilitYazi(d, kod))
       canlandir(btn, [{ transform: 'translate(-50%, -50%)' }, { transform: 'translate(calc(-50% - 4px), -50%)' }, { transform: 'translate(calc(-50% + 4px), -50%)' }, { transform: 'translate(-50%, -50%)' }], 240)
       return
     }
     B.bolgeyeGit(kod)
+  }
+  // Alt kartın düğmesi: buradaysan görev listesi, açık bölgeye geçiş, açılabilir bölgeyi açma
+  B.eylemler['harita-secili'] = () => {
+    const d = B.durumAl()
+    if (secBolge === d.aktifBolge) { B.pencere.ac('gorevler', {}); return }
+    const a = bolgeAcilis(d, secBolge)
+    if (a.durum === 'acik' || a.durum === 'hazir') B.bolgeyeGit(secBolge)
   }
   B.eylemler['harita-gorev'] = (btn) => {
     const d = B.durumAl()

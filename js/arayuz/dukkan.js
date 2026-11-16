@@ -1,9 +1,12 @@
 // Cevher Madenci · Geliştirici: İbrahim Can Göçmez
 // ════════════════════════════════════════════════════════════════
-//  MAĞAZA (§2.16) — günlük hediye (7 günlük döngü), ücretsiz elmas
-//  (ödüllü reklam, günde 3), elmas kumbarası, elmasla güçlendirmeler, özel teklif ve
-//  elmas paketleri. Tarayıcıda paketler deneme olarak verilir (ödeme
-//  alınmaz); uygulamada Google Play ödemesi açılır (magaza.js).
+//  MAĞAZA (§2.16, magaza.md) — bölüm sırası: günlük hediye (7 günlük
+//  döngü), özel teklif, takviyeler (elmasla), bedava elmas (ödüllü reklam,
+//  günde 3), elmas kumbarası, elmas paketleri ve kalıcı ürünler.
+//  • Tarayıcıda paketler deneme olarak verilir (ödeme alınmaz);
+//    uygulamada Google Play ödemesi açılır (magaza.js).
+//  • Tek turuncu düğme hediye almaktır; fiyatlar ikincil, reklam yeşil
+//    (▶ ve kalan hak), elmas harcamaları mavi. Ücretsiz eylemde bedel yazmaz.
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
 import { A, yaz, sinif, gizle, cubuk, bicim, sayac, bolgeAl, simge, simgeleriCiz } from './ortak.js'
@@ -20,40 +23,58 @@ const GUC = [
   { kod: 'yenile', simge: 'yildirim', aciklama: 'Bekleyen bütün yönetici yetenekleri hemen hazır' },
 ]
 const urunSimge = (u) => (u.tur === 'elmas' ? 'elmas' : u.id === 'altin_kazma' ? 'kazma' : u.id === 'reklamsiz' ? 'yildirim' : 'hediye')
+const REKLAM_HAK = 3
+const OYNAT = '▶︎'
+
+// Sayfa başlığının alt satırı
+export const baslik = () => ({ ad: 'Mağaza', alt: 'Günlük hediye, takviyeler ve elmas' })
 
 export function kur(B, govde) {
   const urunler = Magaza.URUNLER.filter((u) => u.tur !== 'kumbara')
+  const teklif = urunler.find((u) => u.id === 'baslangic')
+  const paketler = urunler.filter((u) => u.tur === 'elmas')
+  const kalicilar = urunler.filter((u) => u.tur === 'kalici')
   const kumbaraUrun = Magaza.URUNLER.find((u) => u.tur === 'kumbara')
   const kod0 = B.durumAl().aktifBolge
+  const fiyatBtn = (u, ek = '') => `<button class="btn btn-krem dk-fiyat${ek}" data-eylem="dk-urun" data-id="${u.id}"><span class="sayi">${Magaza.fiyat(u)}</span></button>`
   govde.innerHTML = `<div class="dk sy">
-    <header class="sy-bas">${simge('hediye', '', 54)}<div><h2>Mağaza</h2><small>Günlük hediyeler, güçlendirmeler ve elmas paketleri</small></div></header>
-    <section class="pano dk-gunluk"><h3 class="plaka">${ikon('hediye')}<span>Günlük Hediye</span><small class="dk-gun-sure"></small></h3>
-      <div class="dk-gunler">${A.GUNLUK_HEDIYE.map((h, i) => `<div class="yuva dk-gun" data-i="${i}"><small>${i + 1}. gün</small>${simge(HEDIYE_SIMGE[h.tur] || 'hediye', kod0, i === 6 ? 44 : 36)}<span>${h.metin}</span><i class="dk-tik">${ikon('tik')}</i></div>`).join('')}</div>
-      <button class="btn btn-yesil dk-al" data-eylem="dk-gunluk">Hediyeyi Al</button></section>
-    <section class="pano"><h3 class="plaka">${ikon('elmas')}<span>Ücretsiz Elmas</span></h3>
-      <div class="dk-satir">${simge('elmas', '', 46)}<div><b>Reklam izle, 5 elmas kazan</b><small class="dk-reklam-kalan"></small></div>
-      <button class="btn btn-mavi" data-eylem="dk-reklam">${ikon('oynat')}<span>İzle</span></button></div></section>
-    <section class="pano dk-kumbara"><h3 class="plaka">${ikon('elmas')}<span>Elmas Kumbarası</span><small class="dk-kb-bonus"></small></h3>
-      <div class="dk-satir">${simge('kumbara', '', 52)}<div><b>Oynadıkça dolar</b><small>Yükseltme, kat açma, kontrat ve hazine kumbaraya elmas atar. Kırınca hepsi senin.</small>
+    <section class="dk-gunluk" aria-labelledby="dk-b-gunluk">
+      <h3 class="dk-bolum" id="dk-b-gunluk"><span>Günlük Hediye</span><small class="dk-gun-sure sayi"></small></h3>
+      <div class="dk-gunler">${A.GUNLUK_HEDIYE.map((h, i) => `<div class="dk-gun" data-i="${i}" title="${h.metin}" aria-label="${i + 1}. gün: ${h.metin}"><small>${i + 1}. gün</small>${simge(HEDIYE_SIMGE[h.tur] || 'hediye', kod0, 26)}<i class="dk-tik">${ikon('tik')}</i></div>`).join('')}</div>
+      <p class="dk-bugun"></p>
+      <button class="btn btn-turuncu dk-al" data-eylem="dk-gunluk">Bugünün hediyesini al</button></section>
+    ${teklif ? `<section class="dk-teklif-bolum" aria-labelledby="dk-b-teklif"><h3 class="dk-bolum" id="dk-b-teklif"><span>Özel Teklif</span></h3>
+      <div class="pano dk-teklif" data-urun="${teklif.id}">${teklif.etiket ? `<span class="dk-indirim">${teklif.etiket}</span>` : ''}
+        <div class="dk-teklif-ust">${simge(urunSimge(teklif), kod0, 46)}<b>Başlangıç Paketi</b></div>
+        <ul class="dk-icerik">${(teklif.ne || '').split(' + ').map((x) => `<li>${x}</li>`).join('')}</ul>
+        ${fiyatBtn(teklif, ' dk-teklif-al')}</div></section>` : ''}
+    <section aria-labelledby="dk-b-guc"><h3 class="dk-bolum" id="dk-b-guc"><span>Takviyeler</span></h3>
+      <div class="pano dk-liste">${GUC.map((g) => `<div class="dk-satir" data-guc="${g.kod}"><span class="dk-simge">${simge(g.simge, kod0, 46)}${g.rozet ? `<em>${g.rozet}</em>` : ''}</span><div><b>${A.ELMAS_HARCAMA[g.kod].metin}</b><small>${g.aciklama}</small><small class="dk-ek sayi"></small></div>
+        <button class="btn btn-mavi" data-eylem="dk-guc" data-kod="${g.kod}">${ikon('elmas')}<span class="sayi">${A.ELMAS_HARCAMA[g.kod].elmas}</span></button></div>`).join('')}</div></section>
+    <section aria-labelledby="dk-b-bedava"><h3 class="dk-bolum" id="dk-b-bedava"><span>Bedava Elmas</span></h3>
+      <div class="dk-krem dk-reklam">${simge('elmas', '', 40)}<div><b>Kısa bir reklam izle</b><small class="dk-reklam-kalan"></small></div>
+        <button class="btn btn-yesil dk-reklam-btn" data-eylem="dk-reklam"><span class="dk-izle">${OYNAT} İzle · +5</span><small class="dk-hak sayi"></small></button></div></section>
+    <section class="dk-kumbara" aria-labelledby="dk-b-kumbara"><h3 class="dk-bolum" id="dk-b-kumbara"><span>Elmas Kumbarası</span><small class="dk-kb-bonus"></small></h3>
+      <div class="pano dk-liste"><div class="dk-satir">${simge('kumbara', '', 52)}<div><b>Oynadıkça dolar</b><small>Yükseltme, kat açma, kontrat ve hazine kumbaraya elmas atar. Kırınca hepsi senin.</small>
         <span class="cubuk-ince"><i></i></span><span class="dk-kumbara-sayi sayi"></span></div>
-      <button class="btn btn-yesil" data-eylem="dk-urun" data-id="${kumbaraUrun.id}"><span class="sayi">Kır · ${Magaza.fiyat(kumbaraUrun)}</span></button></div></section>
-    <section class="pano"><h3 class="plaka">${ikon('yildirim')}<span>Güçlendirmeler</span></h3>
-      ${GUC.map((g) => `<div class="dk-satir" data-guc="${g.kod}"><span class="dk-simge">${simge(g.simge, kod0, 46)}${g.rozet ? `<em>${g.rozet}</em>` : ''}</span><div><b>${A.ELMAS_HARCAMA[g.kod].metin}</b><small>${g.aciklama}</small><small class="dk-ek sayi"></small></div>
-        <button class="btn btn-turuncu" data-eylem="dk-guc" data-kod="${g.kod}">${ikon('elmas')}<span class="sayi">${A.ELMAS_HARCAMA[g.kod].elmas}</span></button></div>`).join('')}</section>
-    <section class="pano dk-paketler"><h3 class="plaka">${ikon('magaza')}<span>Elmas Paketleri</span></h3>
-      ${urunler.map((u) => `<div class="dk-satir dk-urun${u.id === 'baslangic' ? ' teklif' : ''}" data-urun="${u.id}">${simge(urunSimge(u), kod0, 46)}
-        <div><b>${u.ad}${u.etiket ? ` <em>${u.etiket}</em>` : ''}</b><small>${u.ne || (u.n ? u.n + ' elmas' : '')}</small></div>
-        <button class="btn btn-yesil" data-eylem="dk-urun" data-id="${u.id}"><span class="sayi">${Magaza.fiyat(u)}</span></button></div>`).join('')}
-      <p class="sayfa-not dk-not"></p></section>
+      <button class="btn btn-krem" data-eylem="dk-urun" data-id="${kumbaraUrun.id}"><span class="sayi">Kır · ${Magaza.fiyat(kumbaraUrun)}</span></button></div></div></section>
+    <section aria-labelledby="dk-b-paket"><h3 class="dk-bolum" id="dk-b-paket"><span>Elmas Paketleri</span></h3>
+      <div class="dk-paketler">${paketler.map((u) => `<div class="dk-krem dk-paket" data-urun="${u.id}">${u.etiket ? `<em class="dk-paket-ek">${u.etiket}</em>` : ''}${simge('elmas', '', 36)}<b class="sayi">${u.n.toLocaleString('tr-TR')} elmas</b>${fiyatBtn(u)}</div>`).join('')}</div></section>
+    ${kalicilar.length ? `<section aria-labelledby="dk-b-kalici"><h3 class="dk-bolum" id="dk-b-kalici"><span>Kalıcı</span></h3>
+      <div class="pano dk-liste">${kalicilar.map((u) => `<div class="dk-satir dk-urun" data-urun="${u.id}">${simge(urunSimge(u), kod0, 46)}
+        <div><b>${u.ad}</b><small>${u.ne || ''}</small></div>${fiyatBtn(u)}</div>`).join('')}</div></section>` : ''}
+    <button class="dk-geri-yukle" data-eylem="dk-geri-yukle" hidden>Satın alımları geri yükle</button>
+    <p class="sayfa-not dk-not"></p>
   </div>`
   simgeleriCiz(govde, B)
   const q = (s) => govde.querySelector(s)
   const el = {
-    gunler: [...govde.querySelectorAll('.dk-gun')], gunAl: q('.dk-al'), gunSure: q('.dk-gun-sure'),
-    reklamKalan: q('.dk-reklam-kalan'), reklamBtn: q('[data-eylem="dk-reklam"]'),
+    gunler: [...govde.querySelectorAll('.dk-gun')], gunAl: q('.dk-al'), gunSure: q('.dk-gun-sure'), bugun: q('.dk-bugun'),
+    reklamKalan: q('.dk-reklam-kalan'), reklamBtn: q('[data-eylem="dk-reklam"]'), reklamHak: q('.dk-hak'),
     guc: [...govde.querySelectorAll('[data-guc]')].map((x) => ({ el: x, kod: x.dataset.guc, btn: x.querySelector('button'), ek: x.querySelector('.dk-ek') })),
     urunler: [...govde.querySelectorAll('[data-urun]')].map((x) => ({ el: x, id: x.dataset.urun, btn: x.querySelector('button') })),
-    not: q('.dk-not'),
+    teklifBolum: q('.dk-teklif-bolum'),
+    not: q('.dk-not'), geriYukle: q('.dk-geri-yukle'),
     kbCubuk: q('.dk-kumbara .cubuk-ince'), kbSayi: q('.dk-kumbara-sayi'), kbBonus: q('.dk-kb-bonus'), kbBtn: q('.dk-kumbara button'),
   }
 
@@ -68,11 +89,14 @@ export function kur(B, govde) {
     })
     el.gunAl.disabled = alindi
     const yarin = new Date(); yarin.setHours(24, 0, 0, 0)
-    yaz(el.gunAl, alindi ? 'Yarın yeni hediye · ' + kalanKisa((yarin.getTime() - Date.now()) / 1000) : 'Hediyeyi Al')
+    yaz(el.gunAl, alindi ? 'Yarın tekrar gel · ' + kalanKisa((yarin.getTime() - Date.now()) / 1000) : 'Bugünün hediyesini al')
+    yaz(el.bugun, (alindi ? 'Bugün aldın: ' : 'Bugün: ') + A.GUNLUK_HEDIYE[bugun].metin)
     yaz(el.gunSure, `${d.gunluk.seri} gün toplandı`)
+    // Ödüllü reklam: ▶ ve kalan hak her zaman görünür
     const r = d.reklamElmas
-    const kalan = r.gun === gun ? 3 - r.n : 3
-    yaz(el.reklamKalan, `Bugün ${kalan}/3 hakkın kaldı`)
+    const kalan = Math.max(0, r.gun === gun ? REKLAM_HAK - r.n : REKLAM_HAK)
+    yaz(el.reklamKalan, kalan > 0 ? `Bugün ${kalan} hakkın kaldı` : 'Bugünlük hakların bitti')
+    yaz(el.reklamHak, `${kalan}/${REKLAM_HAK} hak`)
     el.reklamBtn.disabled = kalan <= 0
     const b = bolgeAl(d)
     const gelir = otoGelir(d, b)
@@ -85,11 +109,11 @@ export function kur(B, govde) {
     for (const u of el.urunler) {
       const ur = urunler.find((x) => x.id === u.id)
       const sahip = Magaza.sahip(ur)
-      const gizli = u.id === 'baslangic' && !d.ogretici.bitti
-      gizle(u.el, gizli)
       u.btn.disabled = sahip
-      if (sahip) yaz(u.btn.firstElementChild, 'Alındı')
+      sinif(u.el, 'sahip', sahip)
+      if (sahip) yaz(u.btn.firstElementChild, '✓ Sende')
     }
+    if (el.teklifBolum) gizle(el.teklifBolum, !d.ogretici.bitti)
     // Kumbara: içindeki elmas, tavan ve kırılışlardan gelen dolum bonusu
     const kb = Math.floor(d.kumbara.elmas), tavan = kumbaraTavan(d)
     cubuk(el.kbCubuk, kb / tavan)
@@ -98,7 +122,9 @@ export function kur(B, govde) {
     yaz(el.kbBonus, bonus > 0 ? `Dolum +%${Math.round(bonus * 100)}` : '')
     el.kbBtn.disabled = kb < A.KUMBARA.enAz
     sinif(el.kbBtn, 'nabiz', kb >= tavan)
-    yaz(el.not, Magaza.gercek() ? 'Ödemeler Google Play üzerinden yapılır.' : 'Tarayıcı sürümü: paketler deneme amaçlı ücretsiz verilir, ödeme alınmaz.')
+    const gercek = Magaza.gercek()
+    gizle(el.geriYukle, !gercek)
+    yaz(el.not, gercek ? 'Ödemeler Google Play üzerinden yapılır.' : 'Önizleme: ödeme Play Store sürümünde açılır. Burada denersen ürün verilir, ödeme alınmaz.')
   }
 
   B.eylemler['dk-gunluk'] = () => {
@@ -128,5 +154,6 @@ export function kur(B, govde) {
     if (r === 'bekle') B.bildir('bilgi', 'Ödeme ekranı açıldı')
     else if (!r) B.bildir('bilgi', 'Satın alma tamamlanmadı')
   }
+  B.eylemler['dk-geri-yukle'] = () => { Magaza.geriYukle(); B.bildir('bilgi', 'Satın alımlar kontrol ediliyor') }
   return { kare2 }
 }

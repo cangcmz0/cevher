@@ -2,22 +2,29 @@
 // ════════════════════════════════════════════════════════════════
 //  PENCERELER (Paket C, §4.9–4.10) — alt sayfalar ve modallar.
 //  • Alt sayfalar: yukseltme, ayarlar, istasyonSec (aynı anda bir tane).
-//  • Modallar: yonetici, aktarim, hikaye. Kuyruk: bir seferde bir modal,
-//    öncelik hikâye > diğerleri, sonra sıra.
+//  • Modallar: yonetici, cevrimdisi, aktarim, hikaye. Kuyruk: bir seferde
+//    bir modal, öncelik çevrimdışı > hikâye > diğerleri, sonra sıra.
+//  • Fener ve Çini: yükseltme, yönetici ve çevrimdışı pencereleri krem
+//    yüzeyli (.krem); diğerleri şimdilik koyu pano görünümünde kalır.
 //  • İçerik açılışta bir kez kurulur; değerler 4 Hz yerinde güncellenir.
 //    Yönetici modalı yalnız yapısı değişince (imza) yeniden kurulur.
 // ════════════════════════════════════════════════════════════════
 import { ikon } from './ikonlar.js'
 import {
   E, A, yaz, sinif, gizle, cubuk, bicim, oranYazi, tam, sayac, sure, ogeYap, bolgeAl, istasyonAdi, nadirlik,
-  yetenekHali, yetenekEtki, yoneticiAdi, kartHizi, madenMi, istasyonTipi, simge, simgeleriCiz,
+  yetenekHali, yetenekEtki, yoneticiAdi, kartHizi, madenMi, istasyonTipi, simge, simgeleriCiz, canlandir, PARLA,
 } from './ortak.js'
+import { eksikYoneticiVar } from '../cevrimdisi.js'
 import { DURAK, BOSALTMA } from '../ayar.js'
 import { KISILER, SAHNELER, BOLUMLER, sahneBolumu } from '../hikaye.js'
 
 const SAYFALAR = new Set(['yukseltme', 'ayarlar', 'istasyonSec', 'defter'])
-const ONCELIK = { hikaye: 1 }
-const MODLAR = [[1, 'x1'], [10, 'x10'], [50, 'x50'], ['max', 'Max']]
+const ONCELIK = { cevrimdisi: 2, hikaye: 1 }
+// Krem yüzeyli (design-system "Panel (sheet) ve pencere") pencereler
+const KREM = new Set(['yukseltme', 'yonetici', 'cevrimdisi'])
+const MODLAR = [[1, 'x1'], [10, 'x10'], [50, 'x50'], ['max', 'Maks']]
+// Süre tavanı yazısı: tam saatse "2 saat", değilse "1 sa 30 dk"
+const saatYazi = (sn) => (sn >= 3600 && sn % 3600 === 0 ? sn / 3600 + ' saat' : sure(sn))
 const katAdi = (ist) => (ist === 'asansor' ? 'Asansör' : ist === 'depo' ? 'Depo' : (+ist.slice(1) + 1) + '. Kat')
 // İstasyon simgesi; katlarda etkin bölgenin cevheri (sahnedeki yığınla aynı çizim)
 const istIkon = (B, ist) => (ist === 'asansor' ? ikon('asansor') : ist === 'depo' ? ikon('sepet')
@@ -28,7 +35,10 @@ export function kur(B) {
   const perde = B.kok.querySelector('#perde')
   const sayfaEl = ogeYap(`<section class="alt-sayfa" role="dialog" aria-modal="true" aria-hidden="true"><i class="tutamac"></i><button class="sayfa-kapat" data-eylem="pencere-kapat" aria-label="Kapat">${ikon('kapat')}</button><div class="govde"></div></section>`)
   const modalEl = ogeYap(`<section class="modal" role="dialog" aria-modal="true" aria-hidden="true"><div class="govde"></div></section>`)
+  // Çevrimdışı penceresinin arkasında dönen altın ışınlar (perdenin üstünde, pencerenin altında)
+  const isinEl = ogeYap('<i class="pencere-isin" aria-hidden="true"></i>')
   kok.appendChild(sayfaEl)
+  kok.appendChild(isinEl)
   kok.appendChild(modalEl)
   const sGovde = sayfaEl.querySelector('.govde')
   const mGovde = modalEl.querySelector('.govde')
@@ -44,6 +54,8 @@ export function kur(B) {
     const kurucu = SAYFA_KUR[ad]
     if (!kurucu) return
     sGovde.innerHTML = ''
+    sayfaEl.dataset.tur = ad
+    sayfaEl.classList.toggle('krem', KREM.has(ad))
     sayfa = { ad, veri, kare4: null }
     sayfa.kare4 = kurucu(sGovde, veri) || null
     sayfaEl.classList.add('acik')
@@ -74,6 +86,8 @@ export function kur(B) {
     }
     mGovde.innerHTML = ''
     modalEl.dataset.tur = ad
+    modalEl.classList.toggle('krem', KREM.has(ad))
+    isinEl.classList.toggle('acik', ad === 'cevrimdisi')
     modal = { ad, veri, kare4: null, kapatilabilir: true }
     const s = kurucu(mGovde, veri, modal)
     modal.kare4 = s || null
@@ -85,6 +99,7 @@ export function kur(B) {
   function modalKapat() {
     if (!modal) return
     modal = null
+    isinEl.classList.remove('acik')
     modalEl.classList.remove('acik')
     modalEl.setAttribute('aria-hidden', 'true')
     perdeGuncelle()
@@ -124,31 +139,39 @@ export function kur(B) {
   B.eylemler['modal-kapat'] = () => modalKapat()
   B.eylemler.ayarlar = () => sayfaAc('ayarlar', {})
 
-  // ════════ Yükseltme sayfası ════════
+  // ════════ Yükseltme sayfası (docs/design/screens/yukseltme.md) ════════
+  // Başlık + "Seviye A → B", alım segmenti, şimdi → sonra satırları, kademe şeridi,
+  // tam genişlik ana düğme (uzun basma tekrar alır) ve "basılı tut" ipucu.
   function yukseltmeKur(g, veri) {
     const ist = veri.istasyon
     const madenMi_ = madenMi(ist)
     g.innerHTML = `
-      <div class="yk-bas"><span class="yk-ikon">${istIkon(B, ist)}</span><div><h2>${katAdi(ist)}</h2><p class="sayi"></p></div></div>
-      <div class="bolumlu" role="group" aria-label="Alım miktarı">${MODLAR.map(([m, ad]) => `<button data-eylem="alim-modu" data-mod="${m}" aria-pressed="false">${ad}</button>`).join('')}</div>
+      <div class="yk-bas"><span class="yk-ikon">${istIkon(B, ist)}</span><div><h2>${katAdi(ist)}</h2><p class="yk-seviye sayi"></p></div></div>
+      <div class="bolumlu yk-mod" role="group" aria-label="Alım miktarı">${MODLAR.map(([m, ad]) => `<button data-eylem="alim-modu" data-mod="${m}" aria-pressed="false">${ad}</button>`).join('')}</div>
       <div class="yk-satirlar"></div>
-      <div class="yk-kademe"><span class="sayi"></span><span class="cubuk"><i></i></span></div>
+      <div class="yk-kademe"><div class="yk-kademe-ust"><span class="yk-kademe-sv sayi"></span><span class="yk-kademe-odul"></span></div><span class="cubuk"><i></i></span></div>
+      <button class="btn btn-turuncu buyuk-btn" data-eylem="yukselt-al" data-istasyon="${ist}" data-uzun data-ogretici="sheet-yukselt"><span class="parla"></span><span class="etiket sayi">Yükselt</span><span class="yk-para">${ikon('para')}</span></button>
+      <p class="yk-ipucu">Basılı tutarak art arda yükseltebilirsin.</p>
       <div class="yk-yonetici"><canvas width="72" height="72"></canvas><span class="yon-bilgi"><b></b><span class="yetenek"></span><span class="hal sayi"></span></span>
         <button class="btn btn-yesil kucuk-btn" data-eylem="yetenek-kullan" data-istasyon="${ist}" hidden>${ikon('yildirim')}Kullan</button>
-        <button class="btn btn-krem kucuk-btn" data-eylem="yonetici-ac" data-istasyon="${ist}">Yönetici</button></div>
-      <button class="btn btn-turuncu buyuk-btn" data-eylem="yukselt-al" data-istasyon="${ist}" data-uzun data-ogretici="sheet-yukselt"><span class="parla"></span>${ikon('yukari')}<span class="etiket sayi">Yükselt</span></button>`
+        <button class="btn btn-krem kucuk-btn" data-eylem="yonetici-ac" data-istasyon="${ist}">Yönetici</button></div>`
     const satirAdlari = madenMi_ ? ['Üretim', 'Madenci', 'Yığın kapasitesi'] : ist === 'asansor' ? ['Kapasite', 'Hız', 'Tur süresi'] : ['Kamyon', 'Kamyon yükü', 'Depo kapasitesi']
     const satirlar = g.querySelector('.yk-satirlar')
-    satirlar.innerHTML = satirAdlari.map((a) => `<div class="yk-satir"><span>${a}</span><b class="sayi"><span class="simdi"></span><span class="artis"></span></b></div>`).join('')
+    satirlar.innerHTML = satirAdlari.map((a) => `<div class="yk-satir"><span>${a}</span><span class="yk-deger sayi"><b class="simdi"></b><span class="ok"> → </span><b class="sonra"></b></span></div>`).join('')
     const el = {
-      seviye: g.querySelector('.yk-bas p'),
-      modlar: [...g.querySelectorAll('.bolumlu button')],
+      seviye: g.querySelector('.yk-seviye'),
+      mod: g.querySelector('.yk-mod'),
+      modlar: [...g.querySelectorAll('.yk-mod button')],
       simdi: [...satirlar.querySelectorAll('.simdi')],
-      artis: [...satirlar.querySelectorAll('.artis')],
-      kademeYazi: g.querySelector('.yk-kademe > span'),
+      ok: [...satirlar.querySelectorAll('.ok')],
+      sonra: [...satirlar.querySelectorAll('.sonra')],
+      kademeSv: g.querySelector('.yk-kademe-sv'),
+      kademeOdul: g.querySelector('.yk-kademe-odul'),
       kademeBar: g.querySelector('.yk-kademe .cubuk'),
       btn: g.querySelector('.buyuk-btn'),
       etiket: g.querySelector('.buyuk-btn .etiket'),
+      para: g.querySelector('.buyuk-btn .yk-para'),
+      ipucu: g.querySelector('.yk-ipucu'),
       yonKutu: g.querySelector('.yk-yonetici'),
       yonPortre: g.querySelector('.yk-yonetici canvas'),
       yonAd: g.querySelector('.yk-yonetici b'),
@@ -158,6 +181,7 @@ export function kur(B) {
       yonDugme: g.querySelector('.yk-yonetici [data-eylem="yonetici-ac"]'),
     }
     let yonId = undefined
+    let sonSeviye = ''
     const degerler = (d, b, L) => {
       if (madenMi_) {
         const i = +ist.slice(1)
@@ -176,7 +200,10 @@ export function kur(B) {
       const L = E.istasyonSeviye(b, ist)
       const tk = E.teklif(d, b, ist, d.alimModu)
       const yeniL = tk.maks ? L : tk.yeniL
-      el.seviye.innerHTML = tk.maks ? `Seviye ${L}` : `Seviye ${L} → <span class="hedef">${yeniL}</span>`
+      const sv = tk.maks ? `Seviye ${L}` : `Seviye ${L} → <span class="hedef">${yeniL}</span>`
+      if (sv !== sonSeviye) { sonSeviye = sv; el.seviye.innerHTML = sv }
+      // Maks seviyede segment gizlenir
+      gizle(el.mod, tk.maks)
       for (const m of el.modlar) {
         const sec = String(d.alimModu) === m.dataset.mod
         if ((m.getAttribute('aria-pressed') === 'true') !== sec) m.setAttribute('aria-pressed', String(sec))
@@ -185,7 +212,10 @@ export function kur(B) {
       const y = tk.maks ? s : degerler(d, b, yeniL)
       for (let k = 0; k < 3; k++) {
         yaz(el.simdi[k], s[k])
-        yaz(el.artis[k], y[k] !== s[k] ? ' → ' + y[k] : '')
+        gizle(el.ok[k], tk.maks)
+        gizle(el.sonra[k], tk.maks)
+        yaz(el.sonra[k], y[k])
+        sinif(el.sonra[k], 'artis', y[k] !== s[k])
       }
       const liste = madenMi_ ? A.KADEME_MADEN : A.KADEME_ISTASYON
       const sonraki = E.sonrakiKademe(L, liste)
@@ -193,17 +223,18 @@ export function kur(B) {
       let ek = ''
       if (sonraki && madenMi_ && (sonraki === 10 || sonraki === 50)) ek = ' · +1 madenci'
       if (sonraki && ist === 'depo' && A.TASIYICI_ESIK.includes(sonraki)) ek = ' · +1 kamyon'
-      yaz(el.kademeYazi, sonraki ? `Sonraki kademe: ${sonraki} → ${stat} ×2${ek}` : 'Bütün kademeler tamam')
+      yaz(el.kademeSv, sonraki ? `Sonraki kademe: ${sonraki}` : 'Bütün kademeler tamam')
+      yaz(el.kademeOdul, sonraki ? `${stat} ×2${ek}` : '')
       cubuk(el.kademeBar, sonraki ? E.kademeIlerleme(L, liste) : 1)
       // Yönetici bölümü
       const yon = b.yoneticiler.find((x) => x.atanan === ist) || null
       if ((yon ? yon.id : null) !== yonId) {
         yonId = yon ? yon.id : null
-        el.yonKutu.style.setProperty('--nr', yon ? nadirlik(yon.nadirlik).renk : 'rgba(255,255,255,.25)')
+        el.yonKutu.dataset.nadir = yon ? String(yon.nadirlik) : ''
         if (yon) { try { B.sahne.portre(yon.tohum, yon.nadirlik, el.yonPortre, 36) } catch {} }
         else { const c = el.yonPortre.getContext('2d'); c.clearRect(0, 0, el.yonPortre.width, el.yonPortre.height) }
         yaz(el.yonAd, yon ? yoneticiAdi(yon) : 'Yönetici yok')
-        yaz(el.yonYetenek, yon ? yetenekEtki(yon) : 'Yönetici bu istasyonu otomatik çalıştırır.')
+        yaz(el.yonYetenek, yon ? `${nadirlik(yon.nadirlik).ad} · ${yetenekEtki(yon)}` : 'Yönetici bu istasyonu otomatik çalıştırır.')
         yaz(el.yonDugme, yon ? 'Yönetici' : 'Yönetici Tut')
       }
       if (yon) {
@@ -212,15 +243,13 @@ export function kur(B) {
         sinif(el.yonHal, 'hazir', h.durum === 'hazir')
         gizle(el.yonKullan, h.durum !== 'hazir')
       } else { yaz(el.yonHal, ''); gizle(el.yonKullan, true) }
-      if (tk.maks) {
-        el.btn.disabled = true
-        el.btn.className = 'btn btn-altin buyuk-btn'
-        yaz(el.etiket, 'MAKS SEVİYE')
-      } else {
-        el.btn.disabled = !tk.yetiyor
-        el.btn.className = 'btn btn-turuncu buyuk-btn'
-        yaz(el.etiket, (tk.yetiyor ? 'Yükselt · ' : 'Yetersiz para · ') + bicim(tk.maliyet))
-      }
+      // Ana düğme: Yükselt · bedel / Yetersiz para · bedel / MAKS SEVİYE (ikisi de pasif)
+      const dis = tk.maks || !tk.yetiyor
+      if (el.btn.disabled !== dis) el.btn.disabled = dis
+      sinif(el.btn, 'btn-turuncu', !dis)
+      gizle(el.para, tk.maks)
+      gizle(el.ipucu, tk.maks)
+      yaz(el.etiket, tk.maks ? 'MAKS SEVİYE' : (tk.yetiyor ? 'Yükselt · ' : 'Yetersiz para · ') + bicim(tk.maliyet))
     }
   }
   B.eylemler['alim-modu'] = (b) => {
@@ -231,6 +260,7 @@ export function kur(B) {
   B.eylemler['yukselt-al'] = (b) => {
     const s = B.eylem('yukselt', { istasyon: b.dataset.istasyon })
     if (s && !s.ok && s.sebep === 'para') B.bildir('bilgi', 'Yetersiz para')
+    if (s && s.ok) canlandir(b, PARLA, 320)
     if (sayfa && sayfa.kare4) sayfa.kare4(B.durumAl())
   }
 
@@ -313,7 +343,10 @@ export function kur(B) {
     if (modal && modal.ad === 'yonetici') modal.yenile && modal.yenile()
   }
 
-  // ════════ Yönetici modalı ════════
+  // ════════ Yönetici modalı (docs/design/screens/yonetici.md) ════════
+  // Mevcut yönetici bloğu (nadirlik halkası + nadirlik/durum rozetleri), yetenek ve
+  // görevden alma, boştakiler listesi (Ata ikincil), tutma düğmeleri. Tek turuncu: Tut.
+  const kapatDugme = '<button class="pencere-kapat" data-eylem="modal-kapat" data-ogretici-modal aria-label="Kapat">' + ikon('kapat') + '</button>'
   function yoneticiKur(g, veri, m) {
     const ist = veri.istasyon
     const tip = istasyonTipi(ist)
@@ -328,36 +361,36 @@ export function kur(B) {
       const dolu = b.yoneticiler.length >= A.MAKS_YONETICI
       const satir = (y, dugme) => {
         const n = nadirlik(y.nadirlik)
-        return `<div class="yon-satir" style="--nr:${n.renk}"><canvas data-tohum="${y.tohum}" data-nadir="${y.nadirlik}" width="80" height="80"></canvas>
-          <span class="yon-bilgi"><b>${yoneticiAdi(y)}</b><span class="nadir" style="color:${n.renk}">${n.ad}</span><span class="yetenek">${yetenekEtki(y)}</span></span>${dugme}</div>`
+        return `<div class="yon-satir" data-nadir="${y.nadirlik}"><canvas data-tohum="${y.tohum}" data-nadir="${y.nadirlik}" width="88" height="88"></canvas>
+          <span class="yon-bilgi"><b>${yoneticiAdi(y)}</b><span class="yon-meta">${n.ad} · ${yetenekEtki(y)} · ${sure(n.sure)}</span></span>${dugme}</div>`
       }
-      let html = `<h2>${katAdi(ist)} · Yönetici</h2>`
+      let html = `<header class="yon-ust"><h2>${katAdi(ist)} · Yönetici</h2>${kapatDugme}</header>`
       if (acilis) {
         const y = acilis.yonetici, n = nadirlik(y.nadirlik)
-        html += `<div class="yon-acilis${y.nadirlik === 2 ? ' efsanevi' : ''}" style="--nr:${n.renk}"><span class="kart-don"><canvas data-tohum="${y.tohum}" data-nadir="${y.nadirlik}" width="192" height="192"></canvas></span>
-          <p class="yon-katildi"><b>${yoneticiAdi(y)} katıldı!</b><br><span style="color:${n.renk};font-weight:700">${n.ad}</span> · ${yetenekEtki(y)}</p></div>`
+        html += `<div class="yon-acilis${y.nadirlik === 2 ? ' efsanevi' : ''}" data-nadir="${y.nadirlik}"><span class="kart-don"><canvas data-tohum="${y.tohum}" data-nadir="${y.nadirlik}" width="192" height="192"></canvas></span>
+          <p class="yon-katildi"><b>${yoneticiAdi(y)} katıldı!</b><br><span class="nadir-rozet">${n.ad}</span> · ${yetenekEtki(y)}</p></div>`
       } else if (mevcut) {
         const n = nadirlik(mevcut.nadirlik)
-        html += `<div class="yon-mevcut" style="--nr:${n.renk}"><canvas data-tohum="${mevcut.tohum}" data-nadir="${mevcut.nadirlik}" width="144" height="144"></canvas>
-          <span class="yon-bilgi"><b>${yoneticiAdi(mevcut)}</b><span class="nadir" style="color:${n.renk}">${n.ad}</span><span class="yetenek">${yetenekEtki(mevcut)} · ${sure(n.sure)}</span><span class="hal sayi"></span></span></div>
+        html += `<div class="yon-mevcut" data-nadir="${mevcut.nadirlik}"><canvas data-tohum="${mevcut.tohum}" data-nadir="${mevcut.nadirlik}" width="144" height="144"></canvas>
+          <span class="yon-bilgi"><b>${yoneticiAdi(mevcut)}</b><span class="nadir-rozet">${n.ad}</span><span class="yetenek">${yetenekEtki(mevcut)} · ${sure(n.sure)}</span><span class="hal-rozet sayi"></span></span></div>
           <div class="yon-dugmeler"><button class="btn btn-yesil" data-eylem="yetenek-kullan" data-istasyon="${ist}">${ikon('yildirim')}Yeteneği Kullan</button><button class="btn btn-krem" data-eylem="gorevden-al" data-istasyon="${ist}">Görevden Al</button></div>`
       } else {
-        html += `<p>Yönetici bu istasyonu senin yerine otomatik çalıştırır.</p>`
+        html += `<p class="yon-yok">Bu istasyonda yönetici yok.</p>`
       }
       html += `<p class="yon-baslik">Boştaki yöneticiler</p>`
-      html += bostakiler.length ? bostakiler.map((y) => satir(y, `<button class="btn btn-turuncu" data-eylem="yonetici-ata" data-id="${y.id}" data-istasyon="${ist}">Ata</button>`)).join('') : `<p class="yon-bos">Boşta yönetici yok.</p>`
+      // Ata ikincil düğme: pencerede tek ana (turuncu) eylem "Yeni Yönetici Tut"
+      html += bostakiler.length ? `<div class="yon-liste">${bostakiler.map((y) => satir(y, `<button class="btn btn-krem" data-eylem="yonetici-ata" data-id="${y.id}" data-istasyon="${ist}">Ata</button>`)).join('')}</div>` : `<p class="yon-bos">Boşta yönetici yok.</p>`
       html += dolu
         ? `<div class="kirala"><button class="btn" disabled>Yönetici odası dolu (${A.MAKS_YONETICI}/${A.MAKS_YONETICI})</button></div>`
-        : `<div class="kirala"><button class="btn btn-turuncu" data-eylem="yonetici-tut" data-odeme="para" data-istasyon="${ist}" data-ogretici="kirala">Yeni Yönetici Tut · ${ikon('para')}<span class="sayi maliyet">${bicim(maliyet)}</span></button>
-          <button class="btn btn-mavi" data-eylem="yonetici-tut" data-odeme="elmas" data-istasyon="${ist}">Elmasla Tut · ${ikon('elmas')}<span class="sayi">${A.ELMAS_KIRALAMA}</span></button></div>`
-      html += `<button class="btn btn-krem modal-kapat-btn" data-eylem="modal-kapat" data-ogretici-modal>Kapat</button>`
+        : `<div class="kirala"><button class="btn btn-turuncu" data-eylem="yonetici-tut" data-odeme="para" data-istasyon="${ist}" data-ogretici="kirala"><span>Yeni Yönetici Tut · <span class="sayi maliyet">${bicim(maliyet)}</span></span>${ikon('para')}</button>
+          <button class="btn btn-mavi" data-eylem="yonetici-tut" data-odeme="elmas" data-istasyon="${ist}">${ikon('elmas')}<span>Elmasla Tut · <span class="sayi">${A.ELMAS_KIRALAMA}</span></span></button></div>`
       g.innerHTML = html
       for (const c of g.querySelectorAll('canvas[data-tohum]')) {
         try { B.sahne.portre(+c.dataset.tohum, +c.dataset.nadir, c, c.width / 2) } catch {}
       }
       el = {
-        hal: g.querySelector('.yon-mevcut .hal'),
-        yetenekBtn: g.querySelector('[data-eylem="yetenek-kullan"]'),
+        hal: g.querySelector('.yon-mevcut .hal-rozet'),
+        yetenekBtn: g.querySelector('.yon-dugmeler [data-eylem="yetenek-kullan"]'),
         paraBtn: g.querySelector('[data-odeme="para"]'),
         elmasBtn: g.querySelector('[data-odeme="elmas"]'),
       }
@@ -382,7 +415,9 @@ export function kur(B) {
         const h = yetenekHali(d, mevcut)
         yaz(el.hal, h.durum === 'hazir' ? 'Hazır' : h.durum === 'aktif' ? 'Aktif · ' + sayac(h.kalan) : 'Bekleme · ' + sayac(h.kalan))
         sinif(el.hal, 'hazir', h.durum === 'hazir')
-        if (el.yetenekBtn) el.yetenekBtn.disabled = h.durum !== 'hazir'
+        sinif(el.hal, 'aktif', h.durum === 'aktif')
+        // Yetenek düğmesi yalnız hazırken görünür
+        if (el.yetenekBtn) gizle(el.yetenekBtn, h.durum !== 'hazir')
       }
       if (el.paraBtn) el.paraBtn.disabled = b.para < E.kiralamaMaliyeti(d, b, tip)
       if (el.elmasBtn) el.elmasBtn.disabled = d.oyuncu.elmas < A.ELMAS_KIRALAMA
@@ -534,14 +569,84 @@ export function kur(B) {
   B.eylemler['defter-oynat'] = (b) => { sayfaKapat(); setTimeout(() => modalAc('hikaye', { id: b.dataset.id, tekrar: true }), 200) }
   B.eylemler.defter = () => sayfaAc('defter', {})
 
-  // Görsel yön 2: çevrimdışı kazanç alt bantta; eski "cevrimdisi" modal çağrısı bildirime döner
-  function cevrimdisiYonlendir() {
-    B.bildir('basari', 'Sen yokken madencilerin çalıştı!')
-    return false
+  // ════════ Çevrimdışı kazanç (docs/design/screens/cevrimdisi.md) ════════
+  // Oyuna dönüşte ilk pencere. Perdeye dokunmak kapatmaz; Topla (ikincil) ya da
+  // Topla x2 (yeşil, reklamlıysa ▶) ile toplanır. Reklam hatasında pencere açık kalır.
+  // Bekleyen kazanç alt banttaki Çevrimdışı Kazanç panelinde de durur.
+  let cdReklamda = false
+  function cevrimdisiKur(g, veri, m) {
+    m.kapatilabilir = false
+    const d0 = B.durumAl()
+    const bc0 = d0.bekleyenCevrimdisi
+    if (!bc0 || !d0.bolgeler[bc0.bolge]) { setTimeout(() => { if (modal && modal.ad === 'cevrimdisi') modalKapat() }, 0); return null }
+    const reklamsiz = !!(d0.satin && d0.satin.reklamsiz)
+    g.innerHTML = `<h2>Sen yokken madencilerin çalıştı!</h2>
+      <div class="kahraman">${ikon('para')}<span class="sayi cd-miktar"></span></div>
+      <p class="cd-sure"></p>
+      <p class="cd-yonetici" hidden>${ikon('yonetici')}<span></span></p>
+      <div class="modal-dugmeler cd-dugmeler">
+        <button class="btn btn-krem" data-eylem="cd-topla" data-kat="1" data-ogretici-modal>Topla</button>
+        <button class="btn btn-yesil cd-x2" data-eylem="cd-topla" data-kat="2"><i class="cd-donen" aria-hidden="true"></i>${reklamsiz ? '' : ikon('oynat')}<span>Topla x2</span></button>
+      </div>
+      ${reklamsiz ? '' : '<p class="cd-not">x2 için kısa bir reklam izlersin.</p>'}`
+    const el = {
+      miktar: g.querySelector('.cd-miktar'),
+      sure: g.querySelector('.cd-sure'),
+      yon: g.querySelector('.cd-yonetici'),
+      yonYazi: g.querySelector('.cd-yonetici span'),
+    }
+    let kapaniyor = false
+    return (d) => {
+      const bc = d.bekleyenCevrimdisi
+      const nb = bc && d.bolgeler[bc.bolge]
+      if (!nb) {
+        // Başka yoldan toplandı (ya da geçersiz): pencere kendiliğinden kapanır
+        if (!kapaniyor && !cdReklamda) { kapaniyor = true; setTimeout(() => { if (modal && modal.ad === 'cevrimdisi') modalKapat() }, 0) }
+        return
+      }
+      yaz(el.miktar, bicim(bc.miktar))
+      const sinir = E.cevrimdisiSinir(d, nb)
+      yaz(el.sure, sure(Math.min(bc.sure, sinir)) + ' boyunca' + (bc.sinirli ? ` (en fazla ${saatYazi(sinir)})` : ''))
+      const calisan = nb.yoneticiler.filter((y) => y.atanan).length
+      gizle(el.yon, calisan === 0)
+      if (calisan) yaz(el.yonYazi, `${calisan} yönetici çalıştı` + (eksikYoneticiVar(nb) ? ' · Yöneticisiz istasyonlar durdu' : ''))
+    }
+  }
+  function cdTopla(kat, btn) {
+    const s = B.eylem('cevrimdisiTopla', { kat })
+    if (!s || !s.ok) return
+    const r = btn.getBoundingClientRect(), k = B.kok.getBoundingClientRect()
+    B.ucanSikke(r.left - k.left + r.width / 2, r.top - k.top + r.height / 2, 14)
+    if (modal && modal.ad === 'cevrimdisi') modalKapat()
+  }
+  B.eylemler['cd-topla'] = async (b) => {
+    if (b.dataset.kat !== '2') { cdTopla(1, b); return }
+    if (cdReklamda) return
+    cdReklamda = true
+    sinif(b, 'yukleniyor', true)
+    b.setAttribute('aria-busy', 'true')
+    let ok = false
+    try { ok = await B.reklamIzle('cevrimdisi') } catch { ok = false }
+    cdReklamda = false
+    sinif(b, 'yukleniyor', false)
+    b.removeAttribute('aria-busy')
+    if (!ok) { B.bildir('bilgi', 'Reklam yüklenemedi, sonra tekrar dene'); return }
+    cdTopla(2, b)
+  }
+  // Bekleyen kazanç varsa pencereyi bir kez açar (öğretici sürerken alt bant yeterli)
+  let cdIlk = 0
+  function cevrimdisiDenetle(d) {
+    const bc = d.bekleyenCevrimdisi
+    if (!bc || !d.bolgeler[bc.bolge] || !d.ogretici.bitti) return
+    const simdi = performance.now()
+    if (!cdIlk) cdIlk = simdi
+    if (simdi - cdIlk < 600) return
+    if ((modal && modal.ad === 'cevrimdisi') || kuyruk.some((k) => k.ad === 'cevrimdisi')) return
+    modalAc('cevrimdisi', {})
   }
 
   const SAYFA_KUR = { yukseltme: yukseltmeKur, ayarlar: ayarlarKur, istasyonSec: istasyonSecKur, defter: defterKur }
-  const MODAL_KUR = { yonetici: yoneticiKur, aktarim: aktarimKur, hikaye: hikayeKur }
+  const MODAL_KUR = { yonetici: yoneticiKur, cevrimdisi: cevrimdisiKur, aktarim: aktarimKur, hikaye: hikayeKur }
 
   // Başka modüllerin alt sayfa / modal kurucusu kaydetmesi
   function kaydet(ad, kurucu, tur = 'sayfa') {
@@ -550,7 +655,6 @@ export function kur(B) {
   }
 
   function ac(ad, veri) {
-    if (ad === 'cevrimdisi') { cevrimdisiYonlendir(); return }
     if (SAYFALAR.has(ad)) sayfaAc(ad, veri || {})
     else modalAc(ad, veri || {})
   }
@@ -566,6 +670,7 @@ export function kur(B) {
   }
 
   function kare4(d) {
+    cevrimdisiDenetle(d)
     if (sayfa && sayfa.kare4) sayfa.kare4(d)
     if (modal && modal.kare4) modal.kare4(d)
   }

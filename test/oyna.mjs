@@ -361,8 +361,11 @@ async function senaryo4(tarayici, profil) {
   let ok = await metinVar(sayfa, 'Sen yokken madencilerin çalıştı!') && await metinVar(sayfa, 'Çevrimdışı Kazanç')
   if (!ok) notlar.push('çevrimdışı bildirimi/paneli yok')
   const once = await sayfa.evaluate(() => ({ para: __cevher.durum.bolgeler[__cevher.durum.aktifBolge].para, miktar: __cevher.durum.bekleyenCevrimdisi?.miktar || 0 }))
+  // Çevrimdışı penceresi açılır (perdeye dokunmak kapatmaz); x2 düğmesi pencerede, yoksa alt bantta
+  await sayfa.waitForSelector('.modal.acik[data-tur="cevrimdisi"]', { timeout: 2500 }).catch(() => {})
   await ekran(s, profil, 'modal-cevrimdisi.png')
-  const d = (await ustDugmeler(sayfa)).find((b) => /2x Topla/.test(b.ad))
+  const dugmeler = await ustDugmeler(sayfa)
+  const d = dugmeler.find((b) => /Topla x2/.test(b.ad)) || dugmeler.find((b) => /2x Topla/.test(b.ad))
   if (!d) { ok = false; notlar.push('2x Topla düğmesi yok') } else {
     await dokun(s, d.x, d.y)
     const perde = await sayfa.waitForSelector('.reklam-perde', { timeout: 1500 }).then(() => true, () => false)
