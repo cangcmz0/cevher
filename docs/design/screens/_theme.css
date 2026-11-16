@@ -1,0 +1,42 @@
+/* Cevher Madenci · Geliştirici: İbrahim Can Göçmez */
+:root{--color-background:#062B42;--color-background-deep:#031A2B;--color-surface-dark:#0B3A55;--color-frame:#2B6585;--color-surface:#F4E8D6;--color-surface-sunken:#E9D7BC;--color-border:#B8996F;--color-text-primary:#2B1D12;--color-text-secondary:#6B5640;--color-text-on-dark:#FFFFFF;--color-text-on-dark-soft:#B7CEDB;--color-accent:#B9501C;--color-accent-light:#E67E3E;--color-on-accent:#FFFFFF;--color-gold:#F6C453;--color-success:#13703A;--color-success-bright:#2ECC71;--color-bar-track:#3A2A1E;--color-info:#2F6DB8;--color-tile:#3FBDB6;--color-danger:#FF7A63;--color-danger-surface:#4A1F1A;--color-disabled:#A8968A;--color-rarity-common:#B8C2C8;--color-rarity-rare:#6FA8EC;--font-display:'Baloo 2','Trebuchet MS',system-ui,sans-serif;--font-body:'Rubik','Segoe UI',Roboto,system-ui,sans-serif;--space-xxs:2px;--space-xs:4px;--space-sm:6px;--space-md:8px;--space-lg:12px;--space-xl:16px;--space-xxl:24px;--radius-badge:6px;--radius-button:9px;--radius-card:12px;--radius-strip:14px;--radius-sheet:18px;--radius-full:999px;--shadow-card:0 2px 0 rgba(120,80,40,.28),0 6px 14px rgba(0,0,0,.30);--shadow-button:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.16),0 2px 0 rgba(0,0,0,.35);--shadow-panel:0 10px 28px rgba(0,0,0,.40)}
+.ekran{width:390px;height:844px;box-sizing:border-box;position:relative;overflow:hidden;background:var(--color-background);color:var(--color-text-on-dark);font-family:var(--font-body);font-size:13px;line-height:17px;font-variant-numeric:tabular-nums}
+.ekran *{box-sizing:border-box}
+.baslik{font-family:var(--font-display);font-weight:800;font-size:20px;line-height:24px;margin:0}
+.kart-baslik{font-family:var(--font-display);font-weight:800;font-size:16px;line-height:19px;margin:0}
+.deger{font-family:var(--font-display);font-weight:700;font-size:16px;line-height:18px}
+.meta{font-size:12px;line-height:15px;font-weight:600}
+.etiket{font-size:11px;line-height:13px;font-weight:600}
+.soluk{color:var(--color-text-on-dark-soft)}
+.ikincil{color:var(--color-text-secondary)}
+.ust{position:absolute;left:0;right:0;top:0;height:74px;padding:10px 12px;display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,var(--color-surface-dark),var(--color-background))}
+.hap{display:flex;align-items:center;gap:6px;height:30px;padding:0 10px 0 4px;border-radius:var(--radius-full);background:rgba(0,0,0,.32);border:1px solid var(--color-frame)}
+.para{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFE08A,var(--color-gold) 55%,#D99A2B);border:1px solid #A8690F;flex:none}
+.elmas{width:20px;height:20px;flex:none;background:linear-gradient(135deg,#7DB1F0,var(--color-info));clip-path:polygon(50% 0,100% 38%,50% 100%,0 38%)}
+.avatar{width:46px;height:46px;border-radius:50%;border:2px solid var(--color-gold);background:radial-gradient(circle at 50% 38%,#E8C9A0 0 34%,#3A2A1E 35% 100%);flex:none}
+.pano{background:linear-gradient(180deg,#0D3D53,#07324A 45%,#042A3C);border:2px solid var(--color-frame);border-radius:var(--radius-card);box-shadow:0 6px 14px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08)}
+.krem{background:linear-gradient(180deg,#FBF4EA,var(--color-surface));color:var(--color-text-primary);border:1px solid var(--color-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.dg{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 16px;border:0;border-radius:var(--radius-button);font-family:var(--font-display);font-weight:800;font-size:16px;line-height:19px;color:var(--color-on-accent);box-shadow:var(--shadow-button);text-shadow:0 1px 0 rgba(0,0,0,.30);cursor:pointer}
+.dg-ana{background:linear-gradient(180deg,var(--color-accent-light),var(--color-accent) 55%)}
+.dg-basari{background:linear-gradient(180deg,#1E9E55,var(--color-success) 55%)}
+.dg-elmas{background:linear-gradient(180deg,#4A90E2,var(--color-info) 55%);height:44px}
+.dg-ikincil{background:linear-gradient(180deg,#FBF4EA,var(--color-surface-sunken));color:var(--color-text-primary);border:1px solid var(--color-border);text-shadow:none}
+.dg-pasif{background:var(--color-disabled);color:var(--color-text-primary);text-shadow:none;box-shadow:none}
+.dg-tam{width:100%}
+.cubuk{height:10px;border-radius:5px;background:var(--color-bar-track);overflow:hidden;border:1px solid rgba(0,0,0,.35)}
+.cubuk>span{display:block;height:100%;background:linear-gradient(180deg,#5FE08F,var(--color-success-bright));border-radius:5px}
+.rozet{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:var(--radius-badge);font-size:10px;line-height:12px;font-weight:700}
+.segment{display:flex;height:34px;padding:3px;border-radius:var(--radius-full);background:var(--color-surface-sunken);border:1px solid var(--color-border)}
+.segment>button{flex:1;border:0;border-radius:var(--radius-full);background:transparent;font-family:var(--font-body);font-weight:600;font-size:12px;color:var(--color-text-primary)}
+.segment>button.secili{background:var(--color-accent);color:var(--color-on-accent)}
+.gezinti{position:absolute;left:0;right:0;bottom:0;height:66px;display:flex;background:var(--color-background-deep);border-top:1px solid var(--color-frame)}
+.gezinti>a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--color-text-on-dark-soft);text-decoration:none;font-size:11px;font-weight:600;border-top:3px solid transparent;position:relative}
+.gezinti>a.secili{color:var(--color-text-on-dark);border-top-color:var(--color-accent-light);background:rgba(255,255,255,.04)}
+.gezinti svg{width:24px;height:24px}
+.nokta{position:absolute;top:8px;right:22px;width:8px;height:8px;border-radius:50%;background:var(--color-danger)}
+.perde{position:absolute;inset:0;background:rgba(3,26,43,.6)}
+.panel{position:absolute;left:0;right:0;bottom:0;background:var(--color-surface);color:var(--color-text-primary);border-radius:var(--radius-sheet) var(--radius-sheet) 0 0;box-shadow:var(--shadow-panel);padding:10px 16px 20px}
+.tutamak{width:40px;height:4px;border-radius:2px;background:var(--color-border);margin:0 auto 12px}
+.pencere{position:absolute;left:35px;width:320px;background:var(--color-surface);color:var(--color-text-primary);border-radius:var(--radius-sheet);box-shadow:var(--shadow-panel);padding:20px 16px 16px}
+.sayfa-govde{position:absolute;left:0;right:0;top:74px;bottom:66px;overflow:hidden;padding:12px}
+.bolum{font-family:var(--font-display);font-weight:800;font-size:16px;line-height:19px;margin:16px 0 8px;color:var(--color-gold)}
